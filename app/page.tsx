@@ -658,8 +658,33 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
 }
 
 function ScrollablePicker({ label, children }: { label: string; children: ReactNode }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [thumb, setThumb] = useState({ left: 0, width: 100 });
+
+  const updateIndicator = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    const width = Math.max(22, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100));
+    const left = maxScroll ? (scroller.scrollLeft / maxScroll) * (100 - width) : 0;
+    setThumb({ left, width });
+  };
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const frame = window.requestAnimationFrame(updateIndicator);
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(scroller);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, []);
+
   return <div className="picker-shell">
-    <div className="picker-scroll" tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
+    <div ref={scrollerRef} className="picker-scroll" onScroll={updateIndicator} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
+    <div className="picker-scrollbar" aria-hidden="true"><span style={{ left: `${thumb.left}%`, width: `${thumb.width}%` }} /></div>
   </div>;
 }
 

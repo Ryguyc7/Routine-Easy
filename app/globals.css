@@ -244,12 +244,11 @@ button { color: inherit; }
 .emoji-picker, .color-picker, .day-picker { min-width: 0; max-width: 100%; border: 0; padding: 0; margin: 0; }
 .emoji-picker legend, .color-picker legend, .day-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .picker-shell { position: relative; min-width: 0; width: 100%; }
-.picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 2px 2px 8px; scrollbar-width: thin; scrollbar-color: var(--purple) #eeeaf8; overscroll-behavior-inline: contain; scroll-behavior: smooth; scroll-snap-type: x proximity; touch-action: pan-x; }
-.picker-scroll::-webkit-scrollbar { height: 5px; }
-.picker-scroll::-webkit-scrollbar-track { background: #eeeaf8; border-radius: 999px; }
-.picker-scroll::-webkit-scrollbar-thumb { min-width: 42px; border-radius: 999px; background: linear-gradient(90deg, #7a68ef, #5c45dc); box-shadow: inset 0 1px 0 rgba(255,255,255,.42); }
-.picker-scroll::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #6f5deb, #5138d0); }
+.picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 2px 2px 7px; scrollbar-width: none; overscroll-behavior-inline: contain; scroll-behavior: smooth; scroll-snap-type: x proximity; touch-action: pan-x; }
+.picker-scroll::-webkit-scrollbar { display: none; }
 .picker-scroll label { flex: 0 0 auto; scroll-snap-align: start; }
+.picker-scrollbar { position: relative; width: 100%; height: 5px; margin-top: 1px; overflow: hidden; border-radius: 999px; background: #eeeaf8; box-shadow: inset 0 1px 2px rgba(72,54,139,.07); pointer-events: none; }
+.picker-scrollbar span { position: absolute; top: 0; bottom: 0; min-width: 22%; border-radius: inherit; background: linear-gradient(90deg, #7a68ef, #5c45dc); box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 1px 4px rgba(92,69,220,.18); transition: left .08s linear, width .2s ease; }
 .picker-scroll:focus-visible { outline: 2px solid rgba(108,92,231,.2); outline-offset: 3px; border-radius: 9px; }
 .emoji-picker input, .color-picker input, .day-picker input { position: absolute; opacity: 0; pointer-events: none; }
 .emoji-picker span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
