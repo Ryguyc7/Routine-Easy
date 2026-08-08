@@ -16,6 +16,8 @@ type Routine = {
   targetCount: number;
   unit: string;
   dayVariants: Partial<Record<number, string>>;
+  startDate: string;
+  endDate: string;
   items: RoutineItem[];
 };
 
@@ -50,6 +52,22 @@ function readDayVariants(form: FormData) {
     if (value) variants[String(day)] = value;
   });
   return variants;
+}
+
+function routineActiveOnDate(routine: Routine, date: string) {
+  return (!routine.startDate || date >= routine.startDate) && (!routine.endDate || date <= routine.endDate);
+}
+
+function formatShortDate(date: string) {
+  if (!date) return "";
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatDateRange(routine: Routine) {
+  if (routine.startDate && routine.endDate) return `${formatShortDate(routine.startDate)}–${formatShortDate(routine.endDate)}`;
+  if (routine.startDate) return `From ${formatShortDate(routine.startDate)}`;
+  if (routine.endDate) return `Until ${formatShortDate(routine.endDate)}`;
+  return "No date limit";
 }
 
 export default function Home() {
@@ -125,7 +143,7 @@ export default function Home() {
     setOnboardingState("done");
   }
 
-  const todayRoutines = routines.filter((routine) => routine.days.includes(today.getDay()));
+  const todayRoutines = routines.filter((routine) => routine.days.includes(today.getDay()) && routineActiveOnDate(routine, todayKey));
   const completedToday = new Set(
     completions.filter((item) => item.date === todayKey).map((item) => item.routineId),
   );
@@ -230,6 +248,8 @@ export default function Home() {
         targetCount: Number(form.get("targetCount") ?? 4),
         unit: form.get("unit"),
         dayVariants: readDayVariants(form),
+        startDate: form.get("startDate"),
+        endDate: form.get("endDate"),
         items: trackingMode === "checklist" ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [],
       }),
     });
@@ -269,6 +289,8 @@ export default function Home() {
         targetCount: Number(form.get("targetCount") ?? 4),
         unit: form.get("unit"),
         dayVariants: readDayVariants(form),
+        startDate: form.get("startDate"),
+        endDate: form.get("endDate"),
         items,
       }),
     });
@@ -382,7 +404,7 @@ export default function Home() {
                 {monthDays.map((date, index) => {
                   if (!date) return <div className="day-cell empty" key={`blank-${index}`} />;
                   const key = localDateKey(date);
-                  const matches = routines.filter((routine) => routine.days.includes(date.getDay()) && (selectedRoutine === "all" || selectedRoutine === routine.id));
+                  const matches = routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, key) && (selectedRoutine === "all" || selectedRoutine === routine.id));
                   const isToday = key === todayKey;
                   return <div className={`day-cell ${isToday ? "is-today" : ""}`} key={key}>
                     <span className="day-number">{date.getDate()}</span>
@@ -528,7 +550,7 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
       : "Single check";
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
-    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{routine.time || "Anytime"} · {trackingLabel}</small></div>
+    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{routine.time || "Anytime"} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
     <button className="list-button" onClick={onEditOptions}>Options</button>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}>×</button>
   </article>;
@@ -555,6 +577,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
     <div className="form-grid">
       <label className="field wide"><span>Routine name</span><input name="name" placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
       <label className="field"><span>Time <small>Optional</small></span><input name="time" type="time" /></label>
+      <DateRangeSettings />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
       {trackingMode === "quantity" && <QuantitySettings />}
@@ -570,17 +593,33 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
 
 function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
   const [trackingMode, setTrackingMode] = useState<TrackingMode>(routine.trackingMode);
-  return <form className="add-card checklist-editor" onSubmit={onSubmit}>
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onCancel]);
+
+  return <div className="edit-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+  <form className="add-card checklist-editor edit-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
     <div className="add-card-header"><div><span className="eyebrow">How {routine.name} works</span><h2>Routine options</h2><p>Choose the check-off style that fits this routine.</p></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
     <div className="form-grid options-grid">
       <label className="field"><span>Time <small>Optional</small></span><input name="time" type="time" defaultValue={routine.time} /></label>
+      <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} autoFocus /></label>}
       {trackingMode === "quantity" && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
       <DayPlanSettings scheduledDays={routine.days} variants={routine.dayVariants} />
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Saving…" : "Save options"}</button></div>
-  </form>;
+  </form>
+  </div>;
 }
 
 function TrackingModePicker({ value, onChange }: { value: TrackingMode; onChange: (mode: TrackingMode) => void }) {
@@ -599,6 +638,18 @@ function TrackingModePicker({ value, onChange }: { value: TrackingMode; onChange
       </label>)}
     </div>
   </fieldset>;
+}
+
+function DateRangeSettings({ startDate = "", endDate = "" }: { startDate?: string; endDate?: string }) {
+  const [start, setStart] = useState(startDate);
+  const [end, setEnd] = useState(endDate);
+  return <section className="date-range-settings">
+    <div className="date-range-heading"><strong>Active dates</strong><small>Optional · leave blank to keep it ongoing</small></div>
+    <div className="date-range-fields">
+      <label className="field"><span>Start date</span><span className="date-input-wrap"><input name="startDate" type="date" value={start} max={end || undefined} onChange={(event) => setStart(event.target.value)} /><button type="button" onClick={() => setStart("")} disabled={!start}>Clear</button></span></label>
+      <label className="field"><span>Stop date</span><span className="date-input-wrap"><input name="endDate" type="date" value={end} min={start || undefined} onChange={(event) => setEnd(event.target.value)} /><button type="button" onClick={() => setEnd("")} disabled={!end}>Clear</button></span></label>
+    </div>
+  </section>;
 }
 
 function DayPlanSettings({ scheduledDays, variants = {} }: { scheduledDays: number[]; variants?: Partial<Record<number, string>> }) {

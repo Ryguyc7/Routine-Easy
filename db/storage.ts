@@ -16,7 +16,9 @@ export async function ensureDatabase() {
     tracking_mode TEXT NOT NULL DEFAULT 'simple',
     target_count INTEGER NOT NULL DEFAULT 1,
     unit TEXT NOT NULL DEFAULT 'times',
-    day_variants TEXT NOT NULL DEFAULT '{}'
+    day_variants TEXT NOT NULL DEFAULT '{}',
+    start_date TEXT NOT NULL DEFAULT '',
+    end_date TEXT NOT NULL DEFAULT ''
   )`).run();
   const routineColumns = await env.DB.prepare("PRAGMA table_info(routines)").all<{ name: string }>();
   const existingColumns = new Set(routineColumns.results.map((column) => column.name));
@@ -24,6 +26,8 @@ export async function ensureDatabase() {
   if (!existingColumns.has("target_count")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN target_count INTEGER NOT NULL DEFAULT 1").run();
   if (!existingColumns.has("unit")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN unit TEXT NOT NULL DEFAULT 'times'").run();
   if (!existingColumns.has("day_variants")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN day_variants TEXT NOT NULL DEFAULT '{}'").run();
+  if (!existingColumns.has("start_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN start_date TEXT NOT NULL DEFAULT ''").run();
+  if (!existingColumns.has("end_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN end_date TEXT NOT NULL DEFAULT ''").run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS completions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,

@@ -178,11 +178,14 @@ button { color: inherit; }
 .calendar-legend { margin-top: 12px; color: #92929c; font-size: 11px; text-align: center; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
-.add-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
-.add-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
+.add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
+.add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
 .add-routine-modal .form-actions button { min-width: 122px; }
+.edit-routine-modal .add-card-header { position: sticky; top: -23px; z-index: 3; margin: -23px -23px 22px; padding: 23px 23px 16px; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.edit-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 3; justify-content: center; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
+.edit-routine-modal .form-actions button { min-width: 122px; }
 @keyframes modal-fade { from { opacity: 0; } }
 @keyframes modal-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } }
 .add-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
@@ -208,6 +211,15 @@ button { color: inherit; }
 .tracking-options small { color: #9999a2; font-size: 9px; font-weight: 600; line-height: 1.25; }
 .quantity-settings { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 2fr; gap: 12px 18px; padding: 15px; border: 1px solid color-mix(in srgb, var(--purple) 22%, #e5e2e9); border-radius: 13px; background: color-mix(in srgb, var(--purple) 3%, #fff); }
 .quantity-settings > p { grid-column: 1 / -1; margin: -3px 0 0; color: #93919b; font-size: 10px; line-height: 1.4; }
+.date-range-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
+.date-range-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.date-range-heading strong { color: var(--ink); font-size: 11px; }
+.date-range-heading small { color: #9996a0; font-size: 9px; }
+.date-range-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.date-input-wrap { display: flex; align-items: center; gap: 7px; }
+.field .date-input-wrap input { min-width: 0; flex: 1; }
+.date-input-wrap button { flex: 0 0 auto; padding: 8px 9px; border: 0; border-radius: 8px; color: var(--purple); background: var(--lavender); font-size: 9px; font-weight: 800; cursor: pointer; }
+.date-input-wrap button:disabled { color: #aaa8b2; background: #eeecf0; cursor: default; }
 .day-plan-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
 .day-plan-toggle { display: flex; align-items: center; gap: 11px; cursor: pointer; }
 .day-plan-toggle > input { position: absolute; opacity: 0; pointer-events: none; }
@@ -246,6 +258,7 @@ button { color: inherit; }
 .card-body strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .card-body p { margin: 5px 0 4px; color: var(--routine); font-size: 10px; font-weight: 750; }
 .card-body small { color: #9999a2; font-size: 11px; }
+.card-body .date-range-label { display: block; margin-top: 3px; color: #aaa8b2; font-size: 9px; }
 .list-button { position: absolute; right: 13px; bottom: 11px; padding: 5px 8px; border: 0; border-radius: 7px; background: var(--lavender); color: var(--purple); font-size: 9px; font-weight: 800; cursor: pointer; }
 .delete-button { position: absolute; top: 10px; right: 12px; opacity: 0; transition: opacity .18s; }
 .routine-card:hover .delete-button, .delete-button:focus { opacity: 1; }
@@ -317,14 +330,17 @@ button { color: inherit; }
   .routine-grid { grid-template-columns: 1fr; }
   .desktop-routine-add { display: none; }
   .form-grid { grid-template-columns: 1fr; }
-  .add-modal-backdrop { align-items: center; padding: 14px; }
-  .add-routine-modal { max-height: calc(100svh - 28px); padding: 20px; border-radius: 23px; }
+  .add-modal-backdrop, .edit-modal-backdrop { align-items: center; padding: 14px; }
+  .add-routine-modal, .edit-routine-modal { max-height: calc(100svh - 28px); padding: 20px; border-radius: 23px; }
   .add-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
+  .edit-routine-modal .add-card-header { top: -20px; margin: -20px -20px 20px; padding: 20px 20px 14px; }
+  .edit-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
   .tracking-options { grid-template-columns: 1fr; }
   .tracking-options label { min-height: 56px; }
   .options-grid .tracking-options { grid-template-columns: 1fr; }
   .quantity-settings { grid-template-columns: 1fr 1.45fr; }
   .day-plan-grid { grid-template-columns: 1fr; }
+  .date-range-fields { grid-template-columns: 1fr; }
   .day-picker { grid-column: auto; }
   .delete-button { opacity: 1; }
   .error-banner { left: 50%; top: 75px; }

@@ -13,11 +13,14 @@ type RoutineRow = {
   targetCount: number;
   unit: string;
   dayVariants: string;
+  startDate: string;
+  endDate: string;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; position: number };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days,
-  tracking_mode AS trackingMode, target_count AS targetCount, unit, day_variants AS dayVariants`;
+  tracking_mode AS trackingMode, target_count AS targetCount, unit, day_variants AS dayVariants,
+  start_date AS startDate, end_date AS endDate`;
 
 function cleanItems(items: unknown) {
   if (!Array.isArray(items)) return [];
@@ -47,6 +50,15 @@ function cleanDayVariants(value: unknown) {
     if (label) clean[String(day)] = label;
   }
   return clean;
+}
+
+function cleanDate(value: unknown) {
+  const date = String(value ?? "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00`)) ? date : "";
+}
+
+function invalidDateRange(startDate: string, endDate: string) {
+  return Boolean(startDate && endDate && endDate < startDate);
 }
 
 function normalize(row: RoutineRow, items: RoutineItemRow[]) {
@@ -114,7 +126,7 @@ export async function POST(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
   };
   const name = payload.name?.trim();
   if (!name || !payload.days?.length) return Response.json({ error: "Name and days are required" }, { status: 400 });
@@ -122,11 +134,14 @@ export async function POST(request: Request) {
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
   const dayVariants = cleanDayVariants(payload.dayVariants);
+  const startDate = cleanDate(payload.startDate);
+  const endDate = cleanDate(payload.endDate);
+  if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
   const result = await env.DB.prepare(`INSERT INTO routines
-    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, day_variants)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, day_variants, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING ${ROUTINE_SELECT}`)
-    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(payload.days), trackingMode, targetCount, unit, JSON.stringify(dayVariants))
+    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(payload.days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate)
     .first<RoutineRow>();
   const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
   if (itemTitles.length) {
@@ -143,7 +158,7 @@ export async function PUT(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
   const payload = await request.json() as {
-    id?: number; time?: string; trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; items?: string[];
+    id?: number; time?: string; trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
   };
   if (!Number.isInteger(payload.id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const existing = await getRoutine(owner, payload.id!);
@@ -154,10 +169,13 @@ export async function PUT(request: Request) {
   let currentDayVariants: Record<string, string> = {};
   try { currentDayVariants = cleanDayVariants(JSON.parse(existing.dayVariants)); } catch { currentDayVariants = {}; }
   const dayVariants = cleanDayVariants(payload.dayVariants ?? currentDayVariants);
+  const startDate = cleanDate(payload.startDate ?? existing.startDate);
+  const endDate = cleanDate(payload.endDate ?? existing.endDate);
+  if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
   const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
   await env.DB.batch([
-    env.DB.prepare("UPDATE routines SET time = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ? WHERE owner_key = ? AND id = ?")
-      .bind(payload.time ?? existing.time, trackingMode, targetCount, unit, JSON.stringify(dayVariants), owner, existing.id),
+    env.DB.prepare("UPDATE routines SET time = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
+      .bind(payload.time ?? existing.time, trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
     env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, existing.id),
     env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
     env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),

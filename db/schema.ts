@@ -12,6 +12,8 @@ export const routines = sqliteTable("routines", {
   targetCount: integer("target_count").notNull().default(1),
   unit: text("unit").notNull().default("times"),
   dayVariants: text("day_variants").notNull().default("{}"),
+  startDate: text("start_date").notNull().default(""),
+  endDate: text("end_date").notNull().default(""),
 });
 
 export const completions = sqliteTable("completions", {
