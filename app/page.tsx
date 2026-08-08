@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, ListChecks, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, ListChecks, Trash2, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -124,6 +124,8 @@ export default function Home() {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingList, setSavingList] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
@@ -318,12 +320,23 @@ export default function Home() {
   }
 
   async function deleteRoutine(id: number) {
+    setDeleting(true);
     const itemIds = new Set(routines.find((routine) => routine.id === id)?.items.map((item) => item.id) ?? []);
     setRoutines((items) => items.filter((routine) => routine.id !== id));
     setCompletions((items) => items.filter((item) => item.routineId !== id));
     setItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
     setQuantityCompletions((items) => items.filter((item) => item.routineId !== id));
-    await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
+    try {
+      const response = await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Delete failed");
+      setError("");
+    } catch {
+      setError("That routine could not be deleted. Please try again.");
+      await loadData();
+    } finally {
+      setDeleting(false);
+      setRoutineToDelete(null);
+    }
   }
 
   async function saveRoutineOptions(event: FormEvent<HTMLFormElement>, routine: Routine) {
@@ -411,6 +424,8 @@ export default function Home() {
           </section>
         </div>}
 
+        {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={() => setRoutineToDelete(null)} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
+
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
 
         {tab === "today" && (
@@ -487,7 +502,7 @@ export default function Home() {
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => deleteRoutine(routine.id)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => setRoutineToDelete(routine)} />)}
               </div>
             </section>
           </div>
@@ -626,6 +641,29 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
     <button className="list-button" onClick={onEditOptions}>Options</button>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}>×</button>
   </article>;
+}
+
+function DeleteRoutineDialog({ routine, deleting, onCancel, onConfirm }: { routine: Routine; deleting: boolean; onCancel: () => void; onConfirm: () => void }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !deleting) onCancel();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [deleting, onCancel]);
+
+  return <div className="delete-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !deleting) onCancel(); }}>
+    <section className="delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
+      <div className="delete-dialog-icon" aria-hidden="true"><Trash2 /></div>
+      <div className="delete-dialog-copy"><small>Please confirm</small><h2 id="delete-dialog-title">Delete {routine.name}?</h2><p id="delete-dialog-description">This removes the routine, its checklist items, and its completion history. This can’t be undone.</p></div>
+      <div className="delete-dialog-actions"><button type="button" className="secondary-button" onClick={onCancel} disabled={deleting}>Cancel</button><button type="button" className="delete-confirm-button" onClick={onConfirm} disabled={deleting}>{deleting ? "Deleting…" : "Delete routine"}</button></div>
+    </section>
+  </div>;
 }
 
 function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, targetCount, unit }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; targetCount: number; unit: string }) {

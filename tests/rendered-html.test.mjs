@@ -29,6 +29,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /dayVariant-/);
   assert.doesNotMatch(page, /Your rhythm at a glance/);
   assert.match(page, /edit-modal-backdrop/);
+  assert.match(page, /function DeleteRoutineDialog/);
+  assert.match(page, /role="alertdialog"/);
+  assert.match(page, /Delete routine/);
+  assert.match(page, /setRoutineToDelete\(routine\)/);
+  assert.doesNotMatch(page, /onDelete=\{\(\) => deleteRoutine\(routine\.id\)\}/);
   assert.match(page, /Active dates/);
   assert.match(page, /name="startDate"/);
   assert.match(page, /name="endDate"/);
