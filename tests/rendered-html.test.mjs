@@ -41,6 +41,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /picker-scrollbar/);
   assert.match(page, /ResizeObserver/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar span/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar \{[\s\S]*width: 88px; height: 3px/);
   assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
