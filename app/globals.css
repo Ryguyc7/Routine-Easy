@@ -103,17 +103,27 @@ button { color: inherit; }
 .section-title h2 { margin: 0; font-size: 18px; letter-spacing: -.3px; }
 .section-title > span { color: #9999a2; font-size: 12px; }
 .routine-list { display: grid; gap: 11px; }
-.routine-row { --routine: #6c5ce7; position: relative; width: 100%; min-height: 76px; padding: 13px 17px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--line); background: #fff; border-radius: 15px; cursor: pointer; text-align: left; box-shadow: 0 5px 17px rgba(35, 30, 77, .035); transition: transform .18s ease, border-color .18s ease, opacity .18s ease; overflow: hidden; }
+.routine-row { --routine: #6c5ce7; position: relative; width: 100%; min-height: 76px; display: flex; align-items: center; flex-wrap: wrap; border: 1px solid var(--line); background: #fff; border-radius: 15px; text-align: left; box-shadow: 0 5px 17px rgba(35, 30, 77, .035); transition: transform .18s ease, border-color .18s ease, opacity .18s ease; overflow: hidden; }
 .routine-row::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--routine); }
 .routine-row:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--routine) 40%, #ddd); }
+.routine-main { min-width: 0; flex: 1; min-height: 74px; padding: 13px 8px 13px 17px; display: flex; align-items: center; gap: 15px; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .routine-emoji { display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 auto; border-radius: 13px; background: color-mix(in srgb, var(--routine) 13%, #fff); font-size: 21px; }
 .routine-info { display: grid; gap: 5px; }
 .routine-info strong { font-size: 14px; }
 .routine-info small { color: var(--muted); font-size: 12px; }
-.check-circle { display: grid; place-items: center; margin-left: auto; width: 26px; height: 26px; border: 1.5px solid #d8d6dd; border-radius: 50%; color: transparent; transition: .2s ease; }
+.expand-chevron { margin-left: auto; color: #aaa8b2; font-size: 19px; line-height: 1; transition: transform .2s ease; }
+.routine-row.expanded .expand-chevron { transform: rotate(180deg); }
+.check-circle { display: grid; place-items: center; flex: 0 0 auto; margin-right: 17px; width: 28px; height: 28px; padding: 0; border: 1.5px solid #d8d6dd; background: #fff; border-radius: 50%; color: transparent; cursor: pointer; transition: .2s ease; }
 .routine-row.completed { opacity: .66; }
 .routine-row.completed .routine-info strong { text-decoration: line-through; }
 .routine-row.completed .check-circle { color: #fff; border-color: var(--routine); background: var(--routine); }
+.routine-checklist { flex: 0 0 100%; display: grid; gap: 7px; padding: 4px 17px 15px 78px; }
+.routine-checklist::before { content: ""; height: 1px; margin: 0 0 4px; background: #f0eef3; }
+.routine-checklist button { display: flex; align-items: center; gap: 10px; min-height: 35px; padding: 5px 8px; border: 0; border-radius: 9px; background: transparent; color: #575762; font-size: 12px; text-align: left; cursor: pointer; transition: background .18s ease, color .18s ease; }
+.routine-checklist button:hover { background: color-mix(in srgb, var(--routine) 7%, #fff); }
+.routine-checklist .item-check { display: grid; place-items: center; width: 20px; height: 20px; flex: 0 0 auto; border: 1.5px solid #d8d6dd; border-radius: 6px; color: transparent; font-size: 11px; }
+.routine-checklist button.checked { color: #9999a2; text-decoration: line-through; }
+.routine-checklist button.checked .item-check { color: #fff; border-color: var(--routine); background: var(--routine); text-decoration: none; }
 
 .primary-button, .secondary-button { border: 0; padding: 11px 17px; border-radius: 10px; font-weight: 750; font-size: 13px; cursor: pointer; transition: .18s ease; }
 .primary-button { color: #fff; background: var(--purple); box-shadow: 0 8px 18px rgba(108,92,231,.2); }
@@ -146,11 +156,15 @@ button { color: inherit; }
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
 .add-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
 .add-card-header h2 { margin: 0; font-size: 21px; }
+.add-card-header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 .add-card-header > button, .delete-button { border: 0; background: transparent; color: #aaa8b2; font-size: 23px; cursor: pointer; }
 .form-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px 20px; }
 .field { display: grid; gap: 7px; color: #5e5e68; font-size: 11px; font-weight: 750; }
-.field input { width: 100%; border: 1px solid #dfdde2; padding: 11px 12px; border-radius: 9px; outline: none; color: var(--ink); background: #fff; }
-.field input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--lavender); }
+.field span small { color: #a09fa8; font-size: 10px; font-weight: 600; }
+.field input, .field textarea { width: 100%; border: 1px solid #dfdde2; padding: 11px 12px; border-radius: 9px; outline: none; color: var(--ink); background: #fff; }
+.field textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
+.field input:focus, .field textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--lavender); }
+.checklist-field { grid-column: 1 / -1; }
 .emoji-picker, .color-picker, .day-picker { border: 0; padding: 0; margin: 0; }
 .emoji-picker legend, .color-picker legend, .day-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .emoji-picker, .color-picker { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -175,6 +189,7 @@ button { color: inherit; }
 .card-body strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .card-body p { margin: 5px 0 4px; color: var(--routine); font-size: 10px; font-weight: 750; }
 .card-body small { color: #9999a2; font-size: 11px; }
+.list-button { position: absolute; right: 13px; bottom: 11px; padding: 5px 8px; border: 0; border-radius: 7px; background: var(--lavender); color: var(--purple); font-size: 9px; font-weight: 800; cursor: pointer; }
 .delete-button { position: absolute; top: 10px; right: 12px; opacity: 0; transition: opacity .18s; }
 .routine-card:hover .delete-button, .delete-button:focus { opacity: 1; }
 .loading-list { display: grid; gap: 10px; width: 100%; grid-column: 1 / -1; }
@@ -233,6 +248,9 @@ button { color: inherit; }
   .progress-card { padding: 21px; border-radius: 22px; box-shadow: 0 18px 38px rgba(86,70,190,.22); }
   .progress-icon { display: none; }
   .routine-row { min-height: 72px; border-color: rgba(225,222,218,.86); border-radius: 18px; box-shadow: 0 9px 24px rgba(35,30,77,.055); }
+  .routine-main { gap: 12px; padding-left: 15px; }
+  .routine-checklist { padding: 3px 14px 14px 19px; }
+  .routine-card { min-height: 116px; padding-bottom: 29px; }
   .calendar-card { padding: 17px 10px; }
   .day-cell { min-height: 61px; padding: 7px 2px; }
   .calendar-toolbar { padding: 0 7px; }

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type Routine = {
   id: number;
   name: string;
@@ -9,9 +10,11 @@ type Routine = {
   color: string;
   time: string;
   days: number[];
+  items: RoutineItem[];
 };
 
 type Completion = { routineId: number; date: string };
+type ItemCompletion = { itemId: number; date: string };
 type Tab = "today" | "calendar" | "routines";
 type OnboardingState = "checking" | "show" | "done";
 
@@ -37,11 +40,14 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("today");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
+  const [itemCompletions, setItemCompletions] = useState<ItemCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRoutine, setSelectedRoutine] = useState<number | "all">("all");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingList, setSavingList] = useState(false);
+  const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const today = useMemo(() => new Date(), []);
   const todayKey = localDateKey(today);
@@ -53,6 +59,7 @@ export default function Home() {
       const data = await response.json();
       setRoutines(data.routines);
       setCompletions(data.completions);
+      setItemCompletions(data.itemCompletions ?? []);
       setError("");
     } catch {
       setError("Your routines could not be loaded. Please refresh and try again.");
@@ -84,10 +91,32 @@ export default function Home() {
   const completedToday = new Set(
     completions.filter((item) => item.date === todayKey).map((item) => item.routineId),
   );
-  const doneCount = todayRoutines.filter((routine) => completedToday.has(routine.id)).length;
+  const completedItemsToday = new Set(
+    itemCompletions.filter((item) => item.date === todayKey).map((item) => item.itemId),
+  );
+  const isRoutineDone = (routine: Routine) => routine.items.length
+    ? routine.items.every((item) => completedItemsToday.has(item.id))
+    : completedToday.has(routine.id);
+  const doneCount = todayRoutines.filter(isRoutineDone).length;
   const progress = todayRoutines.length ? Math.round((doneCount / todayRoutines.length) * 100) : 0;
 
   async function toggleRoutine(routineId: number, date = todayKey) {
+    const routine = routines.find((item) => item.id === routineId);
+    if (routine?.items.length) {
+      const currentlyDone = routine.items.every((item) => itemCompletions.some((completion) => completion.itemId === item.id && completion.date === date));
+      const routineItemIds = new Set(routine.items.map((item) => item.id));
+      setItemCompletions((items) => currentlyDone
+        ? items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId))
+        : [...items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId)), ...routine.items.map((item) => ({ itemId: item.id, date }))],
+      );
+      const response = await fetch("/api/item-completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routineId, date, completed: !currentlyDone }),
+      });
+      if (!response.ok) loadData();
+      return;
+    }
     const currentlyDone = completions.some((item) => item.routineId === routineId && item.date === date);
     setCompletions((items) =>
       currentlyDone
@@ -98,6 +127,20 @@ export default function Home() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ routineId, date, completed: !currentlyDone }),
+    });
+    if (!response.ok) loadData();
+  }
+
+  async function toggleItem(itemId: number, date = todayKey) {
+    const currentlyDone = itemCompletions.some((item) => item.itemId === itemId && item.date === date);
+    setItemCompletions((items) => currentlyDone
+      ? items.filter((item) => !(item.itemId === itemId && item.date === date))
+      : [...items, { itemId, date }],
+    );
+    const response = await fetch("/api/item-completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId, date, completed: !currentlyDone }),
     });
     if (!response.ok) loadData();
   }
@@ -120,6 +163,7 @@ export default function Home() {
         color: form.get("color"),
         time: form.get("time"),
         days,
+        items: String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean),
       }),
     });
     if (response.ok) {
@@ -134,9 +178,34 @@ export default function Home() {
   }
 
   async function deleteRoutine(id: number) {
+    const itemIds = new Set(routines.find((routine) => routine.id === id)?.items.map((item) => item.id) ?? []);
     setRoutines((items) => items.filter((routine) => routine.id !== id));
     setCompletions((items) => items.filter((item) => item.routineId !== id));
+    setItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
     await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
+  }
+
+  async function saveChecklist(event: FormEvent<HTMLFormElement>, routine: Routine) {
+    event.preventDefault();
+    setSavingList(true);
+    const form = new FormData(event.currentTarget);
+    const items = String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean);
+    const response = await fetch("/api/routines", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: routine.id, items }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const previousIds = new Set(routine.items.map((item) => item.id));
+      setRoutines((all) => all.map((item) => item.id === routine.id ? { ...item, items: data.items } : item));
+      setItemCompletions((all) => all.filter((item) => !previousIds.has(item.itemId)));
+      setEditingRoutineId(null);
+      setError("");
+    } else {
+      setError("That checklist could not be saved. Please try again.");
+    }
+    setSavingList(false);
   }
 
   const monthDays = useMemo(() => {
@@ -204,7 +273,14 @@ export default function Home() {
               <div className="section-title"><h2>Today’s routines</h2><span>{todayRoutines.length} items</span></div>
               <div className="routine-list">
                 {loading ? <LoadingRows /> : todayRoutines.length ? todayRoutines.map((routine) => (
-                  <RoutineRow key={routine.id} routine={routine} completed={completedToday.has(routine.id)} onToggle={() => toggleRoutine(routine.id)} />
+                  <RoutineRow
+                    key={routine.id}
+                    routine={routine}
+                    completed={isRoutineDone(routine)}
+                    completedItemIds={completedItemsToday}
+                    onToggle={() => toggleRoutine(routine.id)}
+                    onToggleItem={toggleItem}
+                  />
                 )) : <EmptyToday onAdd={() => { setTab("routines"); setShowAdd(true); }} />}
               </div>
             </section>
@@ -249,10 +325,14 @@ export default function Home() {
               <button className="primary-button" onClick={() => setShowAdd(true)}>＋ Add routine</button>
             </div>
             {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} />}
+            {editingRoutineId !== null && (() => {
+              const routine = routines.find((item) => item.id === editingRoutineId);
+              return routine ? <ChecklistEditor routine={routine} onSubmit={(event) => saveChecklist(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} /> : null;
+            })()}
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><span>{routines.length} total</span></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onDelete={() => deleteRoutine(routine.id)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onEditList={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => deleteRoutine(routine.id)} />)}
               </div>
             </section>
           </div>
@@ -309,17 +389,33 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
   return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span>{icon}</span>{label}</button>;
 }
 
-function RoutineRow({ routine, completed, onToggle }: { routine: Routine; completed: boolean; onToggle: () => void }) {
-  return <button className={`routine-row ${completed ? "completed" : ""}`} onClick={onToggle} style={{ "--routine": routine.color } as React.CSSProperties}>
-    <span className="routine-emoji">{routine.emoji}</span><span className="routine-info"><strong>{routine.name}</strong><small>{routine.time}</small></span><span className="check-circle">✓</span>
-  </button>;
+function RoutineRow({ routine, completed, completedItemIds, onToggle, onToggleItem }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; onToggle: () => void; onToggleItem: (itemId: number) => void }) {
+  const [expanded, setExpanded] = useState(routine.items.length > 0 && !completed);
+  const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
+  return <article className={`routine-row ${completed ? "completed" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
+    <button className="routine-main" onClick={() => routine.items.length ? setExpanded((value) => !value) : onToggle()} aria-expanded={routine.items.length ? expanded : undefined}>
+      <span className="routine-emoji">{routine.emoji}</span>
+      <span className="routine-info"><strong>{routine.name}</strong><small>{routine.time}{routine.items.length ? ` · ${completedCount}/${routine.items.length} items` : ""}</small></span>
+      {routine.items.length > 0 && <span className="expand-chevron" aria-hidden="true">⌄</span>}
+    </button>
+    <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
+    {routine.items.length > 0 && expanded && <div className="routine-checklist">
+      {routine.items.map((item) => {
+        const checked = completedItemIds.has(item.id);
+        return <button key={item.id} className={checked ? "checked" : ""} onClick={() => onToggleItem(item.id)}>
+          <span className="item-check">✓</span><span>{item.title}</span>
+        </button>;
+      })}
+    </div>}
+  </article>;
 }
 
-function RoutineCard({ routine, onDelete }: { routine: Routine; onDelete: () => void }) {
+function RoutineCard({ routine, onEditList, onDelete }: { routine: Routine; onEditList: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
-    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{routine.time}</small></div>
+    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{routine.time}{routine.items.length ? ` · ${routine.items.length} list items` : ""}</small></div>
+    <button className="list-button" onClick={onEditList}>{routine.items.length ? "Edit list" : "+ Add list"}</button>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}>×</button>
   </article>;
 }
@@ -330,11 +426,20 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
     <div className="form-grid">
       <label className="field wide"><span>Routine name</span><input name="name" placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
       <label className="field"><span>Time</span><input name="time" type="time" defaultValue="08:00" required /></label>
+      <label className="field checklist-field"><span>Checklist items <small>Optional · one per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>
       <fieldset className="emoji-picker"><legend>Icon</legend>{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} /><span>{emoji}</span></label>)}</fieldset>
       <fieldset className="color-picker"><legend>Color</legend>{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} /><span style={{ background: color }} /></label>)}</fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} defaultChecked /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
+  </form>;
+}
+
+function ChecklistEditor({ routine, onSubmit, onCancel, saving }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
+  return <form className="add-card checklist-editor" onSubmit={onSubmit}>
+    <div className="add-card-header"><div><span className="eyebrow">Inside {routine.name}</span><h2>Edit checklist</h2><p>Add the smaller steps you want to check off.</p></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
+    <label className="field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} autoFocus /></label>
+    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Saving…" : "Save checklist"}</button></div>
   </form>;
 }
 

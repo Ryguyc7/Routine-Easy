@@ -1,7 +1,9 @@
 import { env } from "cloudflare:workers";
+import { ensureDatabase, ownerKey } from "../../../db/storage";
 
 export async function POST(request: Request) {
-  const owner = request.headers.get("oai-authenticated-user-id") ?? "daydrop-local-user";
+  await ensureDatabase();
+  const owner = ownerKey(request);
   const payload = await request.json() as { routineId?: number; date?: string; completed?: boolean };
   if (!Number.isInteger(payload.routineId) || !/^\d{4}-\d{2}-\d{2}$/.test(payload.date ?? "")) {
     return Response.json({ error: "Invalid completion" }, { status: 400 });
