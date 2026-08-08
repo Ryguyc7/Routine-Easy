@@ -57,7 +57,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /preview-list \{ overflow: visible; \}/);
   assert.match(page, /setPreviewChecklist/);
   assert.match(page, /onValueChange=\{\(targetCount, unit\)/);
-  assert.match(page, /Live preview/);
+  assert.doesNotMatch(page, /<small>Live preview<\/small>/);
+  assert.match(page, /className="preview-progress" role="progressbar"/);
+  assert.match(page, /className="preview-detail-heading"/);
   assert.match(page, /setPreviewEmoji/);
   assert.match(page, /setPreviewColor/);
   assert.match(page, /function VerticalScrollIndicator/);

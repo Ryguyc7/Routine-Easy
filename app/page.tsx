@@ -777,6 +777,11 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
     : trackingMode === "checklist"
       ? items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"
       : `${quantity}/${targetCount} ${unit || "times"}`;
+  const progressValue = trackingMode === "simple"
+    ? simpleDone ? 100 : 0
+    : trackingMode === "checklist"
+      ? items.length ? Math.round((checkedItems.length / items.length) * 100) : 0
+      : targetCount ? Math.round((quantity / targetCount) * 100) : 0;
 
   useEffect(() => {
     setExpanded(trackingMode !== "simple");
@@ -803,7 +808,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
     <div className="preview-summary">
       <button type="button" className="preview-main" onClick={() => hasDetails ? setExpanded((value) => !value) : toggleAll()} aria-expanded={hasDetails ? expanded : undefined}>
         <span className="preview-icon" aria-hidden="true">{emoji}</span>
-        <span className="preview-copy"><small>Live preview</small><strong>{name.trim() || "Your new routine"}</strong><span>{formatRoutineTime(time, timeFormat)} · {detail}</span></span>
+        <span className="preview-copy"><strong>{name.trim() || "Your new routine"}</strong><span>{formatRoutineTime(time, timeFormat)} · {detail}</span></span>
         {hasDetails && <span className="preview-chevron" aria-hidden="true" />}
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
@@ -814,7 +819,8 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
         return <button type="button" key={`${item}-${index}`} className={checked ? "checked" : ""} onClick={() => setCheckedItems((current) => checked ? current.filter((value) => value !== index) : [...current, index].sort((a, b) => a - b))}><span>{checked ? "✓" : ""}</span>{item}</button>;
       }) : <p>Type checklist items below to try them here.</p>}
     </div>}
-    {expanded && trackingMode === "quantity" && <div className="preview-details">
+    {expanded && trackingMode === "quantity" && <div className="preview-details preview-amount">
+      <div className="preview-detail-heading"><span>Daily amount</span><strong>{quantity} of {targetCount} {unit || "times"}</strong></div>
       <div className="preview-quantity" style={{ "--preview-segments": targetCount } as React.CSSProperties}>
         {Array.from({ length: targetCount }, (_, index) => {
           const amount = index + 1;
@@ -823,6 +829,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
         })}
       </div>
     </div>}
+    {!expanded && <div className="preview-progress" role="progressbar" aria-label="Preview progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span style={{ width: `${progressValue}%` }} /></div>}
   </section>;
 }
 
