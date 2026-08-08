@@ -518,8 +518,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
   }, [onCancel]);
 
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
-  <form className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-labelledby="add-routine-title">
-    <div className="add-card-header"><div><span className="eyebrow">A new small promise</span><h2 id="add-routine-title">Add a routine</h2></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
+  <form className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
     <div className="form-grid">
       <label className="field wide"><span>Routine name</span><input name="name" placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
       <label className="field"><span>Time <small>Optional</small></span><input name="time" type="time" /></label>
