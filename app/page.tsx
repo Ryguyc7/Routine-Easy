@@ -658,33 +658,8 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
 }
 
 function ScrollablePicker({ label, children }: { label: string; children: ReactNode }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [hasMore, setHasMore] = useState(true);
-
-  const updateHint = () => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    setHasMore(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 6);
-  };
-
-  const revealMore = () => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    scroller.scrollBy({ left: Math.max(120, scroller.clientWidth * .68), behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(updateHint);
-    window.addEventListener("resize", updateHint);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", updateHint);
-    };
-  }, []);
-
-  return <div className={`picker-shell ${hasMore ? "has-more" : "at-end"}`}>
-    <div ref={scrollerRef} className="picker-scroll" onScroll={updateHint} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
-    <button type="button" className="picker-scroll-hint" onClick={revealMore} aria-label={`Show more ${label.toLowerCase()} choices`}><span>More</span><i aria-hidden="true" /></button>
+  return <div className="picker-shell">
+    <div className="picker-scroll" tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
   </div>;
 }
 

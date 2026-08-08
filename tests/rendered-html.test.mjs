@@ -37,8 +37,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /picker-scroll/);
   assert.match(page, /function ScrollablePicker/);
   assert.match(page, /Scroll horizontally for more/);
-  assert.match(page, /scroller\.scrollBy/);
-  assert.match(page, /Show more \$\{label\.toLowerCase\(\)\} choices/);
+  assert.doesNotMatch(page, /scroller\.scrollBy|picker-scroll-hint/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /scrollbar-color: var\(--purple\) #eeeaf8/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scroll::-webkit-scrollbar-thumb/);
   assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
