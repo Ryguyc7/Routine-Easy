@@ -330,9 +330,9 @@ button { color: inherit; }
   .mobile-header .date-tile small { padding: 3px 0 4px; font-size: 6px; line-height: 1; }
   .today-page { display: flex; flex-direction: column; overflow: hidden; }
   .today-page .progress-card { flex: 0 0 auto; margin-bottom: 25px; }
-  .today-page .routine-section { min-height: 0; flex: 1; display: flex; flex-direction: column; }
-  .today-page .section-title { flex: 0 0 auto; }
-  .today-page .routine-list { min-height: 0; flex: 1; padding: 0 1px 104px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .today-page .routine-section { min-height: 0; flex: 1; display: flex; flex-direction: column; background: transparent; }
+  .today-page .section-title { flex: 0 0 auto; background: transparent; }
+  .today-page .routine-list { min-height: 0; flex: 1; padding: 3px 1px 104px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; background: transparent; }
   .today-page .routine-list::-webkit-scrollbar { display: none; }
   .calendar-page, .routines-page { padding-bottom: 110px; }
   .routines-page { scrollbar-width: none; }
@@ -348,6 +348,7 @@ button { color: inherit; }
   .progress-track span { background: linear-gradient(90deg, #684fe9, #5b42e2); box-shadow: 0 2px 7px rgba(91,66,226,.2); }
   .section-title h2 { font-size: 19px; font-weight: 760; }
   .routine-row { min-height: 72px; background: rgba(255,255,255,.93); border-color: rgba(232,226,216,.94); border-radius: 18px; box-shadow: 0 9px 25px rgba(64,52,43,.055); }
+  .routine-row:hover, .routine-row:active { transform: none; }
   .routine-row::before { display: none; }
   .routine-main { gap: 12px; padding-left: 15px; }
   .routine-emoji { border-radius: 50%; background: color-mix(in srgb, var(--routine) 17%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--routine) 10%, transparent); }
