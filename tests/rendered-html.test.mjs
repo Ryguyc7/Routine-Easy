@@ -22,6 +22,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /aria-modal="true" aria-label="Add a routine"/);
   assert.doesNotMatch(page, /A new small promise/);
   assert.match(page, /openAddFromHeader/);
+  assert.match(page, /function useAnimatedNumber/);
+  assert.match(page, /requestAnimationFrame\(animate\)/);
   assert.match(page, /setTimeout\(\(\) =>/);
   assert.match(page, /Different plan by day/);
   assert.match(page, /dayVariant-/);

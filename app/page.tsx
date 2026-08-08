@@ -62,6 +62,39 @@ function formatDateRange(routine: Routine) {
   return "No date limit";
 }
 
+function useAnimatedNumber(target: number, duration = 600) {
+  const [value, setValue] = useState(0);
+  const valueRef = useRef(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      valueRef.current = target;
+      setValue(target);
+      return;
+    }
+
+    const from = valueRef.current;
+    const difference = target - from;
+    if (difference === 0) return;
+    const startedAt = performance.now();
+    let frame = 0;
+
+    const animate = (now: number) => {
+      const elapsed = Math.min((now - startedAt) / duration, 1);
+      const eased = 1 - Math.pow(1 - elapsed, 3);
+      const next = Math.round(from + difference * eased);
+      valueRef.current = next;
+      setValue(next);
+      if (elapsed < 1) frame = window.requestAnimationFrame(animate);
+    };
+
+    frame = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(frame);
+  }, [target, duration]);
+
+  return value;
+}
+
 export default function Home() {
   const [onboardingState, setOnboardingState] = useState<OnboardingState>("checking");
   const [tab, setTab] = useState<Tab>("today");
@@ -150,6 +183,7 @@ export default function Home() {
       : completedToday.has(routine.id);
   const doneCount = todayRoutines.filter(isRoutineDone).length;
   const progress = todayRoutines.length ? Math.round((doneCount / todayRoutines.length) * 100) : 0;
+  const animatedProgress = useAnimatedNumber(progress);
 
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
@@ -351,7 +385,7 @@ export default function Home() {
                 <span className="progress-icon">✦</span>
                 <div><strong>{progress === 100 ? "Beautiful work!" : progress > 50 ? "You’re on a roll!" : "Let’s make a start"}</strong><p>{doneCount} of {todayRoutines.length} routines complete</p></div>
               </div>
-              <div className="progress-number">{progress}%</div>
+              <div className="progress-number" aria-label={`${progress}% complete`}><span aria-hidden="true">{animatedProgress}%</span></div>
               <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
             </section>
 
