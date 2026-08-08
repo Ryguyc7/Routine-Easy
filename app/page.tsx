@@ -4,6 +4,7 @@ import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent 
 import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, ListChecks, Settings2, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
+type RoutineAmount = { key: string; name: string; targetCount: number };
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
 const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
 const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
@@ -17,6 +18,7 @@ type Routine = {
   trackingMode: TrackingMode;
   targetCount: number;
   unit: string;
+  amounts: RoutineAmount[];
   dayVariants: Partial<Record<number, string>>;
   startDate: string;
   endDate: string;
@@ -25,7 +27,7 @@ type Routine = {
 
 type Completion = { routineId: number; date: string };
 type ItemCompletion = { itemId: number; date: string };
-type QuantityCompletion = { routineId: number; date: string; count: number };
+type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
 type Tab = "today" | "calendar" | "routines" | "settings";
 type OnboardingState = "checking" | "show" | "done";
 type TimeFormat = "12-hour" | "24-hour";
@@ -135,7 +137,7 @@ export default function Home() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [itemCompletions, setItemCompletions] = useState<ItemCompletion[]>([]);
-  const [quantityCompletions, setQuantityCompletions] = useState<QuantityCompletion[]>([]);
+  const [amountCompletions, setAmountCompletions] = useState<AmountCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRoutine, setSelectedRoutine] = useState<number | "all">("all");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -160,7 +162,7 @@ export default function Home() {
       setRoutines(data.routines);
       setCompletions(data.completions);
       setItemCompletions(data.itemCompletions ?? []);
-      setQuantityCompletions(data.quantityCompletions ?? []);
+      setAmountCompletions(data.amountCompletions ?? []);
       setError("");
     } catch {
       setError("Your routines could not be loaded. Please refresh and try again.");
@@ -235,10 +237,10 @@ export default function Home() {
   const completedItemsToday = new Set(
     itemCompletions.filter((item) => item.date === todayKey).map((item) => item.itemId),
   );
-  const quantityCount = (routineId: number, date = todayKey) => quantityCompletions.find((item) => item.routineId === routineId && item.date === date)?.count ?? 0;
+  const amountCount = (routineId: number, amountKey: string, date = todayKey) => amountCompletions.find((item) => item.routineId === routineId && item.amountKey === amountKey && item.date === date)?.count ?? 0;
   const isRoutineDone = (routine: Routine) => {
     const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => completedItemsToday.has(item.id)));
-    const quantityDone = !usesQuantity(routine.trackingMode) || quantityCount(routine.id) >= routine.targetCount;
+    const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => amountCount(routine.id, amount.key) >= amount.targetCount));
     return routine.trackingMode === "simple" ? completedToday.has(routine.id) : checklistDone && quantityDone;
   };
   const doneCount = todayRoutines.filter(isRoutineDone).length;
@@ -258,11 +260,11 @@ export default function Home() {
     const routine = routines.find((item) => item.id === routineId);
     if (routine && routine.trackingMode !== "simple") {
       const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => itemCompletions.some((completion) => completion.itemId === item.id && completion.date === date)));
-      const quantityDone = !usesQuantity(routine.trackingMode) || quantityCount(routineId, date) >= routine.targetCount;
+      const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => amountCount(routineId, amount.key, date) >= amount.targetCount));
       const completeEverything = !(checklistDone && quantityDone);
       await Promise.all([
         usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, completeEverything, date) : Promise.resolve(),
-        usesQuantity(routine.trackingMode) ? setQuantity(routineId, completeEverything ? routine.targetCount : 0, date) : Promise.resolve(),
+        ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routineId, amount, completeEverything ? amount.targetCount : 0, date)) : []),
       ]);
       return;
     }
@@ -294,18 +296,18 @@ export default function Home() {
     if (!response.ok) loadData();
   }
 
-  async function setQuantity(routineId: number, count: number, date = todayKey) {
+  async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
     if (!routine || !usesQuantity(routine.trackingMode)) return;
-    const safeCount = Math.min(routine.targetCount, Math.max(0, Math.round(count)));
-    setQuantityCompletions((items) => safeCount === 0
-      ? items.filter((item) => !(item.routineId === routineId && item.date === date))
-      : [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, count: safeCount }],
+    const safeCount = Math.min(amount.targetCount, Math.max(0, Math.round(count)));
+    setAmountCompletions((items) => safeCount === 0
+      ? items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date))
+      : [...items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date)), { routineId, amountKey: amount.key, date, count: safeCount }],
     );
     const response = await fetch("/api/quantity-completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ routineId, date, count: safeCount }),
+      body: JSON.stringify({ routineId, amountKey: amount.key, date, count: safeCount }),
     });
     if (!response.ok) loadData();
   }
@@ -344,8 +346,7 @@ export default function Home() {
         time: form.get("time"),
         days,
         trackingMode,
-        targetCount: Number(form.get("targetCount") ?? 4),
-        unit: form.get("unit"),
+        amounts: JSON.parse(String(form.get("amounts") ?? "[]")),
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
         endDate: form.get("endDate"),
@@ -369,7 +370,7 @@ export default function Home() {
     setRoutines((items) => items.filter((routine) => routine.id !== id));
     setCompletions((items) => items.filter((item) => item.routineId !== id));
     setItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
-    setQuantityCompletions((items) => items.filter((item) => item.routineId !== id));
+    setAmountCompletions((items) => items.filter((item) => item.routineId !== id));
     try {
       const response = await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Delete failed");
@@ -405,8 +406,7 @@ export default function Home() {
         time: form.get("time"),
         days,
         trackingMode,
-        targetCount: Number(form.get("targetCount") ?? 4),
-        unit: form.get("unit"),
+        amounts: JSON.parse(String(form.get("amounts") ?? "[]")),
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
         endDate: form.get("endDate"),
@@ -508,10 +508,10 @@ export default function Home() {
                     routine={routine}
                     completed={isRoutineDone(routine)}
                     completedItemIds={completedItemsToday}
-                    quantityCount={quantityCount(routine.id)}
+                    amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
                     onToggle={() => toggleRoutine(routine.id)}
                     onToggleItem={toggleItem}
-                    onSetQuantity={(count) => setQuantity(routine.id, count)}
+                    onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
                     timeFormat={preferences.timeFormat}
                   />
                 )) : <EmptyToday onAdd={() => { setTab("routines"); setShowAdd(true); }} />}
@@ -672,19 +672,19 @@ function DateTile({ date }: { date: Date }) {
   </div>;
 }
 
-function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity, timeFormat }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void; timeFormat: TimeFormat }) {
-  const hasDetails = (usesChecklist(routine.trackingMode) && routine.items.length > 0) || (usesQuantity(routine.trackingMode) && routine.targetCount > 1);
+function RoutineRow({ routine, completed, completedItemIds, amountCounts, onToggle, onToggleItem, onSetAmount, timeFormat }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; timeFormat: TimeFormat }) {
+  const hasDetails = (usesChecklist(routine.trackingMode) && routine.items.length > 0) || (usesQuantity(routine.trackingMode) && routine.amounts.length > 0);
   const [expanded, setExpanded] = useState(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
   const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
   const progressParts = [
     ...(usesChecklist(routine.trackingMode) && routine.items.length ? [Math.round((completedCount / routine.items.length) * 100)] : []),
-    ...(usesQuantity(routine.trackingMode) ? [Math.min(100, Math.round((count / routine.targetCount) * 100))] : []),
+    ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => Math.min(100, Math.round(((amountCounts[amount.key] ?? 0) / amount.targetCount) * 100))) : []),
   ];
   const progressValue = progressParts.length ? Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length) : completed ? 100 : 0;
   const detail = [
     ...(usesChecklist(routine.trackingMode) ? [`${completedCount}/${routine.items.length} items`] : []),
-    ...(usesQuantity(routine.trackingMode) ? [`${count}/${routine.targetCount} ${routine.unit}`] : []),
+    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.length === 1 ? `${amountCounts[routine.amounts[0].key] ?? 0}/${routine.amounts[0].targetCount} ${routine.amounts[0].name}` : `${routine.amounts.filter((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount).length}/${routine.amounts.length} amounts`] : []),
   ].join(" · ");
   const handleMainClick = () => {
     if (hasDetails) setExpanded((value) => !value);
@@ -697,7 +697,7 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
       {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
-    {usesQuantity(routine.trackingMode) && expanded && <QuantityTracker routine={routine} count={count} onChange={onSetQuantity} />}
+    {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
     {usesChecklist(routine.trackingMode) && routine.items.length > 0 && expanded && <div className="routine-checklist">
       {routine.items.map((item) => {
         const checked = completedItemIds.has(item.id);
@@ -712,14 +712,15 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
   </article>;
 }
 
-function QuantityTracker({ routine, count, onChange }: { routine: Routine; count: number; onChange: (count: number) => void }) {
+function QuantityTracker({ routineName, amount, count, onChange }: { routineName: string; amount: RoutineAmount; count: number; onChange: (count: number) => void }) {
   return <div className="quantity-tracker">
-    <div className="quantity-pill" style={{ "--segments": routine.targetCount } as React.CSSProperties} role="group" aria-label={`${routine.name}: ${count} of ${routine.targetCount} ${routine.unit}`}>
-      {Array.from({ length: routine.targetCount }, (_, index) => {
-        const amount = index + 1;
-        const filled = amount <= count;
-        return <button key={amount} type="button" className={filled ? "filled" : ""} onClick={() => onChange(filled ? amount - 1 : amount)} aria-label={`${filled ? "Remove" : "Record"} ${routine.unit} ${amount}`} aria-pressed={filled}>
-          <span>{filled ? "✓" : amount}</span>
+    <strong className="quantity-name">{amount.name}</strong>
+    <div className="quantity-pill" style={{ "--segments": amount.targetCount } as React.CSSProperties} role="group" aria-label={`${routineName}: ${count} of ${amount.targetCount} ${amount.name}`}>
+      {Array.from({ length: amount.targetCount }, (_, index) => {
+        const value = index + 1;
+        const filled = value <= count;
+        return <button key={value} type="button" className={filled ? "filled" : ""} onClick={() => onChange(filled ? value - 1 : value)} aria-label={`${filled ? "Remove" : "Record"} ${amount.name} ${value}`} aria-pressed={filled}>
+          <span>{filled ? "✓" : value}</span>
         </button>;
       })}
     </div>
@@ -730,7 +731,7 @@ function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const trackingLabel = routine.trackingMode === "simple" ? "Single check" : [
     ...(usesChecklist(routine.trackingMode) ? [`${routine.items.length} list items`] : []),
-    ...(usesQuantity(routine.trackingMode) ? [`${routine.targetCount} ${routine.unit} daily`] : []),
+    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.map((amount) => `${amount.targetCount} ${amount.name}`).join(" + ")] : []),
   ].join(" + ");
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
@@ -763,23 +764,23 @@ function DeleteRoutineDialog({ routine, deleting, onCancel, onConfirm }: { routi
   </div>;
 }
 
-function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, targetCount, unit, timeFormat }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; targetCount: number; unit: string; timeFormat: TimeFormat }) {
+function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, amounts, timeFormat }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; amounts: RoutineAmount[]; timeFormat: TimeFormat }) {
   const items = useMemo(() => checklist.split(/\r?\n/).map((item) => item.trim()).filter(Boolean), [checklist]);
   const [expanded, setExpanded] = useState(false);
   const [simpleDone, setSimpleDone] = useState(false);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
-  const [quantity, setQuantity] = useState(0);
+  const [amountCounts, setAmountCounts] = useState<Record<string, number>>({});
   const hasDetails = usesChecklist(trackingMode) || usesQuantity(trackingMode);
   const checklistDone = !usesChecklist(trackingMode) || (items.length > 0 && checkedItems.length === items.length);
-  const quantityDone = !usesQuantity(trackingMode) || quantity >= targetCount;
+  const quantityDone = !usesQuantity(trackingMode) || (amounts.length > 0 && amounts.every((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount));
   const completed = trackingMode === "simple" ? simpleDone : checklistDone && quantityDone;
   const detail = trackingMode === "simple" ? "Single check" : [
     ...(usesChecklist(trackingMode) ? [items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"] : []),
-    ...(usesQuantity(trackingMode) ? [`${quantity}/${targetCount} ${unit || "times"}`] : []),
+    ...(usesQuantity(trackingMode) ? [amounts.length === 1 ? `${amountCounts[amounts[0].key] ?? 0}/${amounts[0].targetCount} ${amounts[0].name}` : `${amounts.filter((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount).length}/${amounts.length} amounts`] : []),
   ].join(" · ");
   const progressParts = [
     ...(usesChecklist(trackingMode) ? [items.length ? Math.round((checkedItems.length / items.length) * 100) : 0] : []),
-    ...(usesQuantity(trackingMode) ? [targetCount ? Math.round((quantity / targetCount) * 100) : 0] : []),
+    ...(usesQuantity(trackingMode) ? amounts.map((amount) => Math.round(((amountCounts[amount.key] ?? 0) / amount.targetCount) * 100)) : []),
   ];
   const progressValue = trackingMode === "simple" ? simpleDone ? 100 : 0 : Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);
 
@@ -787,7 +788,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
     setExpanded(trackingMode !== "simple");
     setSimpleDone(false);
     setCheckedItems([]);
-    setQuantity(0);
+    setAmountCounts({});
   }, [trackingMode]);
 
   useEffect(() => {
@@ -795,14 +796,14 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
   }, [items.length]);
 
   useEffect(() => {
-    setQuantity((count) => Math.min(count, targetCount));
-  }, [targetCount]);
+    setAmountCounts((counts) => Object.fromEntries(amounts.map((amount) => [amount.key, Math.min(counts[amount.key] ?? 0, amount.targetCount)])));
+  }, [amounts]);
 
   const toggleAll = () => {
     if (trackingMode === "simple") setSimpleDone((done) => !done);
     else {
       if (usesChecklist(trackingMode)) setCheckedItems(completed ? [] : items.map((_, index) => index));
-      if (usesQuantity(trackingMode)) setQuantity(completed ? 0 : targetCount);
+      if (usesQuantity(trackingMode)) setAmountCounts(Object.fromEntries(amounts.map((amount) => [amount.key, completed ? 0 : amount.targetCount])));
     }
   };
 
@@ -815,15 +816,16 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
     </div>
-    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">
-      <div className="preview-quantity" style={{ "--preview-segments": targetCount } as React.CSSProperties}>
-        {Array.from({ length: targetCount }, (_, index) => {
-          const amount = index + 1;
-          const filled = amount <= quantity;
-          return <button type="button" key={amount} className={filled ? "filled" : ""} onClick={() => setQuantity(filled ? amount - 1 : amount)} aria-label={`${filled ? "Remove" : "Record"} ${unit || "amount"} ${amount}`}>{filled ? "✓" : amount}</button>;
+    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">{amounts.map((amount) => <div className="preview-amount-row" key={amount.key}>
+      <strong>{amount.name}</strong>
+      <div className="preview-quantity" style={{ "--preview-segments": amount.targetCount } as React.CSSProperties}>
+        {Array.from({ length: amount.targetCount }, (_, index) => {
+          const value = index + 1;
+          const filled = value <= (amountCounts[amount.key] ?? 0);
+          return <button type="button" key={value} className={filled ? "filled" : ""} onClick={() => setAmountCounts((counts) => ({ ...counts, [amount.key]: filled ? value - 1 : value }))} aria-label={`${filled ? "Remove" : "Record"} ${amount.name} ${value}`}>{filled ? "✓" : value}</button>;
         })}
       </div>
-    </div>}
+    </div>)}</div>}
     {expanded && usesChecklist(trackingMode) && <div className="preview-details preview-list">
       {items.length ? items.map((item, index) => {
         const checked = checkedItems.includes(index);
@@ -847,8 +849,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
   const [previewEmoji, setPreviewEmoji] = useState(EMOJIS[0]);
   const [previewColor, setPreviewColor] = useState(COLORS[0]);
   const [previewChecklist, setPreviewChecklist] = useState("");
-  const [previewTargetCount, setPreviewTargetCount] = useState(4);
-  const [previewUnit, setPreviewUnit] = useState("pills");
+  const [previewAmounts, setPreviewAmounts] = useState<RoutineAmount[]>([{ key: "amount-1", name: "pills", targetCount: 4 }]);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -886,6 +887,10 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
       const checklistInput = formRef.current?.elements.namedItem("checklist");
       if (checklistInput instanceof HTMLTextAreaElement && !checklistInput.reportValidity()) return;
     }
+    if (nextStep > step && step === 1 && usesQuantity(trackingMode)) {
+      const invalidAmountInput = formRef.current?.querySelector<HTMLInputElement>(".amount-setting-row input:invalid");
+      if (invalidAmountInput && !invalidAmountInput.reportValidity()) return;
+    }
     stepLockRef.current = true;
     setStepSettling(true);
     setStep(Math.min(steps.length - 1, Math.max(0, nextStep)));
@@ -911,7 +916,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
 
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
-  <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} checklist={previewChecklist} targetCount={previewTargetCount} unit={previewUnit} timeFormat={timeFormat} />
+  <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} checklist={previewChecklist} amounts={previewAmounts} timeFormat={timeFormat} />
   <div className="add-form-shell">
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
     <header className="routine-wizard-header">
@@ -929,7 +934,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
       <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">
         <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
         {usesChecklist(trackingMode) && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" value={previewChecklist} onChange={(event) => setPreviewChecklist(event.target.value)} placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} required /></label>}
-        {usesQuantity(trackingMode) && <QuantitySettings onValueChange={(targetCount, unit) => { setPreviewTargetCount(targetCount); setPreviewUnit(unit); }} />}
+        {usesQuantity(trackingMode) && <QuantitySettings amounts={previewAmounts} onValueChange={setPreviewAmounts} />}
       </section>
       <section className="wizard-step" hidden={step !== 2} aria-label="Appearance and schedule">
         <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
@@ -953,6 +958,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
   const formRef = useRef<HTMLFormElement>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>(routine.trackingMode);
   const [selectedDays, setSelectedDays] = useState(() => [...routine.days]);
+  const [amounts, setAmounts] = useState<RoutineAmount[]>(() => routine.amounts.length ? routine.amounts : [{ key: "amount-1", name: routine.unit || "pills", targetCount: routine.targetCount || 4 }]);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -983,7 +989,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
       <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {usesChecklist(trackingMode) && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} required /></label>}
-      {usesQuantity(trackingMode) && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
+      {usesQuantity(trackingMode) && <QuantitySettings amounts={amounts} onValueChange={setAmounts} />}
       <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={emoji === routine.emoji} onChange={(event) => keepModalAligned(event.currentTarget)} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
       <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={color.toLowerCase() === routine.color.toLowerCase()} onChange={(event) => keepModalAligned(event.currentTarget)} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
@@ -1223,23 +1229,28 @@ function DayPlanSettings({ scheduledDays, variants = {} }: { scheduledDays: numb
   </section>;
 }
 
-function QuantitySettings({ targetCount = 4, unit = "pills", onValueChange }: { targetCount?: number; unit?: string; onValueChange?: (targetCount: number, unit: string) => void }) {
-  const [count, setCount] = useState(Math.max(2, targetCount));
-  const [unitValue, setUnitValue] = useState(unit === "times" ? "pills" : unit);
-  const updateCount = (value: number) => {
-    const next = Math.min(12, Math.max(2, value || 2));
-    setCount(next);
-    onValueChange?.(next, unitValue);
+function QuantitySettings({ amounts, onValueChange }: { amounts: RoutineAmount[]; onValueChange: (amounts: RoutineAmount[]) => void }) {
+  const updateAmount = (key: string, patch: Partial<RoutineAmount>) => onValueChange(amounts.map((amount) => amount.key === key ? { ...amount, ...patch } : amount));
+  const addAmount = () => {
+    if (amounts.length >= 6) return;
+    const key = `amount-${Date.now().toString(36)}-${amounts.length + 1}`;
+    onValueChange([...amounts, { key, name: "", targetCount: 4 }]);
   };
-  const updateUnit = (value: string) => {
-    setUnitValue(value);
-    onValueChange?.(count, value);
+  const removeAmount = (key: string) => {
+    if (amounts.length === 1) return;
+    onValueChange(amounts.filter((amount) => amount.key !== key));
   };
-  return <div className="quantity-settings">
-    <label className="field"><span>Daily amount</span><input name="targetCount" type="number" min="2" max="12" value={count} onChange={(event) => updateCount(Number(event.target.value))} required /></label>
-    <label className="field"><span>What are you counting?</span><input name="unit" value={unitValue} onChange={(event) => updateUnit(event.target.value)} placeholder="pills" maxLength={24} required /></label>
-    <p>Each amount becomes one tappable section in the horizontal tracker.</p>
-  </div>;
+  return <fieldset className="quantity-settings">
+    <legend>Daily amounts</legend>
+    <input type="hidden" name="amounts" value={JSON.stringify(amounts)} />
+    <div className="amount-settings-list">{amounts.map((amount, index) => <div className="amount-setting-row" key={amount.key}>
+      <label className="field"><span>Name</span><input value={amount.name} onChange={(event) => updateAmount(amount.key, { name: event.target.value })} placeholder={index === 0 ? "e.g. Vitamin C" : "e.g. Water"} maxLength={24} required /></label>
+      <label className="field amount-target"><span>Amount</span><input type="number" min="2" max="12" value={amount.targetCount} onChange={(event) => updateAmount(amount.key, { targetCount: Math.min(12, Math.max(2, Number(event.target.value) || 2)) })} required /></label>
+      {amounts.length > 1 && <button type="button" className="remove-amount" onClick={() => removeAmount(amount.key)} aria-label={`Remove ${amount.name || `amount ${index + 1}`}`}><Trash2 aria-hidden="true" /></button>}
+    </div>)}</div>
+    <button type="button" className="add-amount-button" onClick={addAmount} disabled={amounts.length >= 6}>+ Add another amount</button>
+    <p>Each named amount gets its own daily tracker.</p>
+  </fieldset>;
 }
 
 function LoadingRows() {

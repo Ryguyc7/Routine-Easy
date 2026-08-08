@@ -14,14 +14,16 @@ type RoutineRow = {
   trackingMode: string;
   targetCount: number;
   unit: string;
+  amountConfig: string;
   dayVariants: string;
   startDate: string;
   endDate: string;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; position: number };
+type RoutineAmount = { key: string; name: string; targetCount: number };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days,
-  tracking_mode AS trackingMode, target_count AS targetCount, unit, day_variants AS dayVariants,
+  tracking_mode AS trackingMode, target_count AS targetCount, unit, amount_config AS amountConfig, day_variants AS dayVariants,
   start_date AS startDate, end_date AS endDate`;
 
 function cleanItems(items: unknown) {
@@ -42,6 +44,25 @@ function cleanCount(count: unknown, mode: TrackingMode) {
 function cleanUnit(unit: unknown, mode: TrackingMode) {
   if (!usesQuantity(mode)) return "times";
   return String(unit ?? "pills").trim().slice(0, 24) || "pills";
+}
+
+function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetCount: number; unit: string }) {
+  if (!usesQuantity(mode)) return [];
+  const source = Array.isArray(amounts) ? amounts : [];
+  const clean: RoutineAmount[] = [];
+  const usedKeys = new Set<string>();
+  for (const [index, item] of source.slice(0, 6).entries()) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    let key = String(record.key ?? `amount-${index + 1}`).trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || `amount-${index + 1}`;
+    while (usedKeys.has(key)) key = `${key}-${index + 1}`;
+    usedKeys.add(key);
+    const name = String(record.name ?? "").trim().slice(0, 24);
+    const count = Math.round(Number(record.targetCount));
+    if (name) clean.push({ key, name, targetCount: Number.isFinite(count) ? Math.min(12, Math.max(2, count)) : 4 });
+  }
+  if (clean.length) return clean;
+  return [{ key: "amount-1", name: fallback?.unit || "pills", targetCount: fallback?.targetCount || 4 }];
 }
 
 function cleanDayVariants(value: unknown) {
@@ -71,8 +92,11 @@ function invalidDateRange(startDate: string, endDate: string) {
 function normalize(row: RoutineRow, items: RoutineItemRow[]) {
   const trackingMode = row.trackingMode === "simple" && items.length ? "checklist" : cleanMode(row.trackingMode);
   let dayVariants: Record<string, string> = {};
+  let storedAmounts: unknown = [];
   try { dayVariants = cleanDayVariants(JSON.parse(row.dayVariants)); } catch { dayVariants = {}; }
-  return { ...row, trackingMode, dayVariants, days: JSON.parse(row.days) as number[], items };
+  try { storedAmounts = JSON.parse(row.amountConfig); } catch { storedAmounts = []; }
+  const amounts = cleanAmounts(storedAmounts, trackingMode, { targetCount: row.targetCount, unit: row.unit });
+  return { ...row, trackingMode, dayVariants, days: JSON.parse(row.days) as number[], items, amounts };
 }
 
 async function getItems(owner: string) {
@@ -112,11 +136,11 @@ export async function GET(request: Request) {
     }
   }
 
-  const [items, completions, itemCompletions, quantityCompletions] = await Promise.all([
+  const [items, completions, itemCompletions, amountCompletions] = await Promise.all([
     getItems(owner),
     env.DB.prepare("SELECT routine_id AS routineId, date FROM completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; date: string }>(),
     env.DB.prepare("SELECT item_id AS itemId, date FROM item_completions WHERE owner_key = ?").bind(owner).all<{ itemId: number; date: string }>(),
-    env.DB.prepare("SELECT routine_id AS routineId, date, count FROM quantity_completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; date: string; count: number }>(),
+    env.DB.prepare("SELECT routine_id AS routineId, amount_key AS amountKey, date, count FROM amount_completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; amountKey: string; date: string; count: number }>(),
   ]);
   const itemsByRoutine = new Map<number, RoutineItemRow[]>();
   for (const item of items.results) itemsByRoutine.set(item.routineId, [...(itemsByRoutine.get(item.routineId) ?? []), item]);
@@ -124,7 +148,7 @@ export async function GET(request: Request) {
     routines: routines.results.map((routine) => normalize(routine, itemsByRoutine.get(routine.id) ?? [])),
     completions: completions.results,
     itemCompletions: itemCompletions.results,
-    quantityCompletions: quantityCompletions.results,
+    amountCompletions: amountCompletions.results,
   });
 }
 
@@ -133,7 +157,7 @@ export async function POST(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
   };
   const name = payload.name?.trim();
   const days = cleanDays(payload.days);
@@ -143,15 +167,17 @@ export async function POST(request: Request) {
   if (usesChecklist(trackingMode) && !itemTitles.length) return Response.json({ error: "Add at least one checklist item" }, { status: 400 });
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
+  const amounts = cleanAmounts(payload.amounts, trackingMode, { targetCount, unit });
+  const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times" };
   const dayVariants = cleanDayVariants(payload.dayVariants);
   const startDate = cleanDate(payload.startDate);
   const endDate = cleanDate(payload.endDate);
   if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
   const result = await env.DB.prepare(`INSERT INTO routines
-    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, day_variants, start_date, end_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, amount_config, day_variants, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING ${ROUTINE_SELECT}`)
-    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate)
+    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(dayVariants), startDate, endDate)
     .first<RoutineRow>();
   if (itemTitles.length) {
     await env.DB.batch(itemTitles.map((title, position) =>
@@ -168,7 +194,7 @@ export async function PUT(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     id?: number; name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
   };
   if (!Number.isInteger(payload.id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const existing = await getRoutine(owner, payload.id!);
@@ -186,6 +212,11 @@ export async function PUT(request: Request) {
   const trackingMode = cleanMode(payload.trackingMode ?? existing.trackingMode);
   const targetCount = cleanCount(payload.targetCount ?? existing.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit ?? existing.unit, trackingMode);
+  let existingAmountData: unknown = [];
+  try { existingAmountData = JSON.parse(existing.amountConfig); } catch { existingAmountData = []; }
+  const currentAmounts = cleanAmounts(existingAmountData, currentMode, { targetCount: existing.targetCount, unit: existing.unit });
+  const amounts = cleanAmounts(payload.amounts ?? currentAmounts, trackingMode, { targetCount, unit });
+  const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times" };
   let currentDayVariants: Record<string, string> = {};
   try { currentDayVariants = cleanDayVariants(JSON.parse(existing.dayVariants)); } catch { currentDayVariants = {}; }
   const dayVariants = cleanDayVariants(payload.dayVariants ?? currentDayVariants);
@@ -198,8 +229,8 @@ export async function PUT(request: Request) {
     .bind(owner, existing.id).all<RoutineItemRow>();
   const itemsChanged = usesChecklist(currentMode) !== usesChecklist(trackingMode) || JSON.stringify(currentItems.results.map((item) => item.title)) !== JSON.stringify(itemTitles);
   const statements = [
-    env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
-      .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
+    env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, amount_config = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
+      .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
   ];
   if (itemsChanged) {
     statements.push(
@@ -209,9 +240,13 @@ export async function PUT(request: Request) {
     );
   }
   if (!usesQuantity(trackingMode)) {
-    statements.push(env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id));
-  } else if (usesQuantity(currentMode) && targetCount !== existing.targetCount) {
-    statements.push(env.DB.prepare("UPDATE quantity_completions SET count = MIN(count, ?) WHERE owner_key = ? AND routine_id = ?").bind(targetCount, owner, existing.id));
+    statements.push(env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id));
+  } else {
+    const amountKeys = new Set(amounts.map((amount) => amount.key));
+    for (const oldAmount of currentAmounts) {
+      if (!amountKeys.has(oldAmount.key)) statements.push(env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ? AND amount_key = ?").bind(owner, existing.id, oldAmount.key));
+    }
+    for (const amount of amounts) statements.push(env.DB.prepare("UPDATE amount_completions SET count = MIN(count, ?) WHERE owner_key = ? AND routine_id = ? AND amount_key = ?").bind(amount.targetCount, owner, existing.id, amount.key));
   }
   await env.DB.batch(statements);
   const [updated, items] = await Promise.all([
@@ -232,6 +267,7 @@ export async function DELETE(request: Request) {
     env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM completions WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
+    env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM routines WHERE owner_key = ? AND id = ?").bind(owner, id),
   ]);
   return Response.json({ ok: true });

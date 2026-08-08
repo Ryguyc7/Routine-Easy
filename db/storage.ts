@@ -16,6 +16,7 @@ export async function ensureDatabase() {
     tracking_mode TEXT NOT NULL DEFAULT 'simple',
     target_count INTEGER NOT NULL DEFAULT 1,
     unit TEXT NOT NULL DEFAULT 'times',
+    amount_config TEXT NOT NULL DEFAULT '[]',
     day_variants TEXT NOT NULL DEFAULT '{}',
     start_date TEXT NOT NULL DEFAULT '',
     end_date TEXT NOT NULL DEFAULT ''
@@ -25,6 +26,7 @@ export async function ensureDatabase() {
   if (!existingColumns.has("tracking_mode")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN tracking_mode TEXT NOT NULL DEFAULT 'simple'").run();
   if (!existingColumns.has("target_count")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN target_count INTEGER NOT NULL DEFAULT 1").run();
   if (!existingColumns.has("unit")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN unit TEXT NOT NULL DEFAULT 'times'").run();
+  if (!existingColumns.has("amount_config")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN amount_config TEXT NOT NULL DEFAULT '[]'").run();
   if (!existingColumns.has("day_variants")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN day_variants TEXT NOT NULL DEFAULT '{}'").run();
   if (!existingColumns.has("start_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN start_date TEXT NOT NULL DEFAULT ''").run();
   if (!existingColumns.has("end_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN end_date TEXT NOT NULL DEFAULT ''").run();
@@ -54,6 +56,14 @@ export async function ensureDatabase() {
     date TEXT NOT NULL,
     count INTEGER NOT NULL DEFAULT 0
   )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS amount_completions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_key TEXT NOT NULL,
+    routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+    amount_key TEXT NOT NULL,
+    date TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0
+  )`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_completions_owner_routine_date
     ON completions(owner_key, routine_id, date)`).run();
   await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_routine_items_owner_routine_position
@@ -62,5 +72,15 @@ export async function ensureDatabase() {
     ON item_completions(owner_key, item_id, date)`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_quantity_completions_owner_routine_date
     ON quantity_completions(owner_key, routine_id, date)`).run();
+  await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_amount_completions_owner_routine_amount_date
+    ON amount_completions(owner_key, routine_id, amount_key, date)`).run();
+  const legacyAmounts = await env.DB.prepare(`SELECT id, owner_key AS ownerKey, target_count AS targetCount, unit
+    FROM routines WHERE tracking_mode IN ('quantity', 'hybrid') AND amount_config = '[]'`).all<{ id: number; ownerKey: string; targetCount: number; unit: string }>();
+  for (const routine of legacyAmounts.results) {
+    const amountConfig = JSON.stringify([{ key: "amount-1", name: routine.unit || "pills", targetCount: routine.targetCount || 4 }]);
+    await env.DB.prepare("UPDATE routines SET amount_config = ? WHERE id = ? AND owner_key = ?").bind(amountConfig, routine.id, routine.ownerKey).run();
+  }
+  await env.DB.prepare(`INSERT OR IGNORE INTO amount_completions (owner_key, routine_id, amount_key, date, count)
+    SELECT owner_key, routine_id, 'amount-1', date, count FROM quantity_completions`).run();
   await env.DB.prepare("PRAGMA optimize").run();
 }
