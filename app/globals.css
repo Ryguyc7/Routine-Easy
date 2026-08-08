@@ -173,10 +173,11 @@ button { color: inherit; }
 .day-cell.empty { background: #fcfbf9; }
 .day-number { position: relative; z-index: 1; display: grid; place-items: center; width: 26px; height: 26px; margin: 0 auto; border-radius: 50%; font-size: 12px; font-weight: 700; }
 .is-today .day-number { background: var(--purple); color: #fff; }
-.day-fill { position: absolute; inset: 0; display: grid; }
-.day-fill span { min-width: 0; opacity: .88; }
-.has-routines .day-number { color: var(--ink); background: rgba(255,255,255,.88); box-shadow: 0 2px 8px rgba(32,34,44,.12); }
-.has-routines.is-today .day-number { color: var(--purple); background: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 3px 9px rgba(32,34,44,.15); }
+.day-fill { position: absolute; inset: auto 6px 6px; height: 6px; display: grid; gap: 1px; overflow: hidden; border-radius: 999px; box-shadow: 0 1px 3px rgba(32,34,44,.08); }
+.day-fill span { min-width: 0; }
+.selected-routine-day { background: color-mix(in srgb, var(--selected-day) 9%, #fff); }
+.has-routines .day-number { color: var(--ink); background: transparent; box-shadow: none; }
+.has-routines.is-today .day-number { color: #fff; background: var(--purple); box-shadow: none; }
 .calendar-legend { margin-top: 12px; color: #92929c; font-size: 11px; text-align: center; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }

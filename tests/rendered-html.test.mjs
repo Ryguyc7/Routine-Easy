@@ -41,6 +41,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
+  assert.match(page, /selected-routine-day/);
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /☀️/);
   assert.match(page, /mobile-wordmark/);

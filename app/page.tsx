@@ -394,14 +394,15 @@ export default function Home() {
                   const key = localDateKey(date);
                   const matches = routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, key) && (selectedRoutine === "all" || selectedRoutine === routine.id));
                   const isToday = key === todayKey;
-                  return <div className={`day-cell ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""}`} key={key} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
+                  const isSelectedRoutineDay = selectedRoutine !== "all" && matches.length > 0;
+                  return <div className={`day-cell ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""} ${isSelectedRoutineDay ? "selected-routine-day" : ""}`} style={isSelectedRoutineDay ? { "--selected-day": matches[0].color } as React.CSSProperties : undefined} key={key} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
                     {matches.length > 0 && <div className="day-fill" style={{ gridTemplateColumns: `repeat(${matches.length}, minmax(0, 1fr))` }} aria-hidden="true">{matches.map((routine) => <span key={routine.id} style={{ background: routine.color }} />)}</div>}
                     <span className="day-number">{date.getDate()}</span>
                   </div>;
                 })}
               </div>
             </section>
-            <div className="calendar-legend">Each day is filled with its scheduled routine colors.</div>
+            <div className="calendar-legend">Colored bars show the routines scheduled for each day.</div>
           </div>
         )}
 
