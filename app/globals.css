@@ -668,3 +668,20 @@ button { color: inherit; }
   .bottom-nav button:nth-child(2).calendar-nav-button.active .date-nav-icon i { background: var(--sky); }
   .bottom-nav button:nth-child(3).active, .bottom-nav button:nth-child(3).active .nav-icon { color: #d38b0d; }
 }
+
+/* Calm typography shared by Settings and the rest of the product. */
+body { font-weight: 400; letter-spacing: -.01em; }
+button, input, textarea, select { font-family: inherit; }
+.page-heading h1, .settings-heading h1 { font-weight: 500; letter-spacing: -1.35px; }
+.section-title h2, .calendar-toolbar h2, .add-card-header h2, .profile-copy h2, .delete-dialog-copy h2, .empty-state h3 { font-weight: 600; letter-spacing: -.35px; }
+.progress-copy strong, .routine-info strong, .card-body strong, .preview-copy strong, .setting-copy h2, .sidebar-note strong { font-weight: 600; letter-spacing: -.12px; }
+.routine-info small, .card-body small, .preview-copy > span, .setting-copy p, .profile-copy p, .add-card-header p, .calendar-legend { font-weight: 400; line-height: 1.45; }
+.side-nav button, .bottom-nav button { font-weight: 600; }
+.bottom-nav button.active, .bottom-nav .calendar-nav-button .nav-label { font-weight: 700; }
+.primary-button, .secondary-button, .desktop-routine-add, .onboarding-cta, .profile-actions button, .list-button, .delete-confirm-button { font-weight: 650; }
+.field, .tracking-picker legend, .emoji-picker legend, .color-picker legend, .day-picker legend { font-weight: 600; }
+.tracking-options strong, .day-plan-toggle strong { font-weight: 600; }
+.weekday-row span, .day-number { font-weight: 600; }
+.progress-number, .quantity-caption strong, .today-variant { font-weight: 700; }
+.date-tile span, .date-tile small, .calendar-toolbar button.calendar-today-button { font-weight: 700; }
+.onboarding-copy h1 { font-weight: 700; }

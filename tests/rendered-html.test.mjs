@@ -128,6 +128,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(2\)\.active[^}]*color: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.brand-ez, \.mobile-wordmark-ez, \.splash-ez \{\s*color: var\(--coral\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Calm typography shared by Settings/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.section-title h2, \.calendar-toolbar h2[^}]*font-weight: 600/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.primary-button, \.secondary-button[^}]*font-weight: 650/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes routine-reveal/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
