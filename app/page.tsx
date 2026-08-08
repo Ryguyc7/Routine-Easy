@@ -37,14 +37,6 @@ function localDateKey(date = new Date()) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
 
-function formatLongDate(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-}
-
 function readDayVariants(form: FormData) {
   const variants: Record<string, string> = {};
   DAY_NAMES.forEach((_, day) => {
@@ -343,7 +335,7 @@ export default function Home() {
 
       <section className="content">
         <header className="mobile-header">
-          <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div>
+          {tab === "today" ? <DateTile date={today} /> : <span className="mobile-header-spacer" aria-hidden="true" />}
           <button className="mobile-add" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
@@ -351,13 +343,7 @@ export default function Home() {
 
         {tab === "today" && (
           <div className="page today-page">
-            <div className="page-heading split-heading">
-              <div className="date-tile" aria-hidden="true"><span>{today.toLocaleDateString("en-US", { month: "short" })}</span><strong>{today.getDate()}</strong></div>
-              <div className="today-date-copy">
-                <p className="eyebrow">{formatLongDate(today)}</p>
-              </div>
-              <span className="date-balance" aria-hidden="true" />
-            </div>
+            <div className="desktop-today-date"><DateTile date={today} /></div>
 
             <section className="progress-card">
               <div className="progress-copy">
@@ -483,6 +469,14 @@ function OnboardingSplash() {
 
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
   return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon"><Icon aria-hidden="true" strokeWidth={active ? 2.4 : 2} /></span>{label}</button>;
+}
+
+function DateTile({ date }: { date: Date }) {
+  return <div className="date-tile" aria-label={date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}>
+    <span>{date.toLocaleDateString("en-US", { month: "short" })}</span>
+    <strong>{date.getDate()}</strong>
+    <small>{date.toLocaleDateString("en-US", { weekday: "short" })}</small>
+  </div>;
 }
 
 function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void }) {
