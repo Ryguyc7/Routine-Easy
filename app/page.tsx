@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
@@ -609,6 +609,7 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
 }
 
 function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
   const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
   const [previewName, setPreviewName] = useState("");
@@ -644,7 +645,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
     <span className="preview-copy"><small>Live preview</small><strong>{previewName.trim() || "Your new routine"}</strong><span>{previewTime || "Anytime"} · {trackingPreview}</span></span>
     <span className="preview-check" aria-hidden="true" />
   </aside>
-  <form className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
+  <div className="add-form-shell">
+  <form ref={formRef} className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
     <div className="form-grid">
       <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
       <TimeField onValueChange={setPreviewTime} />
@@ -659,11 +661,14 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
   </form>
+  <VerticalScrollIndicator scrollerRef={formRef} label="Add routine form" />
+  </div>
   </div>
   </div>;
 }
 
 function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>(routine.trackingMode);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -679,7 +684,8 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
   }, [onCancel]);
 
   return <div className="edit-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
-  <form className="add-card checklist-editor edit-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
+  <div className="edit-form-shell">
+  <form ref={formRef} className="add-card checklist-editor edit-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
     <div className="add-card-header"><div><span className="eyebrow">How {routine.name} works</span><h2>Routine options</h2><p>Choose the check-off style that fits this routine.</p></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
     <div className="form-grid options-grid">
       <TimeField defaultValue={routine.time} />
@@ -691,6 +697,8 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Saving…" : "Save options"}</button></div>
   </form>
+  <VerticalScrollIndicator scrollerRef={formRef} label="Routine options form" />
+  </div>
   </div>;
 }
 
@@ -766,6 +774,82 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
     <div ref={trackRef} className="picker-scrollbar">
       <button ref={thumbRef} type="button" className={`picker-thumb${dragging ? " dragging" : ""}`} style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} aria-label={`Scroll ${label} choices`} onPointerDown={beginThumbDrag} onPointerMove={moveThumb} onPointerUp={endThumbDrag} onPointerCancel={endThumbDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={moveThumbWithKeyboard} />
     </div>
+  </div>;
+}
+
+function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObject<HTMLFormElement | null>; label: string }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLButtonElement>(null);
+  const dragOffsetRef = useRef(0);
+  const [thumb, setThumb] = useState({ top: 0, height: 100 });
+  const [dragging, setDragging] = useState(false);
+
+  const updateIndicator = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const boundedScroll = Math.min(maxScroll, Math.max(0, scroller.scrollTop));
+    const height = Math.max(12, Math.min(100, (scroller.clientHeight / scroller.scrollHeight) * 100));
+    const top = maxScroll ? (boundedScroll / maxScroll) * (100 - height) : 0;
+    setThumb({ top, height });
+  };
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const frame = window.requestAnimationFrame(updateIndicator);
+    const resizeObserver = new ResizeObserver(updateIndicator);
+    const mutationObserver = new MutationObserver(updateIndicator);
+    resizeObserver.observe(scroller);
+    mutationObserver.observe(scroller, { childList: true, subtree: true, attributes: true });
+    scroller.addEventListener("scroll", updateIndicator, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      scroller.removeEventListener("scroll", updateIndicator);
+    };
+  }, [scrollerRef]);
+
+  const scrollFromThumb = (clientY: number) => {
+    const scroller = scrollerRef.current;
+    const track = trackRef.current;
+    const thumbButton = thumbRef.current;
+    if (!scroller || !track || !thumbButton) return;
+    const trackRect = track.getBoundingClientRect();
+    const maxThumbTop = Math.max(0, track.clientHeight - thumbButton.offsetHeight);
+    const nextThumbTop = Math.min(maxThumbTop, Math.max(0, clientY - trackRect.top - dragOffsetRef.current));
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    scroller.scrollTop = maxThumbTop ? (nextThumbTop / maxThumbTop) * maxScroll : 0;
+  };
+
+  const beginDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    dragOffsetRef.current = event.clientY - event.currentTarget.getBoundingClientRect().top;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  };
+
+  const endDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setDragging(false);
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const amounts: Record<string, number> = { ArrowUp: -48, ArrowDown: 48, PageUp: -scroller.clientHeight * .8, PageDown: scroller.clientHeight * .8 };
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      scroller.scrollTo({ top: event.key === "Home" ? 0 : scroller.scrollHeight, behavior: "smooth" });
+    } else if (event.key in amounts) {
+      event.preventDefault();
+      scroller.scrollTo({ top: scroller.scrollTop + amounts[event.key], behavior: "smooth" });
+    }
+  };
+
+  return <div ref={trackRef} className="modal-scrollbar">
+    <button ref={thumbRef} type="button" className={`modal-scroll-thumb${dragging ? " dragging" : ""}`} style={{ top: `calc(${thumb.top}% + 1px)`, height: `calc(${thumb.height}% - 2px)` }} aria-label={`Scroll ${label}`} onPointerDown={beginDrag} onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) scrollFromThumb(event.clientY); }} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={handleKeyDown} />
   </div>;
 }
 

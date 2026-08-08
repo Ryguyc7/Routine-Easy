@@ -38,8 +38,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Live preview/);
   assert.match(page, /setPreviewEmoji/);
   assert.match(page, /setPreviewColor/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /overflow-y: scroll;[^}]*scrollbar-gutter: stable;[^}]*scrollbar-color: #6c5ce7 #e5dfef/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /add-routine-modal::\-webkit-scrollbar-thumb[\s\S]*background: #6c5ce7/);
+  assert.match(page, /function VerticalScrollIndicator/);
+  assert.match(page, /mutationObserver/);
+  assert.match(page, /Scroll \$\{label\}/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /modal-scrollbar::before/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /modal-scroll-thumb::after[\s\S]*width: 5px[\s\S]*background: #6c5ce7/);
   assert.match(page, /picker-scroll/);
   assert.match(page, /function ScrollablePicker/);
   assert.match(page, /Scroll horizontally for more/);
