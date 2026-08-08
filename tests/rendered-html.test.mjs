@@ -128,6 +128,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /routineez-preferences/);
   assert.match(page, /timeFormat: "12-hour"/);
   assert.match(page, /formatRoutineTime/);
+  assert.match(page, /completed \? 100 : 0/);
+  assert.match(page, /!expanded && <div className="collapsed-progress"/);
   assert.match(page, /weekStartsOn/);
   assert.match(page, /preferences\.motion === "reduced"/);
   assert.match(page, /Manage routines/);

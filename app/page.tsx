@@ -650,7 +650,6 @@ function DateTile({ date }: { date: Date }) {
 
 function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity, timeFormat }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void; timeFormat: TimeFormat }) {
   const hasDetails = (routine.trackingMode === "checklist" && routine.items.length > 0) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
-  const hasMultiple = (routine.trackingMode === "checklist" && routine.items.length > 1) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
   const [expanded, setExpanded] = useState(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
   const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
@@ -658,7 +657,7 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
     ? Math.min(100, Math.round((count / routine.targetCount) * 100))
     : routine.trackingMode === "checklist" && routine.items.length
       ? Math.round((completedCount / routine.items.length) * 100)
-      : 0;
+      : completed ? 100 : 0;
   const detail = routine.trackingMode === "quantity"
     ? `${count}/${routine.targetCount} ${routine.unit}`
     : routine.trackingMode === "checklist"
@@ -684,7 +683,7 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
         </button>;
       })}
     </div>}
-    {hasMultiple && !expanded && <div className="collapsed-progress" role="progressbar" aria-label={`${routine.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}>
+    {!expanded && <div className="collapsed-progress" role="progressbar" aria-label={`${routine.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}>
       <span style={{ width: `${progressValue}%` }} />
     </div>}
   </article>;
