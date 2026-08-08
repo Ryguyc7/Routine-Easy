@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, ListChecks, Settings2, Sparkles, Trash2, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, ListChecks, Settings2, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -138,7 +138,6 @@ export default function Home() {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [settingsReturnTab, setSettingsReturnTab] = useState<Exclude<Tab, "settings">>("today");
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
   const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -199,7 +198,6 @@ export default function Home() {
   }
 
   function openSettings() {
-    if (tab !== "settings") setSettingsReturnTab(tab);
     setShowProfile(false);
     setTab("settings");
   }
@@ -552,7 +550,7 @@ export default function Home() {
           </div>
         )}
 
-        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onBack={() => setTab(settingsReturnTab)} />}
+        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} />}
       </section>
 
       <nav className="bottom-nav" aria-label="Main navigation">
@@ -564,9 +562,8 @@ export default function Home() {
   );
 }
 
-function SettingsPage({ preferences, onChange, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onBack: () => void }) {
+function SettingsPage({ preferences, onChange }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void }) {
   return <div className="page settings-page">
-    <button className="settings-back" onClick={onBack}><ArrowLeft aria-hidden="true" />Back</button>
     <header className="settings-heading"><span>Make it yours</span><h1>Settings</h1><p>Choose how RoutineEZ looks and feels. Changes save automatically on this device.</p></header>
     <div className="settings-list">
       <section className="setting-card">

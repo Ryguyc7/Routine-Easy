@@ -186,10 +186,7 @@ button { color: inherit; }
 .calendar-legend { margin-top: 12px; color: #92929c; font-size: 11px; text-align: center; }
 
 .settings-page { max-width: 760px; }
-.settings-back { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 19px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; color: #6f707a; background: rgba(255,255,255,.78); font-size: 12px; font-weight: 750; cursor: pointer; transition: color .18s ease, border-color .18s ease, transform .18s ease; }
-.settings-back:hover { color: var(--purple); border-color: #d9d2ff; transform: translateX(-2px); }
-.settings-back svg { width: 15px; height: 15px; }
-.settings-heading { margin-bottom: 26px; }
+.settings-heading { max-width: 540px; margin: 0 auto 26px; text-align: center; }
 .settings-heading > span { color: var(--purple); font-size: 10px; font-weight: 850; letter-spacing: 1.5px; text-transform: uppercase; }
 .settings-heading h1 { margin: 5px 0 7px; font-size: 38px; letter-spacing: -1.7px; }
 .settings-heading p { max-width: 500px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
@@ -480,8 +477,7 @@ button { color: inherit; }
   .calendar-toolbar { padding: 0 7px; }
   .settings-page { width: calc(100% - 34px); padding-top: 17px; scrollbar-width: none; }
   .settings-page::-webkit-scrollbar { display: none; }
-  .settings-back { margin-bottom: 15px; padding: 7px 9px; background: rgba(255,255,255,.7); }
-  .settings-heading { margin-bottom: 20px; }
+  .settings-heading { margin-bottom: 20px; padding: 8px 8px 0; }
   .settings-heading h1 { margin-top: 4px; font-size: 31px; }
   .settings-heading p { font-size: 11px; }
   .settings-list { gap: 11px; }
