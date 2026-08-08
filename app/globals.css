@@ -695,10 +695,11 @@ button { color: inherit; }
 
 /* App-icon palette: one coordinated system instead of a purple-only UI. */
 .brand-ez, .mobile-wordmark-ez, .splash-ez {
-  color: var(--coral);
   background: none;
-  -webkit-text-fill-color: var(--coral);
+  -webkit-text-fill-color: currentColor;
 }
+.brand-e { color: var(--sky); -webkit-text-fill-color: var(--sky); }
+.brand-z { color: var(--coral); -webkit-text-fill-color: var(--coral); }
 .premium-action {
   background: var(--sky);
   box-shadow: 0 10px 22px rgba(77,150,255,.24), inset 0 1px 0 rgba(255,255,255,.42);
@@ -727,10 +728,10 @@ button { color: inherit; }
 .add-form-shell.step-tone-3 { --picker-accent: var(--mint); }
 
 @media (max-width: 760px) {
-  .mobile-profile.active { color: #fff; border-color: var(--coral); background: var(--coral); box-shadow: 0 8px 18px rgba(255,128,101,.24); }
-  .profile-avatar { color: var(--coral); background: color-mix(in srgb, var(--coral) 11%, #fff); }
+  .mobile-profile.active { color: #fff; border-color: var(--sky); background: var(--sky); box-shadow: 0 8px 18px rgba(77,150,255,.24); }
+  .profile-avatar { color: var(--purple); background: color-mix(in srgb, var(--purple) 10%, #fff); }
   .profile-copy small { color: var(--coral); }
-  .profile-settings-button svg { color: var(--sky); }
+  .profile-settings-button svg { color: var(--mint); }
   .profile-routines-button { background: var(--sky); box-shadow: 0 7px 15px rgba(77,150,255,.2); }
 }
 
