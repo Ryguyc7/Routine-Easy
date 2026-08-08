@@ -335,7 +335,7 @@ export default function Home() {
 
       <section className="content">
         <header className="mobile-header">
-          {tab === "today" ? <DateTile date={today} /> : <span className="mobile-header-spacer" aria-hidden="true" />}
+          <DateTile date={today} />
           <div className="mobile-wordmark" aria-label="RoutineEZ">Routine<span>EZ</span></div>
           <button className="mobile-add" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>

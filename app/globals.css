@@ -303,7 +303,6 @@ button { color: inherit; }
   .content { height: 100svh; min-height: 0; padding-top: 78px; overflow: hidden; }
   .page { width: calc(100% - 40px); height: calc(100svh - 78px); padding: 8px 0 0; overflow-y: auto; }
   .mobile-header { position: fixed; inset: 0 0 auto; height: 78px; padding: 10px 22px 8px; background: rgba(251,250,247,.95); border: 0; z-index: 30; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-  .mobile-header-spacer { display: block; width: 50px; height: 1px; justify-self: start; }
   .mobile-wordmark { justify-self: center; color: var(--ink); font-size: 18px; font-weight: 850; letter-spacing: -.65px; }
   .mobile-wordmark span { color: var(--purple); }
   .mobile-add { justify-self: end; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid rgba(255,255,255,.75); border-radius: 50%; background: linear-gradient(145deg, #7869ef, #5d4bdc); color: #fff; box-shadow: 0 9px 22px rgba(82,66,194,.28), inset 0 1px 0 rgba(255,255,255,.3); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
