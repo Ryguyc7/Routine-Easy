@@ -452,7 +452,10 @@ export default function Home() {
       <section className="content">
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
-          <div className="mobile-wordmark" aria-label="RoutineEZ"><img src="/routineez-mark.png" alt="" />Routine<span>EZ</span></div>
+          <div className="mobile-wordmark" aria-label="RoutineEZ">
+            <img src="/routineez-mark.png" alt="" />
+            <span className="mobile-wordmark-name">Routine<span className="mobile-wordmark-ez">EZ</span></span>
+          </div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
