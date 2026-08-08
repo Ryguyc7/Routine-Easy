@@ -379,16 +379,25 @@ export default function Home() {
 
   async function saveRoutineOptions(event: FormEvent<HTMLFormElement>, routine: Routine) {
     event.preventDefault();
-    setSavingList(true);
     const form = new FormData(event.currentTarget);
     const trackingMode = String(form.get("trackingMode") ?? "simple") as TrackingMode;
+    const days = DAY_NAMES.map((_, index) => index).filter((index) => form.get(`day-${index}`));
+    if (!days.length) {
+      setError("Choose at least one day for your routine.");
+      return;
+    }
+    setSavingList(true);
     const items = trackingMode === "checklist" ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [];
     const response = await fetch("/api/routines", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: routine.id,
+        name: form.get("name"),
+        emoji: form.get("emoji"),
+        color: form.get("color"),
         time: form.get("time"),
+        days,
         trackingMode,
         targetCount: Number(form.get("targetCount") ?? 4),
         unit: form.get("unit"),
@@ -399,15 +408,11 @@ export default function Home() {
       }),
     });
     if (response.ok) {
-      const data = await response.json();
-      const previousIds = new Set(routine.items.map((item) => item.id));
-      setRoutines((all) => all.map((item) => item.id === routine.id ? data.routine : item));
-      setItemCompletions((all) => all.filter((item) => !previousIds.has(item.itemId)));
-      setQuantityCompletions((all) => all.filter((item) => item.routineId !== routine.id));
+      await loadData();
       setEditingRoutineId(null);
       setError("");
     } else {
-      setError("Those routine options could not be saved. Please try again.");
+      setError("That routine could not be saved. Please try again.");
     }
     setSavingList(false);
   }
@@ -728,7 +733,7 @@ function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
-    <button className="list-button" onClick={onEditOptions}>Options</button>
+    <button className="list-button" onClick={onEditOptions} aria-label={`Edit ${routine.name}`}>Edit</button>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}>×</button>
   </article>;
 }
@@ -881,6 +886,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
 function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>(routine.trackingMode);
+  const [selectedDays, setSelectedDays] = useState(() => [...routine.days]);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -894,21 +900,32 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
     };
   }, [onCancel]);
 
+  const keepModalAligned = (input: HTMLInputElement) => {
+    const modal = input.closest(".edit-routine-modal");
+    window.requestAnimationFrame(() => {
+      if (modal instanceof HTMLElement) modal.scrollLeft = 0;
+    });
+  };
+
   return <div className="edit-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="edit-form-shell">
   <form ref={formRef} className="add-card checklist-editor edit-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
-    <div className="add-card-header"><div><span className="eyebrow">How {routine.name} works</span><h2>Routine options</h2><p>Choose the check-off style that fits this routine.</p></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
+    <div className="add-card-header"><div><span className="eyebrow">Make it yours</span><h2>Edit routine</h2><p>Change any part of this routine.</p></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
     <div className="form-grid options-grid">
+      <label className="field wide"><span>Routine name</span><input name="name" defaultValue={routine.name} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
       <TimeField defaultValue={routine.time} />
       <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
-      {trackingMode === "checklist" && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} autoFocus /></label>}
+      {trackingMode === "checklist" && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} /></label>}
       {trackingMode === "quantity" && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
-      <DayPlanSettings scheduledDays={routine.days} variants={routine.dayVariants} />
+      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={emoji === routine.emoji} onChange={(event) => keepModalAligned(event.currentTarget)} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={color.toLowerCase() === routine.color.toLowerCase()} onChange={(event) => keepModalAligned(event.currentTarget)} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
+      <DayPlanSettings scheduledDays={selectedDays} variants={routine.dayVariants} />
     </div>
-    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Saving…" : "Save options"}</button></div>
+    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Saving…" : "Save routine"}</button></div>
   </form>
-  <VerticalScrollIndicator scrollerRef={formRef} label="Routine options form" />
+  <VerticalScrollIndicator scrollerRef={formRef} label="Edit routine form" />
   </div>
   </div>;
 }

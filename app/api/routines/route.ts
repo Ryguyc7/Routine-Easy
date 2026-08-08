@@ -57,6 +57,11 @@ function cleanDate(value: unknown) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00`)) ? date : "";
 }
 
+function cleanDays(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort((a, b) => a - b);
+}
+
 function invalidDateRange(startDate: string, endDate: string) {
   return Boolean(startDate && endDate && endDate < startDate);
 }
@@ -129,7 +134,8 @@ export async function POST(request: Request) {
     trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
   };
   const name = payload.name?.trim();
-  if (!name || !payload.days?.length) return Response.json({ error: "Name and days are required" }, { status: 400 });
+  const days = cleanDays(payload.days);
+  if (!name || !days.length) return Response.json({ error: "Name and days are required" }, { status: 400 });
   const trackingMode = cleanMode(payload.trackingMode);
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
@@ -141,7 +147,7 @@ export async function POST(request: Request) {
     (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, day_variants, start_date, end_date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING ${ROUTINE_SELECT}`)
-    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(payload.days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate)
+    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate)
     .first<RoutineRow>();
   const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
   if (itemTitles.length) {
@@ -158,11 +164,22 @@ export async function PUT(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
   const payload = await request.json() as {
-    id?: number; time?: string; trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
+    id?: number; name?: string; emoji?: string; color?: string; time?: string; days?: number[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
   };
   if (!Number.isInteger(payload.id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const existing = await getRoutine(owner, payload.id!);
   if (!existing) return Response.json({ error: "Routine not found" }, { status: 404 });
+  const name = String(payload.name ?? existing.name).trim().slice(0, 40);
+  if (!name) return Response.json({ error: "Routine name is required" }, { status: 400 });
+  let existingDays: number[] = [];
+  try { existingDays = cleanDays(JSON.parse(existing.days)); } catch { existingDays = []; }
+  const days = payload.days === undefined ? existingDays : cleanDays(payload.days);
+  if (!days.length) return Response.json({ error: "Choose at least one repeat day" }, { status: 400 });
+  const emoji = String(payload.emoji ?? existing.emoji).trim().slice(0, 16) || existing.emoji;
+  const requestedColor = String(payload.color ?? existing.color).trim();
+  const color = /^#[0-9a-f]{6}$/i.test(requestedColor) ? requestedColor : existing.color;
+  const currentMode = cleanMode(existing.trackingMode);
   const trackingMode = cleanMode(payload.trackingMode ?? existing.trackingMode);
   const targetCount = cleanCount(payload.targetCount ?? existing.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit ?? existing.unit, trackingMode);
@@ -173,14 +190,26 @@ export async function PUT(request: Request) {
   const endDate = cleanDate(payload.endDate ?? existing.endDate);
   if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
   const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
-  await env.DB.batch([
-    env.DB.prepare("UPDATE routines SET time = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
-      .bind(payload.time ?? existing.time, trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
-    env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, existing.id),
-    env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
-    env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
-    ...itemTitles.map((title, position) => env.DB.prepare("INSERT INTO routine_items (owner_key, routine_id, title, position) VALUES (?, ?, ?, ?)").bind(owner, existing.id, title, position)),
-  ]);
+  const currentItems = await env.DB.prepare("SELECT id, routine_id AS routineId, title, position FROM routine_items WHERE owner_key = ? AND routine_id = ? ORDER BY position, id")
+    .bind(owner, existing.id).all<RoutineItemRow>();
+  const itemsChanged = currentMode !== trackingMode || JSON.stringify(currentItems.results.map((item) => item.title)) !== JSON.stringify(itemTitles);
+  const statements = [
+    env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
+      .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
+  ];
+  if (itemsChanged) {
+    statements.push(
+      env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, existing.id),
+      env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
+      ...itemTitles.map((title, position) => env.DB.prepare("INSERT INTO routine_items (owner_key, routine_id, title, position) VALUES (?, ?, ?, ?)").bind(owner, existing.id, title, position)),
+    );
+  }
+  if (trackingMode !== "quantity" || currentMode !== "quantity") {
+    statements.push(env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id));
+  } else if (targetCount !== existing.targetCount) {
+    statements.push(env.DB.prepare("UPDATE quantity_completions SET count = MIN(count, ?) WHERE owner_key = ? AND routine_id = ?").bind(targetCount, owner, existing.id));
+  }
+  await env.DB.batch(statements);
   const [updated, items] = await Promise.all([
     getRoutine(owner, existing.id),
     env.DB.prepare("SELECT id, routine_id AS routineId, title, position FROM routine_items WHERE owner_key = ? AND routine_id = ? ORDER BY position, id")

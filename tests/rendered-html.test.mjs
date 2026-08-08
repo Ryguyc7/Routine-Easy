@@ -18,7 +18,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /splash-routine/);
   assert.match(page, /splash-ez/);
   assert.match(page, /window\.clearTimeout\(splashTimer\)/);
-  assert.match(page, /Routine options/);
+  assert.match(page, /Edit routine/);
+  assert.match(page, />Edit<\/button>/);
+  assert.match(page, /name: form\.get\("name"\)/);
+  assert.match(page, /emoji: form\.get\("emoji"\)/);
+  assert.match(page, /color: form\.get\("color"\)/);
   assert.match(page, /Daily amount/);
   assert.match(page, /quantity-completions/);
   assert.match(page, /collapsed-progress/);
