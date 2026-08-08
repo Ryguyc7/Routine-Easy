@@ -150,6 +150,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /How to track it/);
   assert.match(page, /Make it yours/);
   assert.match(page, /className="wizard-progress" role="progressbar"/);
+  assert.match(page, /stepLockRef\.current/);
+  assert.match(page, /disabled=\{saving \|\| stepSettling\}/);
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);
   assert.match(page, /profile-settings-button/);

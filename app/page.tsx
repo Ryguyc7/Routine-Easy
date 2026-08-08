@@ -828,7 +828,10 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
 
 function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; timeFormat: TimeFormat }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const stepLockRef = useRef(false);
+  const stepTimerRef = useRef<number | undefined>(undefined);
   const [step, setStep] = useState(0);
+  const [stepSettling, setStepSettling] = useState(false);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
   const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
   const [previewName, setPreviewName] = useState("");
@@ -846,6 +849,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
+      if (stepTimerRef.current) window.clearTimeout(stepTimerRef.current);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
@@ -865,15 +869,26 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
   ];
 
   const moveToStep = (nextStep: number) => {
+    if (stepLockRef.current) return;
     if (nextStep > step && step === 0) {
       const nameInput = formRef.current?.elements.namedItem("name");
       if (nameInput instanceof HTMLInputElement && !nameInput.reportValidity()) return;
     }
+    stepLockRef.current = true;
+    setStepSettling(true);
     setStep(Math.min(steps.length - 1, Math.max(0, nextStep)));
     window.requestAnimationFrame(() => formRef.current?.scrollTo({ top: 0, behavior: "auto" }));
+    stepTimerRef.current = window.setTimeout(() => {
+      stepLockRef.current = false;
+      setStepSettling(false);
+    }, 260);
   };
 
   const submitWizard = (event: FormEvent<HTMLFormElement>) => {
+    if (stepLockRef.current) {
+      event.preventDefault();
+      return;
+    }
     if (step < steps.length - 1) {
       event.preventDefault();
       moveToStep(step + 1);
@@ -913,7 +928,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
     </div>
     <div className="form-actions wizard-actions">
       <button type="button" className="secondary-button" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)}>{step === 0 ? "Cancel" : "Back"}</button>
-      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)}>Next</button> : <button className="primary-button premium-action" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button>}
+      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving || stepSettling}>{saving ? "Adding…" : "Add routine"}</button>}
     </div>
   </form>
   <VerticalScrollIndicator scrollerRef={formRef} label="Add routine form" />

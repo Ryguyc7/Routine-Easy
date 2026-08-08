@@ -226,11 +226,11 @@ button { color: inherit; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
 .add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; overflow: hidden; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
-.add-modal-stack { width: min(680px, 100%); height: min(820px, calc(100svh - 48px)); display: flex; flex-direction: column; gap: 10px; }
+.add-modal-stack { width: min(680px, 100%); max-height: calc(100svh - 48px); display: flex; flex-direction: column; gap: 10px; }
 .add-form-shell, .edit-form-shell { position: relative; min-height: 0; }
-.add-form-shell { flex: 1 1 auto; }
+.add-form-shell { flex: 0 1 auto; max-height: calc(100svh - 130px); }
 .edit-form-shell { width: min(680px, 100%); max-height: calc(100svh - 48px); }
-.add-modal-stack .add-routine-modal { width: 100%; height: 100%; max-height: none; }
+.add-modal-stack .add-routine-modal { width: 100%; height: auto; max-height: calc(100svh - 130px); }
 .edit-form-shell .edit-routine-modal { width: 100%; }
 .routine-live-preview { --preview: var(--purple); position: relative; width: calc(100% - 28px); min-height: 72px; flex: 0 0 auto; margin: 0 auto; padding: 0; display: block; overflow: hidden; border: 1px solid color-mix(in srgb, var(--preview) 30%, #e7e2da); border-radius: 17px; background: rgba(255,255,255,.97); box-shadow: 0 16px 35px rgba(30,25,55,.17), inset 0 1px 0 #fff; animation: preview-arrive .28s ease; transition: border-color .2s ease; }
 .routine-live-preview::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--preview); }
@@ -281,7 +281,7 @@ button { color: inherit; }
 .wizard-step[hidden] { display: none; }
 .wizard-step > * { min-width: 0; max-width: 100%; }
 .wizard-step .wide, .wizard-step .date-range-settings, .wizard-step .tracking-picker, .wizard-step .checklist-field, .wizard-step .quantity-settings, .wizard-step .day-picker, .wizard-step .day-plan-settings { grid-column: 1 / -1; }
-.wizard-actions { min-height: 80px; }
+.wizard-actions { min-height: 66px; }
 @keyframes wizard-step-in { from { opacity: 0; transform: translateX(8px); } }
 .edit-routine-modal .add-card-header { position: sticky; top: -23px; z-index: 3; margin: -23px -23px 22px; padding: 23px 23px 16px; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .edit-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 3; justify-content: center; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
@@ -527,9 +527,10 @@ button { color: inherit; }
   .form-grid { grid-template-columns: 1fr; }
   .wizard-step { grid-template-columns: 1fr; }
   .add-modal-backdrop, .edit-modal-backdrop { align-items: center; padding: 14px; }
-  .add-modal-stack { width: 100%; height: calc(100svh - 28px); gap: 8px; }
+  .add-modal-stack { width: 100%; max-height: calc(100svh - 28px); gap: 8px; }
   .edit-form-shell { width: 100%; max-height: calc(100svh - 28px); }
-  .add-modal-stack .add-routine-modal { height: 100%; max-height: none; }
+  .add-form-shell { max-height: calc(100svh - 102px); }
+  .add-modal-stack .add-routine-modal { height: auto; max-height: calc(100svh - 102px); }
   .routine-live-preview { width: calc(100% - 18px); min-height: 66px; border-radius: 16px; }
   .preview-summary { min-height: 64px; padding: 8px 11px 8px 14px; }
   .preview-icon { width: 40px; height: 40px; }
