@@ -136,9 +136,9 @@ export default function Home() {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="brand" aria-label="Daydrop home">
+        <div className="brand" aria-label="RoutineEZ home">
           <span className="brand-mark"><i /><i /><i /></span>
-          <span>Daydrop</span>
+          <span>RoutineEZ</span>
         </div>
         <nav className="side-nav" aria-label="Main navigation">
           <NavButton active={tab === "today"} onClick={() => setTab("today")} icon="◉" label="Today" />
@@ -154,7 +154,7 @@ export default function Home() {
 
       <section className="content">
         <header className="mobile-header">
-          <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>Daydrop</span></div>
+          <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div>
           <button className="mobile-add" onClick={() => { setTab("routines"); setShowAdd(true); }} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
