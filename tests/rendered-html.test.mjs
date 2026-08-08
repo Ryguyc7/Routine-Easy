@@ -60,6 +60,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /picker-scroll/);
   assert.match(page, /function ScrollablePicker/);
   assert.match(page, /Calendar routine filters/);
+  assert.match(page, /viewingCurrentMonth/);
+  assert.match(page, /calendar-today-button/);
+  assert.match(page, /setMonth\(new Date\(today\.getFullYear\(\), today\.getMonth\(\), 1\)\)/);
   assert.match(page, /calendar-filter-picker/);
   assert.match(page, /scrollClassName="filter-pills"/);
   assert.match(page, /Scroll horizontally for more/);
