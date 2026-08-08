@@ -611,6 +611,10 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
 function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
   const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
+  const [previewName, setPreviewName] = useState("");
+  const [previewTime, setPreviewTime] = useState("");
+  const [previewEmoji, setPreviewEmoji] = useState(EMOJIS[0]);
+  const [previewColor, setPreviewColor] = useState(COLORS[0]);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -631,22 +635,31 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
     });
   };
 
+  const trackingPreview = trackingMode === "checklist" ? "Checklist" : trackingMode === "quantity" ? "Daily amount" : "Single check";
+
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+  <div className="add-modal-stack">
+  <aside className="routine-live-preview" style={{ "--preview": previewColor } as React.CSSProperties} aria-label="Routine preview">
+    <span className="preview-icon" aria-hidden="true">{previewEmoji}</span>
+    <span className="preview-copy"><small>Live preview</small><strong>{previewName.trim() || "Your new routine"}</strong><span>{previewTime || "Anytime"} · {trackingPreview}</span></span>
+    <span className="preview-check" aria-hidden="true" />
+  </aside>
   <form className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
     <div className="form-grid">
-      <label className="field wide"><span>Routine name</span><input name="name" placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
-      <TimeField />
+      <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
+      <TimeField onValueChange={setPreviewTime} />
       <DateRangeSettings />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
       {trackingMode === "quantity" && <QuantitySettings />}
-      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => keepModalAligned(event.currentTarget)} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
-      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} onChange={(event) => keepModalAligned(event.currentTarget)} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
       <DayPlanSettings scheduledDays={selectedDays} />
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
   </form>
+  </div>
   </div>;
 }
 
@@ -791,9 +804,13 @@ function DateRangeSettings({ startDate = "", endDate = "" }: { startDate?: strin
   </section>;
 }
 
-function TimeField({ defaultValue = "" }: { defaultValue?: string }) {
+function TimeField({ defaultValue = "", onValueChange }: { defaultValue?: string; onValueChange?: (value: string) => void }) {
   const [time, setTime] = useState(defaultValue);
-  return <label className="field"><span>Time <small>Optional</small></span><span className="date-input-wrap time-input-wrap"><input name="time" type="time" value={time} onChange={(event) => setTime(event.target.value)} /><button type="button" onClick={() => setTime("")} disabled={!time}>Clear</button></span></label>;
+  const updateTime = (value: string) => {
+    setTime(value);
+    onValueChange?.(value);
+  };
+  return <label className="field"><span>Time <small>Optional</small></span><span className="date-input-wrap time-input-wrap"><input name="time" type="time" value={time} onChange={(event) => updateTime(event.target.value)} /><button type="button" onClick={() => updateTime("")} disabled={!time}>Clear</button></span></label>;
 }
 
 function DayPlanSettings({ scheduledDays, variants = {} }: { scheduledDays: number[]; variants?: Partial<Record<number, string>> }) {

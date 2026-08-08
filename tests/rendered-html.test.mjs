@@ -33,7 +33,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /name="startDate"/);
   assert.match(page, /name="endDate"/);
   assert.match(page, /function TimeField/);
-  assert.match(page, /onClick=\{\(\) => setTime\(""\)\}/);
+  assert.match(page, /onClick=\{\(\) => updateTime\(""\)\}/);
+  assert.match(page, /routine-live-preview/);
+  assert.match(page, /Live preview/);
+  assert.match(page, /setPreviewEmoji/);
+  assert.match(page, /setPreviewColor/);
   assert.match(page, /picker-scroll/);
   assert.match(page, /function ScrollablePicker/);
   assert.match(page, /Scroll horizontally for more/);

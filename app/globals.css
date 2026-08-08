@@ -182,6 +182,17 @@ button { color: inherit; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
 .add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; overflow: hidden; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
+.add-modal-stack { width: min(680px, 100%); max-height: calc(100svh - 48px); display: flex; flex-direction: column; gap: 10px; }
+.add-modal-stack .add-routine-modal { width: 100%; max-height: calc(100svh - 132px); }
+.routine-live-preview { --preview: var(--purple); position: relative; width: calc(100% - 28px); min-height: 72px; margin: 0 auto; padding: 10px 14px 10px 17px; display: flex; align-items: center; gap: 12px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--preview) 30%, #e7e2da); border-radius: 17px; background: rgba(255,255,255,.97); box-shadow: 0 16px 35px rgba(30,25,55,.17), inset 0 1px 0 #fff; animation: preview-arrive .28s ease; }
+.routine-live-preview::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--preview); }
+.preview-icon { display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--preview) 17%, transparent); border-radius: 13px; background: color-mix(in srgb, var(--preview) 13%, #fff); font-size: 20px; }
+.preview-copy { min-width: 0; display: grid; gap: 2px; }
+.preview-copy > small { color: var(--preview); font-size: 8px; font-weight: 850; letter-spacing: 1px; text-transform: uppercase; }
+.preview-copy > strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.preview-copy > span { color: #92909a; font-size: 10px; }
+.preview-check { width: 26px; height: 26px; flex: 0 0 auto; margin-left: auto; border: 1.5px solid color-mix(in srgb, var(--preview) 34%, #d9d6df); border-radius: 50%; background: #fff; }
+@keyframes preview-arrive { from { opacity: 0; transform: translateY(8px) scale(.98); } }
 .add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
@@ -377,6 +388,10 @@ button { color: inherit; }
   .desktop-routine-add { display: none; }
   .form-grid { grid-template-columns: 1fr; }
   .add-modal-backdrop, .edit-modal-backdrop { align-items: center; padding: 14px; }
+  .add-modal-stack { width: 100%; max-height: calc(100svh - 28px); gap: 8px; }
+  .add-modal-stack .add-routine-modal { max-height: calc(100svh - 108px); }
+  .routine-live-preview { width: calc(100% - 18px); min-height: 66px; padding: 8px 12px 8px 15px; border-radius: 16px; }
+  .preview-icon { width: 40px; height: 40px; }
   .add-routine-modal, .edit-routine-modal { max-height: calc(100svh - 28px); padding: 20px; border-radius: 23px; }
   .add-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
   .edit-routine-modal .add-card-header { top: -20px; margin: -20px -20px 20px; padding: 20px 20px 14px; }
