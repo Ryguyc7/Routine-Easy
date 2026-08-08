@@ -181,7 +181,7 @@ button { color: inherit; }
 .calendar-legend { margin-top: 12px; color: #92929c; font-size: 11px; text-align: center; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
-.add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
+.add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; overflow: hidden; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
 .add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
@@ -244,13 +244,15 @@ button { color: inherit; }
 .emoji-picker, .color-picker, .day-picker { min-width: 0; max-width: 100%; border: 0; padding: 0; margin: 0; }
 .emoji-picker legend, .color-picker legend, .day-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .picker-shell { position: relative; min-width: 0; width: 100%; }
-.picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 2px 44px 5px 2px; scrollbar-width: none; overscroll-behavior-inline: contain; scroll-behavior: smooth; scroll-snap-type: x proximity; touch-action: pan-x; }
+.picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 2px 9px 5px 2px; scrollbar-width: none; overscroll-behavior-inline: contain; scroll-behavior: smooth; scroll-snap-type: x proximity; touch-action: pan-x; }
 .picker-scroll::-webkit-scrollbar { display: none; }
 .picker-scroll label { flex: 0 0 auto; scroll-snap-align: start; }
 .picker-shell.has-more .picker-scroll { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 46px), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 46px), transparent 100%); }
-.picker-scroll-hint { position: absolute; right: 0; top: 50%; z-index: 2; display: flex; align-items: center; gap: 4px; padding: 4px 1px 4px 18px; color: var(--purple); background: linear-gradient(90deg, transparent, rgba(255,255,255,.95) 42%); font-size: 8px; font-weight: 850; letter-spacing: .15px; transform: translateY(-55%); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+.picker-scroll-hint { position: absolute; right: 0; top: -28px; z-index: 2; display: flex; align-items: center; gap: 4px; padding: 3px 4px 3px 7px; border: 0; border-radius: 999px; color: var(--purple); background: transparent; font-size: 8.5px; font-weight: 850; letter-spacing: .1px; cursor: pointer; transition: opacity .2s ease, transform .2s ease, background .2s ease; }
 .picker-scroll-hint i { width: 6px; height: 6px; border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor; transform: rotate(45deg); animation: picker-nudge 1.35s ease-in-out infinite; }
-.picker-shell.at-end .picker-scroll-hint { opacity: 0; transform: translate(5px, -55%); }
+.picker-scroll-hint:hover { background: var(--lavender); }
+.picker-scroll-hint:focus-visible { outline: 2px solid rgba(108,92,231,.25); outline-offset: 2px; }
+.picker-shell.at-end .picker-scroll-hint { visibility: hidden; opacity: 0; transform: translateX(5px); pointer-events: none; }
 .picker-scroll:focus-visible { outline: 2px solid rgba(108,92,231,.2); outline-offset: 3px; border-radius: 9px; }
 @keyframes picker-nudge { 0%, 100% { translate: 0; } 50% { translate: 3px; } }
 .emoji-picker input, .color-picker input, .day-picker input { position: absolute; opacity: 0; pointer-events: none; }

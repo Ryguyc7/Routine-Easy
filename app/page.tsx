@@ -667,6 +667,12 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
     setHasMore(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 6);
   };
 
+  const revealMore = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    scroller.scrollBy({ left: Math.max(120, scroller.clientWidth * .68), behavior: "smooth" });
+  };
+
   useEffect(() => {
     const frame = window.requestAnimationFrame(updateHint);
     window.addEventListener("resize", updateHint);
@@ -678,7 +684,7 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
 
   return <div className={`picker-shell ${hasMore ? "has-more" : "at-end"}`}>
     <div ref={scrollerRef} className="picker-scroll" onScroll={updateHint} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
-    <span className="picker-scroll-hint" aria-hidden="true"><b>More</b><i /></span>
+    <button type="button" className="picker-scroll-hint" onClick={revealMore} aria-label={`Show more ${label.toLowerCase()} choices`}><span>More</span><i aria-hidden="true" /></button>
   </div>;
 }
 
