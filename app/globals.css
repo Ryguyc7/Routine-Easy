@@ -228,11 +228,15 @@ button { color: inherit; }
 .add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; overflow: hidden; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
 .add-modal-stack { width: min(680px, 100%); max-height: calc(100svh - 48px); display: flex; flex-direction: column; gap: 10px; }
 .add-form-shell, .edit-form-shell { position: relative; min-height: 0; }
-.add-form-shell { flex: 0 1 auto; max-height: calc(100svh - 130px); }
+.add-form-shell { flex: 1 1 auto; max-height: none; display: flex; overflow: hidden; }
 .edit-form-shell { width: min(680px, 100%); max-height: calc(100svh - 48px); }
-.add-modal-stack .add-routine-modal { width: 100%; height: auto; max-height: calc(100svh - 130px); }
+.add-modal-stack .add-routine-modal { width: 100%; height: auto; max-height: 100%; }
 .edit-form-shell .edit-routine-modal { width: 100%; }
 .routine-live-preview { --preview: var(--purple); position: relative; width: calc(100% - 28px); min-height: 72px; flex: 0 0 auto; margin: 0 auto; padding: 0; display: block; overflow: hidden; border: 1px solid color-mix(in srgb, var(--preview) 30%, #e7e2da); border-radius: 17px; background: rgba(255,255,255,.97); box-shadow: 0 16px 35px rgba(30,25,55,.17), inset 0 1px 0 #fff; animation: preview-arrive .28s ease; transition: border-color .2s ease; }
+.add-modal-stack > .routine-live-preview { max-height: min(240px, 32svh); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--preview) transparent; }
+.add-modal-stack > .routine-live-preview::-webkit-scrollbar { width: 4px; }
+.add-modal-stack > .routine-live-preview::-webkit-scrollbar-track { background: transparent; }
+.add-modal-stack > .routine-live-preview::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--preview); }
 .routine-live-preview::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--preview); }
 .preview-summary { min-height: 70px; padding: 9px 13px 9px 16px; display: flex; align-items: center; gap: 8px; }
 .preview-main { min-width: 0; flex: 1; padding: 0; display: flex; align-items: center; gap: 12px; border: 0; background: transparent; text-align: left; cursor: pointer; }
@@ -529,9 +533,10 @@ button { color: inherit; }
   .add-modal-backdrop, .edit-modal-backdrop { align-items: center; padding: 14px; }
   .add-modal-stack { width: 100%; max-height: calc(100svh - 28px); gap: 8px; }
   .edit-form-shell { width: 100%; max-height: calc(100svh - 28px); }
-  .add-form-shell { max-height: calc(100svh - 102px); }
-  .add-modal-stack .add-routine-modal { height: auto; max-height: calc(100svh - 102px); }
+  .add-form-shell { max-height: none; }
+  .add-modal-stack .add-routine-modal { height: auto; max-height: 100%; }
   .routine-live-preview { width: calc(100% - 18px); min-height: 66px; border-radius: 16px; }
+  .add-modal-stack > .routine-live-preview { max-height: min(210px, 28svh); }
   .preview-summary { min-height: 64px; padding: 8px 11px 8px 14px; }
   .preview-icon { width: 40px; height: 40px; }
   .add-routine-modal, .edit-routine-modal { max-height: calc(100svh - 28px); padding: 20px; border-radius: 23px; }
