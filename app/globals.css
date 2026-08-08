@@ -269,6 +269,20 @@ button { color: inherit; }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
 .add-routine-modal .form-actions button { min-width: 122px; }
+.routine-wizard-header { margin: -5px 0 22px; padding-bottom: 17px; border-bottom: 1px solid #ece9ef; }
+.wizard-heading { display: grid; gap: 3px; }
+.wizard-heading > span { color: var(--purple); font-size: 9px; font-weight: 850; letter-spacing: 1px; text-transform: uppercase; }
+.wizard-heading h2 { margin: 0; color: var(--ink); font-size: 20px; line-height: 1.2; }
+.wizard-heading p { margin: 1px 0 0; color: #92909a; font-size: 10px; line-height: 1.4; }
+.wizard-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 13px; }
+.wizard-progress i { height: 4px; border-radius: 999px; background: #e8e3ef; transition: background .22s ease, transform .22s ease; }
+.wizard-progress i.active { background: var(--purple); transform: scaleY(1.18); }
+.wizard-step { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 18px; min-width: 0; animation: wizard-step-in .22s ease both; }
+.wizard-step[hidden] { display: none; }
+.wizard-step > * { min-width: 0; max-width: 100%; }
+.wizard-step .wide, .wizard-step .date-range-settings, .wizard-step .tracking-picker, .wizard-step .checklist-field, .wizard-step .quantity-settings, .wizard-step .day-picker, .wizard-step .day-plan-settings { grid-column: 1 / -1; }
+.wizard-actions { min-height: 80px; }
+@keyframes wizard-step-in { from { opacity: 0; transform: translateX(8px); } }
 .edit-routine-modal .add-card-header { position: sticky; top: -23px; z-index: 3; margin: -23px -23px 22px; padding: 23px 23px 16px; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .edit-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 3; justify-content: center; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .edit-routine-modal .form-actions button { min-width: 122px; }
@@ -512,6 +526,7 @@ button { color: inherit; }
   .routine-grid { grid-template-columns: 1fr; }
   .desktop-routine-add { display: none; }
   .form-grid { grid-template-columns: 1fr; }
+  .wizard-step { grid-template-columns: 1fr; }
   .add-modal-backdrop, .edit-modal-backdrop { align-items: center; padding: 14px; }
   .add-modal-stack { width: 100%; height: calc(100svh - 28px); gap: 8px; }
   .edit-form-shell { width: 100%; max-height: calc(100svh - 28px); }

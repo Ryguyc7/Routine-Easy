@@ -145,6 +145,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(layout, /routineez-logo\.png/);
   assert.match(page, /mobile-profile/);
   assert.match(page, /className="delete-button"[\s\S]*?<Trash2 aria-hidden="true"/);
+  assert.match(page, /Step \{step \+ 1\} of \{steps\.length\}/);
+  assert.match(page, /The basics/);
+  assert.match(page, /How to track it/);
+  assert.match(page, /Make it yours/);
+  assert.match(page, /className="wizard-progress" role="progressbar"/);
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);
   assert.match(page, /profile-settings-button/);

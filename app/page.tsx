@@ -829,6 +829,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
 
 function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; timeFormat: TimeFormat }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [step, setStep] = useState(0);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
   const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
   const [previewName, setPreviewName] = useState("");
@@ -858,24 +859,63 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
     });
   };
 
+  const steps = [
+    { title: "The basics", note: "Name it and choose when it happens." },
+    { title: "How to track it", note: "Choose the check-off style that fits." },
+    { title: "Make it yours", note: "Pick its look and weekly schedule." },
+  ];
+
+  const moveToStep = (nextStep: number) => {
+    if (nextStep > step && step === 0) {
+      const nameInput = formRef.current?.elements.namedItem("name");
+      if (nameInput instanceof HTMLInputElement && !nameInput.reportValidity()) return;
+    }
+    setStep(Math.min(steps.length - 1, Math.max(0, nextStep)));
+    window.requestAnimationFrame(() => formRef.current?.scrollTo({ top: 0, behavior: "auto" }));
+  };
+
+  const submitWizard = (event: FormEvent<HTMLFormElement>) => {
+    if (step < steps.length - 1) {
+      event.preventDefault();
+      moveToStep(step + 1);
+      return;
+    }
+    onSubmit(event);
+  };
+
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
   <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} checklist={previewChecklist} targetCount={previewTargetCount} unit={previewUnit} timeFormat={timeFormat} />
   <div className="add-form-shell">
-  <form ref={formRef} className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
+  <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
+    <header className="routine-wizard-header">
+      <div className="wizard-heading" aria-live="polite"><span>Step {step + 1} of {steps.length}</span><h2>{steps[step].title}</h2><p>{steps[step].note}</p></div>
+      <div className="wizard-progress" role="progressbar" aria-label="Add routine progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={step + 1}>
+        {steps.map((item, index) => <i key={item.title} className={index <= step ? "active" : ""} />)}
+      </div>
+    </header>
     <div className="form-grid">
-      <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
-      <TimeField onValueChange={setPreviewTime} />
-      <DateRangeSettings />
-      <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
-      {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" value={previewChecklist} onChange={(event) => setPreviewChecklist(event.target.value)} placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
-      {trackingMode === "quantity" && <QuantitySettings onValueChange={(targetCount, unit) => { setPreviewTargetCount(targetCount); setPreviewUnit(unit); }} />}
-      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
-      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
-      <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
-      <DayPlanSettings scheduledDays={selectedDays} />
+      <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
+        <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
+        <TimeField onValueChange={setPreviewTime} />
+        <DateRangeSettings />
+      </section>
+      <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">
+        <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
+        {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" value={previewChecklist} onChange={(event) => setPreviewChecklist(event.target.value)} placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
+        {trackingMode === "quantity" && <QuantitySettings onValueChange={(targetCount, unit) => { setPreviewTargetCount(targetCount); setPreviewUnit(unit); }} />}
+      </section>
+      <section className="wizard-step" hidden={step !== 2} aria-label="Appearance and schedule">
+        <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
+        <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+        <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
+        <DayPlanSettings scheduledDays={selectedDays} />
+      </section>
     </div>
-    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
+    <div className="form-actions wizard-actions">
+      <button type="button" className="secondary-button" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)}>{step === 0 ? "Cancel" : "Back"}</button>
+      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)}>Next</button> : <button className="primary-button premium-action" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button>}
+    </div>
   </form>
   <VerticalScrollIndicator scrollerRef={formRef} label="Add routine form" />
   </div>
