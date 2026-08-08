@@ -35,6 +35,12 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /function TimeField/);
   assert.match(page, /onClick=\{\(\) => updateTime\(""\)\}/);
   assert.match(page, /routine-live-preview/);
+  assert.match(page, /function RoutineLivePreview/);
+  assert.match(page, /Interactive routine preview/);
+  assert.match(page, /preview-quantity/);
+  assert.match(page, /preview-list/);
+  assert.match(page, /setPreviewChecklist/);
+  assert.match(page, /onValueChange=\{\(targetCount, unit\)/);
   assert.match(page, /Live preview/);
   assert.match(page, /setPreviewEmoji/);
   assert.match(page, /setPreviewColor/);

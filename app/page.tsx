@@ -608,6 +608,72 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
   </article>;
 }
 
+function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, targetCount, unit }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; targetCount: number; unit: string }) {
+  const items = useMemo(() => checklist.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, 8), [checklist]);
+  const [expanded, setExpanded] = useState(false);
+  const [simpleDone, setSimpleDone] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<number[]>([]);
+  const [quantity, setQuantity] = useState(0);
+  const hasDetails = trackingMode !== "simple";
+  const completed = trackingMode === "simple"
+    ? simpleDone
+    : trackingMode === "checklist"
+      ? items.length > 0 && checkedItems.length === items.length
+      : quantity >= targetCount;
+  const detail = trackingMode === "simple"
+    ? "Single check"
+    : trackingMode === "checklist"
+      ? items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"
+      : `${quantity}/${targetCount} ${unit || "times"}`;
+
+  useEffect(() => {
+    setExpanded(trackingMode !== "simple");
+    setSimpleDone(false);
+    setCheckedItems([]);
+    setQuantity(0);
+  }, [trackingMode]);
+
+  useEffect(() => {
+    setCheckedItems((checked) => checked.filter((index) => index < items.length));
+  }, [items.length]);
+
+  useEffect(() => {
+    setQuantity((count) => Math.min(count, targetCount));
+  }, [targetCount]);
+
+  const toggleAll = () => {
+    if (trackingMode === "simple") setSimpleDone((done) => !done);
+    else if (trackingMode === "checklist") setCheckedItems(completed ? [] : items.map((_, index) => index));
+    else setQuantity(completed ? 0 : targetCount);
+  };
+
+  return <section className={`routine-live-preview${expanded ? " expanded" : ""}${completed ? " completed" : ""}`} style={{ "--preview": color } as React.CSSProperties} aria-label="Interactive routine preview">
+    <div className="preview-summary">
+      <button type="button" className="preview-main" onClick={() => hasDetails ? setExpanded((value) => !value) : toggleAll()} aria-expanded={hasDetails ? expanded : undefined}>
+        <span className="preview-icon" aria-hidden="true">{emoji}</span>
+        <span className="preview-copy"><small>Live preview</small><strong>{name.trim() || "Your new routine"}</strong><span>{time || "Anytime"} · {detail}</span></span>
+        {hasDetails && <span className="preview-chevron" aria-hidden="true" />}
+      </button>
+      <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
+    </div>
+    {expanded && trackingMode === "checklist" && <div className="preview-details preview-list">
+      {items.length ? items.map((item, index) => {
+        const checked = checkedItems.includes(index);
+        return <button type="button" key={`${item}-${index}`} className={checked ? "checked" : ""} onClick={() => setCheckedItems((current) => checked ? current.filter((value) => value !== index) : [...current, index].sort((a, b) => a - b))}><span>{checked ? "✓" : ""}</span>{item}</button>;
+      }) : <p>Type checklist items below to try them here.</p>}
+    </div>}
+    {expanded && trackingMode === "quantity" && <div className="preview-details">
+      <div className="preview-quantity" style={{ "--preview-segments": targetCount } as React.CSSProperties}>
+        {Array.from({ length: targetCount }, (_, index) => {
+          const amount = index + 1;
+          const filled = amount <= quantity;
+          return <button type="button" key={amount} className={filled ? "filled" : ""} onClick={() => setQuantity(filled ? amount - 1 : amount)} aria-label={`${filled ? "Remove" : "Record"} ${unit || "amount"} ${amount}`}>{filled ? "✓" : amount}</button>;
+        })}
+      </div>
+    </div>}
+  </section>;
+}
+
 function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
@@ -616,6 +682,9 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
   const [previewTime, setPreviewTime] = useState("");
   const [previewEmoji, setPreviewEmoji] = useState(EMOJIS[0]);
   const [previewColor, setPreviewColor] = useState(COLORS[0]);
+  const [previewChecklist, setPreviewChecklist] = useState("");
+  const [previewTargetCount, setPreviewTargetCount] = useState(4);
+  const [previewUnit, setPreviewUnit] = useState("pills");
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -636,15 +705,9 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
     });
   };
 
-  const trackingPreview = trackingMode === "checklist" ? "Checklist" : trackingMode === "quantity" ? "Daily amount" : "Single check";
-
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
-  <aside className="routine-live-preview" style={{ "--preview": previewColor } as React.CSSProperties} aria-label="Routine preview">
-    <span className="preview-icon" aria-hidden="true">{previewEmoji}</span>
-    <span className="preview-copy"><small>Live preview</small><strong>{previewName.trim() || "Your new routine"}</strong><span>{previewTime || "Anytime"} · {trackingPreview}</span></span>
-    <span className="preview-check" aria-hidden="true" />
-  </aside>
+  <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} checklist={previewChecklist} targetCount={previewTargetCount} unit={previewUnit} />
   <div className="add-form-shell">
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
     <div className="form-grid">
@@ -652,8 +715,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
       <TimeField onValueChange={setPreviewTime} />
       <DateRangeSettings />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
-      {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
-      {trackingMode === "quantity" && <QuantitySettings />}
+      {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" value={previewChecklist} onChange={(event) => setPreviewChecklist(event.target.value)} placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
+      {trackingMode === "quantity" && <QuantitySettings onValueChange={(targetCount, unit) => { setPreviewTargetCount(targetCount); setPreviewUnit(unit); }} />}
       <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
       <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
@@ -915,10 +978,21 @@ function DayPlanSettings({ scheduledDays, variants = {} }: { scheduledDays: numb
   </section>;
 }
 
-function QuantitySettings({ targetCount = 4, unit = "pills" }: { targetCount?: number; unit?: string }) {
+function QuantitySettings({ targetCount = 4, unit = "pills", onValueChange }: { targetCount?: number; unit?: string; onValueChange?: (targetCount: number, unit: string) => void }) {
+  const [count, setCount] = useState(Math.max(2, targetCount));
+  const [unitValue, setUnitValue] = useState(unit === "times" ? "pills" : unit);
+  const updateCount = (value: number) => {
+    const next = Math.min(12, Math.max(2, value || 2));
+    setCount(next);
+    onValueChange?.(next, unitValue);
+  };
+  const updateUnit = (value: string) => {
+    setUnitValue(value);
+    onValueChange?.(count, value);
+  };
   return <div className="quantity-settings">
-    <label className="field"><span>Daily amount</span><input name="targetCount" type="number" min="2" max="12" defaultValue={Math.max(2, targetCount)} required /></label>
-    <label className="field"><span>What are you counting?</span><input name="unit" defaultValue={unit === "times" ? "pills" : unit} placeholder="pills" maxLength={24} required /></label>
+    <label className="field"><span>Daily amount</span><input name="targetCount" type="number" min="2" max="12" value={count} onChange={(event) => updateCount(Number(event.target.value))} required /></label>
+    <label className="field"><span>What are you counting?</span><input name="unit" value={unitValue} onChange={(event) => updateUnit(event.target.value)} placeholder="pills" maxLength={24} required /></label>
     <p>Each amount becomes one tappable section in the horizontal tracker.</p>
   </div>;
 }
