@@ -51,7 +51,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav::before, \.bottom-nav::after/);
   assert.match(page, /LiquidButton/);
   assert.match(await readFile(new URL("../components/ui/liquid-glass-button.tsx", import.meta.url), "utf8"), /feDisplacementMap/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Exact liquid-glass surface used by the integrated 21st\.dev component/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /21st\.dev liquid-glass surface, tuned to RoutineEZ/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-add \.(?:liquid-glass-surface)/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
