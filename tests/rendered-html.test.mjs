@@ -46,8 +46,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /modal\.scrollLeft = 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar span/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /emoji-picker input, \.color-picker input \{ position: absolute; inset: 0/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar \{[\s\S]*width: 100%; height: 7px/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar span \{[\s\S]*background: linear-gradient\(90deg, #7966ee, #5a41d8\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar \{[\s\S]*width: 100%; height: 10px/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar::before \{[\s\S]*height: 3px[\s\S]*transform: translateY\(-50%\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar span \{[\s\S]*height: 5px[\s\S]*background: #6c5ce7[\s\S]*transform: translateY\(-50%\)/);
   assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
