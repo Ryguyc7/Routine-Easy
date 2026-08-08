@@ -254,8 +254,6 @@ export default function Home() {
             <div className="page-heading split-heading">
               <div>
                 <p className="eyebrow">{formatLongDate(today)}</p>
-                <h1>Good {today.getHours() < 12 ? "morning" : today.getHours() < 18 ? "afternoon" : "evening"}<span className="accent-dot">.</span></h1>
-                <p>{doneCount === todayRoutines.length && todayRoutines.length ? "Everything is done — enjoy the feeling." : "Here’s your rhythm for today."}</p>
               </div>
               <div className="date-tile" aria-hidden="true"><span>{today.toLocaleDateString("en-US", { month: "short" })}</span><strong>{today.getDate()}</strong></div>
             </div>

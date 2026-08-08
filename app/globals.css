@@ -83,6 +83,8 @@ button { color: inherit; }
 .page-heading .eyebrow, .eyebrow { margin: 0 0 9px; text-transform: uppercase; color: var(--purple); font-size: 11px; letter-spacing: 1.7px; font-weight: 800; }
 .page-heading h1 { margin: 0; font-size: clamp(38px, 5vw, 54px); line-height: 1.04; letter-spacing: -2.5px; font-weight: 800; }
 .page-heading p:not(.eyebrow) { margin: 12px 0 0; color: var(--muted); font-size: 15px; }
+.today-page .page-heading { margin-bottom: 18px; }
+.today-page .page-heading .eyebrow { margin-bottom: 0; }
 .accent-dot { color: var(--purple); }
 .split-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 30px; }
 .date-tile { width: 68px; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 14px; text-align: center; box-shadow: 0 8px 24px rgba(35, 30, 77, .06); }
