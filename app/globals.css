@@ -104,6 +104,9 @@ button { color: inherit; }
 .section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
 .section-title h2 { margin: 0; font-size: 18px; letter-spacing: -.3px; }
 .section-title > span { color: #9999a2; font-size: 12px; }
+.section-title-actions { display: flex; align-items: center; gap: 12px; }
+.section-title-actions > span { color: #9999a2; font-size: 12px; }
+.desktop-routine-add { padding: 8px 11px; border: 0; border-radius: 9px; color: #fff; background: var(--purple); box-shadow: 0 6px 14px rgba(108,92,231,.18); font-size: 11px; font-weight: 800; cursor: pointer; }
 .routine-list { display: grid; gap: 11px; }
 .routine-row { --routine: #6c5ce7; position: relative; width: 100%; min-height: 76px; display: flex; align-items: center; flex-wrap: wrap; border: 1px solid var(--line); background: #fff; border-radius: 15px; text-align: left; box-shadow: 0 5px 17px rgba(35, 30, 77, .035); transition: transform .18s ease, border-color .18s ease, opacity .18s ease; overflow: hidden; }
 .routine-row::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--routine); }
@@ -258,6 +261,7 @@ button { color: inherit; }
   .day-cell { min-height: 61px; padding: 7px 2px; }
   .calendar-toolbar { padding: 0 7px; }
   .routine-grid { grid-template-columns: 1fr; }
+  .desktop-routine-add { display: none; }
   .form-grid { grid-template-columns: 1fr; }
   .day-picker { grid-column: auto; }
   .delete-button { opacity: 1; }

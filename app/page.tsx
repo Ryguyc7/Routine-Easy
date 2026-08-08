@@ -318,17 +318,13 @@ export default function Home() {
 
         {tab === "routines" && (
           <div className="page routines-page">
-            <div className="page-heading split-heading">
-              <div><p className="eyebrow">Make it yours</p><h1>Routines<span className="accent-dot">.</span></h1><p>Create a simple rhythm that works for you.</p></div>
-              <button className="primary-button" onClick={() => setShowAdd(true)}>＋ Add routine</button>
-            </div>
             {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} />}
             {editingRoutineId !== null && (() => {
               const routine = routines.find((item) => item.id === editingRoutineId);
               return routine ? <ChecklistEditor routine={routine} onSubmit={(event) => saveChecklist(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} /> : null;
             })()}
             <section className="routine-library">
-              <div className="section-title"><h2>Your routines</h2><span>{routines.length} total</span></div>
+              <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
                 {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onEditList={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => deleteRoutine(routine.id)} />)}
               </div>
