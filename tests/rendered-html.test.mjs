@@ -30,6 +30,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Active dates/);
   assert.match(page, /name="startDate"/);
   assert.match(page, /name="endDate"/);
+  assert.match(page, /picker-scroll/);
+  assert.match(page, /🪥/);
+  assert.match(page, /#00A896/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);

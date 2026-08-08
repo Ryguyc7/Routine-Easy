@@ -27,8 +27,8 @@ type QuantityCompletion = { routineId: number; date: string; count: number };
 type Tab = "today" | "calendar" | "routines";
 type OnboardingState = "checking" | "show" | "done";
 
-const COLORS = ["#6C5CE7", "#FF8A65", "#F4B942", "#49A078", "#4D96FF", "#EC6F91"];
-const EMOJIS = ["✨", "💊", "🏋️", "🥣", "🥗", "🍲", "🧘", "💧"];
+const COLORS = ["#6C5CE7", "#FF8A65", "#F4B942", "#49A078", "#4D96FF", "#EC6F91", "#00A896", "#8E7DBE", "#E76F51", "#2A9D8F", "#8D6E63", "#EF476F"];
+const EMOJIS = ["✨", "💊", "🏋️", "🥣", "🥗", "🍲", "🧘", "💧", "🍳", "🥑", "☕", "🍎", "🥕", "🥪", "🍝", "🥤", "🏃", "🚶", "🚴", "📚", "🛏️", "🧹", "🐕", "🌿", "🧴", "🪥"];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_FULL_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -581,8 +581,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
       {trackingMode === "quantity" && <QuantitySettings />}
-      <fieldset className="emoji-picker"><legend>Icon</legend>{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} /><span>{emoji}</span></label>)}</fieldset>
-      <fieldset className="color-picker"><legend>Color</legend>{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} /><span style={{ background: color }} /></label>)}</fieldset>
+      <fieldset className="emoji-picker"><legend>Icon</legend><div className="picker-scroll">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} /><span>{emoji}</span></label>)}</div></fieldset>
+      <fieldset className="color-picker"><legend>Color</legend><div className="picker-scroll">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} /><span style={{ background: color }} /></label>)}</div></fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
       <DayPlanSettings scheduledDays={selectedDays} />
     </div>
@@ -643,12 +643,17 @@ function TrackingModePicker({ value, onChange }: { value: TrackingMode; onChange
 function DateRangeSettings({ startDate = "", endDate = "" }: { startDate?: string; endDate?: string }) {
   const [start, setStart] = useState(startDate);
   const [end, setEnd] = useState(endDate);
+  const [expanded, setExpanded] = useState(Boolean(startDate || endDate));
   return <section className="date-range-settings">
-    <div className="date-range-heading"><strong>Active dates</strong><small>Optional · leave blank to keep it ongoing</small></div>
-    <div className="date-range-fields">
+    <button type="button" className="date-range-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+      <span><strong>Active dates</strong><small>{start || end ? `${start ? formatShortDate(start) : "Anytime"} – ${end ? formatShortDate(end) : "Ongoing"}` : "Optional · add a start or stop date"}</small></span>
+      <i aria-hidden="true" />
+    </button>
+    {!expanded && <><input type="hidden" name="startDate" value={start} /><input type="hidden" name="endDate" value={end} /></>}
+    {expanded && <div className="date-range-fields">
       <label className="field"><span>Start date</span><span className="date-input-wrap"><input name="startDate" type="date" value={start} max={end || undefined} onChange={(event) => setStart(event.target.value)} /><button type="button" onClick={() => setStart("")} disabled={!start}>Clear</button></span></label>
       <label className="field"><span>Stop date</span><span className="date-input-wrap"><input name="endDate" type="date" value={end} min={start || undefined} onChange={(event) => setEnd(event.target.value)} /><button type="button" onClick={() => setEnd("")} disabled={!end}>Clear</button></span></label>
-    </div>
+    </div>}
   </section>;
 }
 
