@@ -45,6 +45,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /function DateTile/);
   assert.match(page, /function CalendarNavButton/);
   assert.match(page, /date-nav-icon/);
+  assert.match(page, /month: "short"/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);

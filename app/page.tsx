@@ -508,7 +508,7 @@ function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; on
 }
 
 function CalendarNavButton({ active, onClick, date }: { active: boolean; onClick: () => void; date: Date }) {
-  return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon date-nav-icon" aria-hidden="true"><i /><strong>{date.getDate()}</strong></span>Calendar</button>;
+  return <button className={`calendar-nav-button ${active ? "active" : ""}`} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon date-nav-icon" aria-hidden="true"><i>{date.toLocaleDateString("en-US", { month: "short" })}</i><strong>{date.getDate()}</strong></span><span className="nav-label">Calendar</span></button>;
 }
 
 function DateTile({ date }: { date: Date }) {
