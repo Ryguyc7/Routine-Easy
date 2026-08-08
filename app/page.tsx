@@ -862,7 +862,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
   const [previewName, setPreviewName] = useState("");
   const [previewTime, setPreviewTime] = useState("");
   const [previewEmoji, setPreviewEmoji] = useState(EMOJIS[0]);
-  const [previewColor, setPreviewColor] = useState(COLORS[0]);
+  const [previewColor, setPreviewColor] = useState(COLORS[8]);
   const [previewLists, setPreviewLists] = useState<RoutineListDraft[]>([]);
   const [previewAmounts, setPreviewAmounts] = useState<RoutineAmount[]>([]);
   const trackingMode = trackingModeFor(previewLists, previewAmounts);
@@ -929,7 +929,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
   <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} lists={previewLists} amounts={previewAmounts} timeFormat={timeFormat} />
-  <div className="add-form-shell">
+  <div className={`add-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
     <header className="routine-wizard-header">
       <div className="wizard-heading" aria-live="polite"><span>Step {step + 1} of {steps.length}</span><h2>{steps[step].title}</h2><p>{steps[step].note}</p></div>

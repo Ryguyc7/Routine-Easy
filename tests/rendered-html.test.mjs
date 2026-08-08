@@ -75,6 +75,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /tracking-list-block/);
   assert.match(page, /tracking-amount-block/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /tracking-add-menu \{ position: static/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /step-tone-2 \{ --wizard-accent: var\(--coral\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /setting-card:nth-child\(3n \+ 2\) \{ --setting-accent: var\(--sky\)/);
   assert.match(page, /usesChecklist\(routine\.trackingMode\)[\s\S]*usesQuantity\(routine\.trackingMode\)/);
   assert.match(routinesRoute, /mode === "hybrid"/);
   assert.match(routinesRoute, /function cleanLists/);
@@ -181,7 +183,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /className="wizard-progress" role="progressbar"/);
   assert.match(page, /stepLockRef\.current/);
   assert.match(page, /disabled=\{saving \|\| stepSettling\}/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /add-form-shell \{ flex: 1 1 auto; max-height: none; display: flex; overflow: hidden/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /add-form-shell \{[^}]*flex: 1 1 auto; max-height: none; display: flex; overflow: hidden/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /add-modal-stack > \.routine-live-preview \{ max-height: min\(240px, 32svh\)/);
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);
