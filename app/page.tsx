@@ -32,7 +32,7 @@ type MotionPreference = "full" | "reduced";
 type AppPreferences = { timeFormat: TimeFormat; weekStartsOn: WeekStart; motion: MotionPreference };
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
-const SPLASH_DURATION_MS = 1200;
+const SPLASH_DURATION_MS = 2100;
 
 const COLORS = [
   "#6C5CE7", "#845EF7", "#8338EC", "#9C36B5", "#CC5DE8", "#8E7DBE", "#5F3DC4", "#6741D9",
@@ -636,7 +636,14 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
 }
 
 function OnboardingSplash() {
-  return <main className="onboarding-splash" aria-label="Loading RoutineEZ"><div className="brand"><img className="brand-logo" src="/routineez-mark.png" alt="" /><span>Routine<span>EZ</span></span></div></main>;
+  return <main className="onboarding-splash" aria-label="Loading RoutineEZ">
+    <div className="splash-brand">
+      <img className="splash-logo" src="/routineez-mark.png" alt="" />
+      <div className="splash-wordmark" aria-hidden="true">
+        <span className="splash-routine">Routine</span><span className="splash-ez">EZ</span>
+      </div>
+    </div>
+  </main>;
 }
 
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
