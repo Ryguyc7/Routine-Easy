@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CalendarPlus2, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -383,9 +383,9 @@ export default function Home() {
             </div>
             <section className="calendar-card">
               <div className="calendar-toolbar">
-                <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month">‹</button>
+                <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft aria-hidden="true" /></button>
                 <h2>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2>
-                <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month">›</button>
+                <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
               </div>
               <div className="weekday-row">{DAY_NAMES.map((day) => <span key={day}>{day}</span>)}</div>
               <div className="calendar-grid">
@@ -394,14 +394,14 @@ export default function Home() {
                   const key = localDateKey(date);
                   const matches = routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, key) && (selectedRoutine === "all" || selectedRoutine === routine.id));
                   const isToday = key === todayKey;
-                  return <div className={`day-cell ${isToday ? "is-today" : ""}`} key={key}>
+                  return <div className={`day-cell ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""}`} key={key} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
+                    {matches.length > 0 && <div className="day-fill" style={{ gridTemplateColumns: `repeat(${matches.length}, minmax(0, 1fr))` }} aria-hidden="true">{matches.map((routine) => <span key={routine.id} style={{ background: routine.color }} />)}</div>}
                     <span className="day-number">{date.getDate()}</span>
-                    <div className="day-dots">{matches.slice(0, 5).map((routine) => <i key={routine.id} style={{ background: routine.color }} title={routine.dayVariants?.[date.getDay()] ? `${routine.name}: ${routine.dayVariants[date.getDay()]}` : routine.name} />)}</div>
                   </div>;
                 })}
               </div>
             </section>
-            <div className="calendar-legend">Colored dots show when each routine is scheduled.</div>
+            <div className="calendar-legend">Each day is filled with its scheduled routine colors.</div>
           </div>
         )}
 
