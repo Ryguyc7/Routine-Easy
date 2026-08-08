@@ -568,7 +568,7 @@ export default function Home() {
 
         {tab === "routines" && (
           <div className="page routines-page">
-            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} timeFormat={preferences.timeFormat} usedEmojis={routines.map((routine) => routine.emoji)} usedColors={routines.map((routine) => routine.color)} />}
+            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} usedEmojis={routines.map((routine) => routine.emoji)} usedColors={routines.map((routine) => routine.color)} />}
             {editingRoutineId !== null && (() => {
               const routine = routines.find((item) => item.id === editingRoutineId);
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
@@ -852,7 +852,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
   </section>;
 }
 
-function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat, usedEmojis, usedColors }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; timeFormat: TimeFormat; usedEmojis: string[]; usedColors: string[] }) {
+function AddRoutineForm({ onSubmit, onCancel, saving, usedEmojis, usedColors }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; usedEmojis: string[]; usedColors: string[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   const stepLockRef = useRef(false);
   const stepTimerRef = useRef<number | undefined>(undefined);
@@ -860,14 +860,12 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat, usedEmojis, us
   const [stepSettling, setStepSettling] = useState(false);
   const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
   const [previewName, setPreviewName] = useState("");
-  const [previewTime, setPreviewTime] = useState("");
   const [previewEmoji, setPreviewEmoji] = useState(EMOJIS[0]);
   const [previewColor, setPreviewColor] = useState(COLORS[8]);
   const [previewLists, setPreviewLists] = useState<RoutineListDraft[]>([]);
   const [previewAmounts, setPreviewAmounts] = useState<RoutineAmount[]>([]);
   const [hideUsedEmojis, setHideUsedEmojis] = useState(false);
   const [hideUsedColors, setHideUsedColors] = useState(false);
-  const trackingMode = trackingModeFor(previewLists, previewAmounts);
   const usedColorKeys = useMemo(() => new Set(usedColors.map((color) => color.toLowerCase())), [usedColors]);
   const availableEmojis = hideUsedEmojis ? EMOJIS.filter((emoji) => !usedEmojis.includes(emoji)) : EMOJIS;
   const availableColors = hideUsedColors ? COLORS.filter((color) => !usedColorKeys.has(color.toLowerCase())) : COLORS;
@@ -941,7 +939,6 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat, usedEmojis, us
 
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
-  <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} lists={previewLists} amounts={previewAmounts} timeFormat={timeFormat} />
   <div className={`add-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
     <header className="routine-wizard-header">
@@ -953,7 +950,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat, usedEmojis, us
     <div className="form-grid">
       <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
         <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
-        <TimeField onValueChange={setPreviewTime} />
+        <TimeField />
         <DateRangeSettings />
       </section>
       <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">
