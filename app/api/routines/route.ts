@@ -1,7 +1,9 @@
 import { env } from "cloudflare:workers";
 import { ensureDatabase, ownerKey } from "../../../db/storage";
 
-type TrackingMode = "simple" | "checklist" | "quantity";
+type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
+const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
+const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
 type RoutineRow = {
   id: number;
   name: string;
@@ -28,17 +30,17 @@ function cleanItems(items: unknown) {
 }
 
 function cleanMode(mode: unknown): TrackingMode {
-  return mode === "checklist" || mode === "quantity" ? mode : "simple";
+  return mode === "checklist" || mode === "quantity" || mode === "hybrid" ? mode : "simple";
 }
 
 function cleanCount(count: unknown, mode: TrackingMode) {
-  if (mode !== "quantity") return 1;
+  if (!usesQuantity(mode)) return 1;
   const value = Math.round(Number(count));
   return Number.isFinite(value) ? Math.min(12, Math.max(2, value)) : 4;
 }
 
 function cleanUnit(unit: unknown, mode: TrackingMode) {
-  if (mode !== "quantity") return "times";
+  if (!usesQuantity(mode)) return "times";
   return String(unit ?? "pills").trim().slice(0, 24) || "pills";
 }
 
@@ -137,6 +139,8 @@ export async function POST(request: Request) {
   const days = cleanDays(payload.days);
   if (!name || !days.length) return Response.json({ error: "Name and days are required" }, { status: 400 });
   const trackingMode = cleanMode(payload.trackingMode);
+  const itemTitles = usesChecklist(trackingMode) ? cleanItems(payload.items) : [];
+  if (usesChecklist(trackingMode) && !itemTitles.length) return Response.json({ error: "Add at least one checklist item" }, { status: 400 });
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
   const dayVariants = cleanDayVariants(payload.dayVariants);
@@ -149,7 +153,6 @@ export async function POST(request: Request) {
     RETURNING ${ROUTINE_SELECT}`)
     .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate)
     .first<RoutineRow>();
-  const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
   if (itemTitles.length) {
     await env.DB.batch(itemTitles.map((title, position) =>
       env.DB.prepare("INSERT INTO routine_items (owner_key, routine_id, title, position) VALUES (?, ?, ?, ?)").bind(owner, result!.id, title, position),
@@ -189,10 +192,11 @@ export async function PUT(request: Request) {
   const startDate = cleanDate(payload.startDate ?? existing.startDate);
   const endDate = cleanDate(payload.endDate ?? existing.endDate);
   if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
-  const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
+  const itemTitles = usesChecklist(trackingMode) ? cleanItems(payload.items) : [];
+  if (usesChecklist(trackingMode) && !itemTitles.length) return Response.json({ error: "Add at least one checklist item" }, { status: 400 });
   const currentItems = await env.DB.prepare("SELECT id, routine_id AS routineId, title, position FROM routine_items WHERE owner_key = ? AND routine_id = ? ORDER BY position, id")
     .bind(owner, existing.id).all<RoutineItemRow>();
-  const itemsChanged = currentMode !== trackingMode || JSON.stringify(currentItems.results.map((item) => item.title)) !== JSON.stringify(itemTitles);
+  const itemsChanged = usesChecklist(currentMode) !== usesChecklist(trackingMode) || JSON.stringify(currentItems.results.map((item) => item.title)) !== JSON.stringify(itemTitles);
   const statements = [
     env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
       .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, targetCount, unit, JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
@@ -204,9 +208,9 @@ export async function PUT(request: Request) {
       ...itemTitles.map((title, position) => env.DB.prepare("INSERT INTO routine_items (owner_key, routine_id, title, position) VALUES (?, ?, ?, ?)").bind(owner, existing.id, title, position)),
     );
   }
-  if (trackingMode !== "quantity" || currentMode !== "quantity") {
+  if (!usesQuantity(trackingMode)) {
     statements.push(env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id));
-  } else if (targetCount !== existing.targetCount) {
+  } else if (usesQuantity(currentMode) && targetCount !== existing.targetCount) {
     statements.push(env.DB.prepare("UPDATE quantity_completions SET count = MIN(count, ?) WHERE owner_key = ? AND routine_id = ?").bind(targetCount, owner, existing.id));
   }
   await env.DB.batch(statements);

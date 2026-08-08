@@ -313,7 +313,14 @@ button { color: inherit; }
 .checklist-field { grid-column: 1 / -1; }
 .tracking-picker { width: 100%; min-width: 0; grid-column: 1 / -1; padding: 0; border: 0; }
 .tracking-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
+.tracking-base { position: relative; display: flex; align-items: center; gap: 11px; min-height: 62px; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--purple) 23%, #dfdde2); border-radius: 12px; background: color-mix(in srgb, var(--purple) 4%, #fff); }
+.tracking-base > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
+.tracking-base strong { color: var(--ink); font-size: 11px; }
+.tracking-base small { color: #9999a2; font-size: 9px; font-weight: 600; line-height: 1.3; }
+.tracking-base b { margin-left: auto; padding: 5px 7px; border-radius: 999px; color: var(--purple); background: var(--lavender); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .55px; }
+.tracking-addon-label { margin: 12px 1px 8px; color: #8f8d97; font-size: 9px; font-weight: 700; }
 .tracking-options { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.tracking-options.tracking-addons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tracking-options label { width: 100%; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px; border: 1px solid #dfdde2; border-radius: 12px; background: #fff; cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
 .tracking-options label.selected { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 5%, #fff); box-shadow: 0 0 0 3px var(--lavender); }
 .tracking-options input { position: absolute; opacity: 0; pointer-events: none; }
@@ -557,6 +564,7 @@ button { color: inherit; }
   .edit-routine-modal .add-card-header { top: -20px; margin: -20px -20px 20px; padding: 20px 20px 14px; }
   .edit-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
   .tracking-options, .options-grid .tracking-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .tracking-options.tracking-addons, .options-grid .tracking-options.tracking-addons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tracking-options label { min-width: 0; min-height: 70px; padding: 8px 5px; flex-direction: column; justify-content: center; gap: 6px; text-align: center; }
   .tracking-options label > span:last-child { display: block; }
   .tracking-options strong { display: block; font-size: 10px; white-space: nowrap; }

@@ -3,10 +3,12 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("ships the RoutineEZ product instead of starter content", async () => {
-  const [page, layout, packageJson] = await Promise.all([
+  const [page, layout, packageJson, routinesRoute, quantityRoute] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/routines/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/quantity-completions/route.ts", import.meta.url), "utf8"),
   ]);
 
   assert.doesNotMatch(page, /Today’s routines/);
@@ -60,6 +62,16 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /<small>Live preview<\/small>/);
   assert.match(page, /className="preview-progress" role="progressbar"/);
   assert.match(page, /className="preview-detail-heading"/);
+  assert.match(page, /"simple" \| "checklist" \| "quantity" \| "hybrid"/);
+  assert.match(page, /const usesChecklist/);
+  assert.match(page, /const usesQuantity/);
+  assert.match(page, /Add either one or combine both/);
+  assert.match(page, /list && quantity \? "hybrid"/);
+  assert.match(page, /usesChecklist\(routine\.trackingMode\)[\s\S]*usesQuantity\(routine\.trackingMode\)/);
+  assert.match(routinesRoute, /mode === "hybrid"/);
+  assert.match(routinesRoute, /usesChecklist\(trackingMode\) \? cleanItems/);
+  assert.match(routinesRoute, /Add at least one checklist item/);
+  assert.match(quantityRoute, /tracking_mode IN \('quantity', 'hybrid'\)/);
   assert.match(page, /setPreviewEmoji/);
   assert.match(page, /setPreviewColor/);
   assert.match(page, /function VerticalScrollIndicator/);

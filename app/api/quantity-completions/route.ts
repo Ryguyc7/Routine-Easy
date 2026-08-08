@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (!Number.isInteger(payload.routineId) || !/^\d{4}-\d{2}-\d{2}$/.test(payload.date ?? "") || !Number.isInteger(count) || count < 0 || count > 12) {
     return Response.json({ error: "Invalid quantity completion" }, { status: 400 });
   }
-  const routine = await env.DB.prepare("SELECT target_count AS targetCount FROM routines WHERE owner_key = ? AND id = ? AND tracking_mode = 'quantity'")
+  const routine = await env.DB.prepare("SELECT target_count AS targetCount FROM routines WHERE owner_key = ? AND id = ? AND tracking_mode IN ('quantity', 'hybrid')")
     .bind(owner, payload.routineId).first<{ targetCount: number }>();
   if (!routine) return Response.json({ error: "Routine not found" }, { status: 404 });
   const safeCount = Math.min(count, routine.targetCount);

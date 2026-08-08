@@ -4,7 +4,9 @@ import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent 
 import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, ListChecks, Settings2, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
-type TrackingMode = "simple" | "checklist" | "quantity";
+type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
+const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
+const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
 type Routine = {
   id: number;
   name: string;
@@ -234,11 +236,11 @@ export default function Home() {
     itemCompletions.filter((item) => item.date === todayKey).map((item) => item.itemId),
   );
   const quantityCount = (routineId: number, date = todayKey) => quantityCompletions.find((item) => item.routineId === routineId && item.date === date)?.count ?? 0;
-  const isRoutineDone = (routine: Routine) => routine.trackingMode === "quantity"
-    ? quantityCount(routine.id) >= routine.targetCount
-    : routine.trackingMode === "checklist"
-      ? routine.items.length > 0 && routine.items.every((item) => completedItemsToday.has(item.id))
-      : completedToday.has(routine.id);
+  const isRoutineDone = (routine: Routine) => {
+    const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => completedItemsToday.has(item.id)));
+    const quantityDone = !usesQuantity(routine.trackingMode) || quantityCount(routine.id) >= routine.targetCount;
+    return routine.trackingMode === "simple" ? completedToday.has(routine.id) : checklistDone && quantityDone;
+  };
   const doneCount = todayRoutines.filter(isRoutineDone).length;
   const progress = todayRoutines.length ? Math.round((doneCount / todayRoutines.length) * 100) : 0;
   const animatedProgress = useAnimatedNumber(progress, preferences.motion === "reduced" ? 0 : 600);
@@ -254,24 +256,14 @@ export default function Home() {
 
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
-    if (routine?.trackingMode === "quantity") {
-      const current = quantityCount(routineId, date);
-      await setQuantity(routineId, current >= routine.targetCount ? 0 : routine.targetCount, date);
-      return;
-    }
-    if (routine?.trackingMode === "checklist" && routine.items.length) {
-      const currentlyDone = routine.items.every((item) => itemCompletions.some((completion) => completion.itemId === item.id && completion.date === date));
-      const routineItemIds = new Set(routine.items.map((item) => item.id));
-      setItemCompletions((items) => currentlyDone
-        ? items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId))
-        : [...items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId)), ...routine.items.map((item) => ({ itemId: item.id, date }))],
-      );
-      const response = await fetch("/api/item-completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ routineId, date, completed: !currentlyDone }),
-      });
-      if (!response.ok) loadData();
+    if (routine && routine.trackingMode !== "simple") {
+      const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => itemCompletions.some((completion) => completion.itemId === item.id && completion.date === date)));
+      const quantityDone = !usesQuantity(routine.trackingMode) || quantityCount(routineId, date) >= routine.targetCount;
+      const completeEverything = !(checklistDone && quantityDone);
+      await Promise.all([
+        usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, completeEverything, date) : Promise.resolve(),
+        usesQuantity(routine.trackingMode) ? setQuantity(routineId, completeEverything ? routine.targetCount : 0, date) : Promise.resolve(),
+      ]);
       return;
     }
     const currentlyDone = completions.some((item) => item.routineId === routineId && item.date === date);
@@ -288,9 +280,23 @@ export default function Home() {
     if (!response.ok) loadData();
   }
 
+  async function setChecklistCompletion(routine: Routine, completed: boolean, date = todayKey) {
+    const routineItemIds = new Set(routine.items.map((item) => item.id));
+    setItemCompletions((items) => completed
+      ? [...items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId)), ...routine.items.map((item) => ({ itemId: item.id, date }))]
+      : items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId)),
+    );
+    const response = await fetch("/api/item-completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ routineId: routine.id, date, completed }),
+    });
+    if (!response.ok) loadData();
+  }
+
   async function setQuantity(routineId: number, count: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
-    if (!routine || routine.trackingMode !== "quantity") return;
+    if (!routine || !usesQuantity(routine.trackingMode)) return;
     const safeCount = Math.min(routine.targetCount, Math.max(0, Math.round(count)));
     setQuantityCompletions((items) => safeCount === 0
       ? items.filter((item) => !(item.routineId === routineId && item.date === date))
@@ -343,7 +349,7 @@ export default function Home() {
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
         endDate: form.get("endDate"),
-        items: trackingMode === "checklist" ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [],
+        items: usesChecklist(trackingMode) ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [],
       }),
     });
     if (response.ok) {
@@ -387,7 +393,7 @@ export default function Home() {
       return;
     }
     setSavingList(true);
-    const items = trackingMode === "checklist" ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [];
+    const items = usesChecklist(trackingMode) ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [];
     const response = await fetch("/api/routines", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -667,20 +673,19 @@ function DateTile({ date }: { date: Date }) {
 }
 
 function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity, timeFormat }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void; timeFormat: TimeFormat }) {
-  const hasDetails = (routine.trackingMode === "checklist" && routine.items.length > 0) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
+  const hasDetails = (usesChecklist(routine.trackingMode) && routine.items.length > 0) || (usesQuantity(routine.trackingMode) && routine.targetCount > 1);
   const [expanded, setExpanded] = useState(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
   const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
-  const progressValue = routine.trackingMode === "quantity"
-    ? Math.min(100, Math.round((count / routine.targetCount) * 100))
-    : routine.trackingMode === "checklist" && routine.items.length
-      ? Math.round((completedCount / routine.items.length) * 100)
-      : completed ? 100 : 0;
-  const detail = routine.trackingMode === "quantity"
-    ? `${count}/${routine.targetCount} ${routine.unit}`
-    : routine.trackingMode === "checklist"
-      ? `${completedCount}/${routine.items.length} items`
-      : "";
+  const progressParts = [
+    ...(usesChecklist(routine.trackingMode) && routine.items.length ? [Math.round((completedCount / routine.items.length) * 100)] : []),
+    ...(usesQuantity(routine.trackingMode) ? [Math.min(100, Math.round((count / routine.targetCount) * 100))] : []),
+  ];
+  const progressValue = progressParts.length ? Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length) : completed ? 100 : 0;
+  const detail = [
+    ...(usesChecklist(routine.trackingMode) ? [`${completedCount}/${routine.items.length} items`] : []),
+    ...(usesQuantity(routine.trackingMode) ? [`${count}/${routine.targetCount} ${routine.unit}`] : []),
+  ].join(" · ");
   const handleMainClick = () => {
     if (hasDetails) setExpanded((value) => !value);
     else onToggle();
@@ -692,8 +697,8 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
       {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
-    {routine.trackingMode === "quantity" && expanded && <QuantityTracker routine={routine} count={count} onChange={onSetQuantity} />}
-    {routine.trackingMode === "checklist" && routine.items.length > 0 && expanded && <div className="routine-checklist">
+    {usesQuantity(routine.trackingMode) && expanded && <QuantityTracker routine={routine} count={count} onChange={onSetQuantity} />}
+    {usesChecklist(routine.trackingMode) && routine.items.length > 0 && expanded && <div className="routine-checklist">
       {routine.items.map((item) => {
         const checked = completedItemIds.has(item.id);
         return <button key={item.id} className={checked ? "checked" : ""} onClick={() => onToggleItem(item.id)}>
@@ -724,11 +729,10 @@ function QuantityTracker({ routine, count, onChange }: { routine: Routine; count
 
 function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
-  const trackingLabel = routine.trackingMode === "quantity"
-    ? `${routine.targetCount} ${routine.unit} daily`
-    : routine.trackingMode === "checklist"
-      ? `${routine.items.length} list items`
-      : "Single check";
+  const trackingLabel = routine.trackingMode === "simple" ? "Single check" : [
+    ...(usesChecklist(routine.trackingMode) ? [`${routine.items.length} list items`] : []),
+    ...(usesQuantity(routine.trackingMode) ? [`${routine.targetCount} ${routine.unit} daily`] : []),
+  ].join(" + ");
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
@@ -766,22 +770,19 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
   const [simpleDone, setSimpleDone] = useState(false);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [quantity, setQuantity] = useState(0);
-  const hasDetails = trackingMode !== "simple";
-  const completed = trackingMode === "simple"
-    ? simpleDone
-    : trackingMode === "checklist"
-      ? items.length > 0 && checkedItems.length === items.length
-      : quantity >= targetCount;
-  const detail = trackingMode === "simple"
-    ? "Single check"
-    : trackingMode === "checklist"
-      ? items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"
-      : `${quantity}/${targetCount} ${unit || "times"}`;
-  const progressValue = trackingMode === "simple"
-    ? simpleDone ? 100 : 0
-    : trackingMode === "checklist"
-      ? items.length ? Math.round((checkedItems.length / items.length) * 100) : 0
-      : targetCount ? Math.round((quantity / targetCount) * 100) : 0;
+  const hasDetails = usesChecklist(trackingMode) || usesQuantity(trackingMode);
+  const checklistDone = !usesChecklist(trackingMode) || (items.length > 0 && checkedItems.length === items.length);
+  const quantityDone = !usesQuantity(trackingMode) || quantity >= targetCount;
+  const completed = trackingMode === "simple" ? simpleDone : checklistDone && quantityDone;
+  const detail = trackingMode === "simple" ? "Single check" : [
+    ...(usesChecklist(trackingMode) ? [items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"] : []),
+    ...(usesQuantity(trackingMode) ? [`${quantity}/${targetCount} ${unit || "times"}`] : []),
+  ].join(" · ");
+  const progressParts = [
+    ...(usesChecklist(trackingMode) ? [items.length ? Math.round((checkedItems.length / items.length) * 100) : 0] : []),
+    ...(usesQuantity(trackingMode) ? [targetCount ? Math.round((quantity / targetCount) * 100) : 0] : []),
+  ];
+  const progressValue = trackingMode === "simple" ? simpleDone ? 100 : 0 : Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);
 
   useEffect(() => {
     setExpanded(trackingMode !== "simple");
@@ -800,8 +801,10 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
 
   const toggleAll = () => {
     if (trackingMode === "simple") setSimpleDone((done) => !done);
-    else if (trackingMode === "checklist") setCheckedItems(completed ? [] : items.map((_, index) => index));
-    else setQuantity(completed ? 0 : targetCount);
+    else {
+      if (usesChecklist(trackingMode)) setCheckedItems(completed ? [] : items.map((_, index) => index));
+      if (usesQuantity(trackingMode)) setQuantity(completed ? 0 : targetCount);
+    }
   };
 
   return <section className={`routine-live-preview${expanded ? " expanded" : ""}${completed ? " completed" : ""}`} style={{ "--preview": color } as React.CSSProperties} aria-label="Interactive routine preview">
@@ -813,13 +816,13 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
     </div>
-    {expanded && trackingMode === "checklist" && <div className="preview-details preview-list">
+    {expanded && usesChecklist(trackingMode) && <div className="preview-details preview-list">
       {items.length ? items.map((item, index) => {
         const checked = checkedItems.includes(index);
         return <button type="button" key={`${item}-${index}`} className={checked ? "checked" : ""} onClick={() => setCheckedItems((current) => checked ? current.filter((value) => value !== index) : [...current, index].sort((a, b) => a - b))}><span>{checked ? "✓" : ""}</span>{item}</button>;
       }) : <p>Type checklist items below to try them here.</p>}
     </div>}
-    {expanded && trackingMode === "quantity" && <div className="preview-details preview-amount">
+    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">
       <div className="preview-detail-heading"><span>Daily amount</span><strong>{quantity} of {targetCount} {unit || "times"}</strong></div>
       <div className="preview-quantity" style={{ "--preview-segments": targetCount } as React.CSSProperties}>
         {Array.from({ length: targetCount }, (_, index) => {
@@ -881,6 +884,10 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
       const nameInput = formRef.current?.elements.namedItem("name");
       if (nameInput instanceof HTMLInputElement && !nameInput.reportValidity()) return;
     }
+    if (nextStep > step && step === 1 && usesChecklist(trackingMode)) {
+      const checklistInput = formRef.current?.elements.namedItem("checklist");
+      if (checklistInput instanceof HTMLTextAreaElement && !checklistInput.reportValidity()) return;
+    }
     stepLockRef.current = true;
     setStepSettling(true);
     setStep(Math.min(steps.length - 1, Math.max(0, nextStep)));
@@ -923,8 +930,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
       </section>
       <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">
         <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
-        {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" value={previewChecklist} onChange={(event) => setPreviewChecklist(event.target.value)} placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
-        {trackingMode === "quantity" && <QuantitySettings onValueChange={(targetCount, unit) => { setPreviewTargetCount(targetCount); setPreviewUnit(unit); }} />}
+        {usesChecklist(trackingMode) && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" value={previewChecklist} onChange={(event) => setPreviewChecklist(event.target.value)} placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} required /></label>}
+        {usesQuantity(trackingMode) && <QuantitySettings onValueChange={(targetCount, unit) => { setPreviewTargetCount(targetCount); setPreviewUnit(unit); }} />}
       </section>
       <section className="wizard-step" hidden={step !== 2} aria-label="Appearance and schedule">
         <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
@@ -977,8 +984,8 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
       <TimeField defaultValue={routine.time} />
       <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
-      {trackingMode === "checklist" && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} /></label>}
-      {trackingMode === "quantity" && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
+      {usesChecklist(trackingMode) && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} required /></label>}
+      {usesQuantity(trackingMode) && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
       <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={emoji === routine.emoji} onChange={(event) => keepModalAligned(event.currentTarget)} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
       <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={color.toLowerCase() === routine.color.toLowerCase()} onChange={(event) => keepModalAligned(event.currentTarget)} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
@@ -1143,19 +1150,29 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
 }
 
 function TrackingModePicker({ value, onChange }: { value: TrackingMode; onChange: (mode: TrackingMode) => void }) {
-  const choices: Array<{ mode: TrackingMode; title: string; note: string; icon: string }> = [
-    { mode: "simple", title: "One check", note: "Done or not done", icon: "✓" },
-    { mode: "checklist", title: "List", note: "Check off steps", icon: "☷" },
-    { mode: "quantity", title: "Daily amount", note: "Track pills or servings", icon: "▥" },
-  ];
+  const listEnabled = usesChecklist(value);
+  const quantityEnabled = usesQuantity(value);
+  const setAddons = (list: boolean, quantity: boolean) => onChange(list && quantity ? "hybrid" : list ? "checklist" : quantity ? "quantity" : "simple");
   return <fieldset className="tracking-picker">
-    <legend>How do you want to track it?</legend>
-    <div className="tracking-options">
-      {choices.map((choice) => <label key={choice.mode} className={value === choice.mode ? "selected" : ""}>
-        <input type="radio" name="trackingMode" value={choice.mode} checked={value === choice.mode} onChange={() => onChange(choice.mode)} />
-        <span className="tracking-icon" aria-hidden="true">{choice.icon}</span>
-        <span><strong>{choice.title}</strong><small>{choice.note}</small></span>
-      </label>)}
+    <legend>Build your tracking</legend>
+    <input type="hidden" name="trackingMode" value={value} />
+    <div className="tracking-base">
+      <span className="tracking-icon" aria-hidden="true">✓</span>
+      <span><strong>One check</strong><small>Always included. With no add-ons, this is all you need.</small></span>
+      <b>Default</b>
+    </div>
+    <p className="tracking-addon-label">Add either one or combine both</p>
+    <div className="tracking-options tracking-addons">
+      <label className={listEnabled ? "selected" : ""}>
+        <input type="checkbox" checked={listEnabled} onChange={(event) => setAddons(event.target.checked, quantityEnabled)} />
+        <span className="tracking-icon" aria-hidden="true">☷</span>
+        <span><strong>List</strong><small>Check off steps</small></span>
+      </label>
+      <label className={quantityEnabled ? "selected" : ""}>
+        <input type="checkbox" checked={quantityEnabled} onChange={(event) => setAddons(listEnabled, event.target.checked)} />
+        <span className="tracking-icon" aria-hidden="true">▥</span>
+        <span><strong>Daily amount</strong><small>Track pills or servings</small></span>
+      </label>
     </div>
   </fieldset>;
 }
