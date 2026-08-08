@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, ListChecks, Trash2, type LucideIcon } from "lucide-react";
+import { ArrowLeft, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, ListChecks, Settings2, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -24,8 +24,14 @@ type Routine = {
 type Completion = { routineId: number; date: string };
 type ItemCompletion = { itemId: number; date: string };
 type QuantityCompletion = { routineId: number; date: string; count: number };
-type Tab = "today" | "calendar" | "routines";
+type Tab = "today" | "calendar" | "routines" | "settings";
 type OnboardingState = "checking" | "show" | "done";
+type TimeFormat = "12-hour" | "24-hour";
+type WeekStart = "sunday" | "monday";
+type MotionPreference = "full" | "reduced";
+type AppPreferences = { timeFormat: TimeFormat; weekStartsOn: WeekStart; motion: MotionPreference };
+
+const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
 
 const COLORS = [
   "#6C5CE7", "#845EF7", "#8338EC", "#9C36B5", "#CC5DE8", "#8E7DBE", "#5F3DC4", "#6741D9",
@@ -79,12 +85,20 @@ function formatDateRange(routine: Routine) {
   return "No date limit";
 }
 
+function formatRoutineTime(time: string, format: TimeFormat) {
+  if (!time) return "Anytime";
+  if (format === "24-hour") return time;
+  const [hours, minutes] = time.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return time;
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
+}
+
 function useAnimatedNumber(target: number, duration = 600) {
   const [value, setValue] = useState(0);
   const valueRef = useRef(0);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (duration <= 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       valueRef.current = target;
       setValue(target);
       return;
@@ -124,6 +138,8 @@ export default function Home() {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [settingsReturnTab, setSettingsReturnTab] = useState<Exclude<Tab, "settings">>("today");
+  const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
   const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -154,6 +170,12 @@ export default function Home() {
   useEffect(() => {
     const forceOnboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
     const completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
+    try {
+      const savedPreferences = JSON.parse(window.localStorage.getItem("routineez-preferences") ?? "{}");
+      setPreferences({ ...DEFAULT_PREFERENCES, ...savedPreferences });
+    } catch {
+      setPreferences(DEFAULT_PREFERENCES);
+    }
     setOnboardingState(forceOnboarding || !completed ? "show" : "done");
     loadData();
     return () => {
@@ -174,6 +196,20 @@ export default function Home() {
       setShowAdd(true);
       addTimerRef.current = null;
     }, 200);
+  }
+
+  function openSettings() {
+    if (tab !== "settings") setSettingsReturnTab(tab);
+    setShowProfile(false);
+    setTab("settings");
+  }
+
+  function updatePreferences(next: Partial<AppPreferences>) {
+    setPreferences((current) => {
+      const updated = { ...current, ...next };
+      window.localStorage.setItem("routineez-preferences", JSON.stringify(updated));
+      return updated;
+    });
   }
 
   function completeOnboarding(addRoutine = false) {
@@ -203,7 +239,7 @@ export default function Home() {
       : completedToday.has(routine.id);
   const doneCount = todayRoutines.filter(isRoutineDone).length;
   const progress = todayRoutines.length ? Math.round((doneCount / todayRoutines.length) * 100) : 0;
-  const animatedProgress = useAnimatedNumber(progress);
+  const animatedProgress = useAnimatedNumber(progress, preferences.motion === "reduced" ? 0 : 600);
 
   useEffect(() => {
     if (!showProfile) return;
@@ -378,19 +414,21 @@ export default function Home() {
     const year = month.getFullYear();
     const monthIndex = month.getMonth();
     const firstWeekday = new Date(year, monthIndex, 1).getDay();
+    const weekStartIndex = preferences.weekStartsOn === "monday" ? 1 : 0;
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const cells: Array<Date | null> = Array(firstWeekday).fill(null);
+    const cells: Array<Date | null> = Array((firstWeekday - weekStartIndex + 7) % 7).fill(null);
     for (let day = 1; day <= daysInMonth; day += 1) cells.push(new Date(year, monthIndex, day));
     while (cells.length % 7) cells.push(null);
     return cells;
-  }, [month]);
+  }, [month, preferences.weekStartsOn]);
   const viewingCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
+  const calendarDayNames = preferences.weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
 
   if (onboardingState === "checking") return <OnboardingSplash />;
   if (onboardingState === "show") return <OnboardingPage onComplete={completeOnboarding} />;
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="RoutineEZ home">
           <span className="brand-mark"><i /><i /><i /></span>
@@ -400,6 +438,7 @@ export default function Home() {
           <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
           <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarDays} label="Calendar" />
           <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
+          <NavButton active={tab === "settings"} onClick={openSettings} icon={Settings2} label="Settings" />
         </nav>
         <div className="sidebar-note">
           <span className="spark">✦</span>
@@ -421,7 +460,10 @@ export default function Home() {
             <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
             <div className="profile-copy"><small>Your profile</small><h2>My RoutineEZ</h2><p>Small routines. Easier days.</p></div>
             <div className="profile-stats"><div><strong>{routines.length}</strong><span>Routines</span></div><div><strong>{doneCount}/{todayRoutines.length}</strong><span>Done today</span></div></div>
-            <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}>Manage routines</button>
+            <div className="profile-actions">
+              <button className="profile-settings-button" onClick={openSettings}><Settings2 aria-hidden="true" />Settings</button>
+              <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}>Manage routines</button>
+            </div>
           </section>
         </div>}
 
@@ -455,6 +497,7 @@ export default function Home() {
                     onToggle={() => toggleRoutine(routine.id)}
                     onToggleItem={toggleItem}
                     onSetQuantity={(count) => setQuantity(routine.id, count)}
+                    timeFormat={preferences.timeFormat}
                   />
                 )) : <EmptyToday onAdd={() => { setTab("routines"); setShowAdd(true); }} />}
               </div>
@@ -474,7 +517,7 @@ export default function Home() {
                 <div className="calendar-month-heading"><h2>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2>{!viewingCurrentMonth && <button className="calendar-today-button" onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>Today</button>}</div>
                 <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
               </div>
-              <div className="weekday-row">{DAY_NAMES.map((day) => <span key={day}>{day}</span>)}</div>
+              <div className="weekday-row">{calendarDayNames.map((day) => <span key={day}>{day}</span>)}</div>
               <div className="calendar-grid">
                 {monthDays.map((date, index) => {
                   if (!date) return <div className="day-cell empty" key={`blank-${index}`} />;
@@ -495,7 +538,7 @@ export default function Home() {
 
         {tab === "routines" && (
           <div className="page routines-page">
-            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} />}
+            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} timeFormat={preferences.timeFormat} />}
             {editingRoutineId !== null && (() => {
               const routine = routines.find((item) => item.id === editingRoutineId);
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} /> : null;
@@ -503,11 +546,13 @@ export default function Home() {
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => setRoutineToDelete(routine)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => setRoutineToDelete(routine)} />)}
               </div>
             </section>
           </div>
         )}
+
+        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onBack={() => setTab(settingsReturnTab)} />}
       </section>
 
       <nav className="bottom-nav" aria-label="Main navigation">
@@ -517,6 +562,40 @@ export default function Home() {
       </nav>
     </main>
   );
+}
+
+function SettingsPage({ preferences, onChange, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onBack: () => void }) {
+  return <div className="page settings-page">
+    <button className="settings-back" onClick={onBack}><ArrowLeft aria-hidden="true" />Back</button>
+    <header className="settings-heading"><span>Make it yours</span><h1>Settings</h1><p>Choose how RoutineEZ looks and feels. Changes save automatically on this device.</p></header>
+    <div className="settings-list">
+      <section className="setting-card">
+        <div className="setting-icon"><Clock3 aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Time format</h2><p>Choose how routine times appear throughout the app.</p></div>
+        <div className="setting-options" role="group" aria-label="Time format">
+          <button className={preferences.timeFormat === "12-hour" ? "active" : ""} onClick={() => onChange({ timeFormat: "12-hour" })}><strong>12-hour</strong><span>8:30 AM</span></button>
+          <button className={preferences.timeFormat === "24-hour" ? "active" : ""} onClick={() => onChange({ timeFormat: "24-hour" })}><strong>24-hour</strong><span>08:30</span></button>
+        </div>
+      </section>
+      <section className="setting-card">
+        <div className="setting-icon"><CalendarDays aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Calendar week</h2><p>Pick which day appears first in your calendar.</p></div>
+        <div className="setting-options" role="group" aria-label="First day of week">
+          <button className={preferences.weekStartsOn === "sunday" ? "active" : ""} onClick={() => onChange({ weekStartsOn: "sunday" })}><strong>Sunday</strong><span>Sun · Mon · Tue</span></button>
+          <button className={preferences.weekStartsOn === "monday" ? "active" : ""} onClick={() => onChange({ weekStartsOn: "monday" })}><strong>Monday</strong><span>Mon · Tue · Wed</span></button>
+        </div>
+      </section>
+      <section className="setting-card">
+        <div className="setting-icon"><Sparkles aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Animations</h2><p>Keep the polished movement or use a calmer experience.</p></div>
+        <div className="setting-options" role="group" aria-label="Animation preference">
+          <button className={preferences.motion === "full" ? "active" : ""} onClick={() => onChange({ motion: "full" })}><strong>Full</strong><span>Smooth motion</span></button>
+          <button className={preferences.motion === "reduced" ? "active" : ""} onClick={() => onChange({ motion: "reduced" })}><strong>Reduced</strong><span>Less movement</span></button>
+        </div>
+      </section>
+    </div>
+    <p className="settings-saved"><CircleCheckBig aria-hidden="true" />Preferences save automatically</p>
+  </div>;
 }
 
 function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => void }) {
@@ -572,7 +651,7 @@ function DateTile({ date }: { date: Date }) {
   </div>;
 }
 
-function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void }) {
+function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity, timeFormat }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void; timeFormat: TimeFormat }) {
   const hasDetails = (routine.trackingMode === "checklist" && routine.items.length > 0) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
   const hasMultiple = (routine.trackingMode === "checklist" && routine.items.length > 1) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
   const [expanded, setExpanded] = useState(false);
@@ -595,7 +674,7 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
   return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
     <button className="routine-main" onClick={handleMainClick} aria-expanded={hasDetails ? expanded : undefined}>
       <span className="routine-emoji">{routine.emoji}</span>
-      <span className="routine-info"><strong>{routine.name}</strong><small>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{routine.time || "Anytime"}{detail ? ` · ${detail}` : ""}</small></span>
+      <span className="routine-info"><strong>{routine.name}</strong><small>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</small></span>
       {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
@@ -629,7 +708,7 @@ function QuantityTracker({ routine, count, onChange }: { routine: Routine; count
   </div>;
 }
 
-function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; onEditOptions: () => void; onDelete: () => void }) {
+function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const trackingLabel = routine.trackingMode === "quantity"
     ? `${routine.targetCount} ${routine.unit} daily`
@@ -638,7 +717,7 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
       : "Single check";
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
-    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{routine.time || "Anytime"} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
+    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
     <button className="list-button" onClick={onEditOptions}>Options</button>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}>×</button>
   </article>;
@@ -667,7 +746,7 @@ function DeleteRoutineDialog({ routine, deleting, onCancel, onConfirm }: { routi
   </div>;
 }
 
-function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, targetCount, unit }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; targetCount: number; unit: string }) {
+function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, targetCount, unit, timeFormat }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; targetCount: number; unit: string; timeFormat: TimeFormat }) {
   const items = useMemo(() => checklist.split(/\r?\n/).map((item) => item.trim()).filter(Boolean), [checklist]);
   const [expanded, setExpanded] = useState(false);
   const [simpleDone, setSimpleDone] = useState(false);
@@ -710,7 +789,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
     <div className="preview-summary">
       <button type="button" className="preview-main" onClick={() => hasDetails ? setExpanded((value) => !value) : toggleAll()} aria-expanded={hasDetails ? expanded : undefined}>
         <span className="preview-icon" aria-hidden="true">{emoji}</span>
-        <span className="preview-copy"><small>Live preview</small><strong>{name.trim() || "Your new routine"}</strong><span>{time || "Anytime"} · {detail}</span></span>
+        <span className="preview-copy"><small>Live preview</small><strong>{name.trim() || "Your new routine"}</strong><span>{formatRoutineTime(time, timeFormat)} · {detail}</span></span>
         {hasDetails && <span className="preview-chevron" aria-hidden="true" />}
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
@@ -733,7 +812,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
   </section>;
 }
 
-function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
+function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; timeFormat: TimeFormat }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
   const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
@@ -766,7 +845,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
 
   return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
-  <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} checklist={previewChecklist} targetCount={previewTargetCount} unit={previewUnit} />
+  <RoutineLivePreview name={previewName} time={previewTime} emoji={previewEmoji} color={previewColor} trackingMode={trackingMode} checklist={previewChecklist} targetCount={previewTargetCount} unit={previewUnit} timeFormat={timeFormat} />
   <div className="add-form-shell">
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
     <div className="form-grid">

@@ -123,6 +123,13 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /mobile-profile/);
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);
+  assert.match(page, /profile-settings-button/);
+  assert.match(page, /function SettingsPage/);
+  assert.match(page, /routineez-preferences/);
+  assert.match(page, /timeFormat: "12-hour"/);
+  assert.match(page, /formatRoutineTime/);
+  assert.match(page, /weekStartsOn/);
+  assert.match(page, /preferences\.motion === "reduced"/);
   assert.match(page, /Manage routines/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);

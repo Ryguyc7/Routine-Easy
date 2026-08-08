@@ -185,6 +185,31 @@ button { color: inherit; }
 .has-routines.is-today .day-number { color: #fff; background: var(--purple); box-shadow: none; }
 .calendar-legend { margin-top: 12px; color: #92929c; font-size: 11px; text-align: center; }
 
+.settings-page { max-width: 760px; }
+.settings-back { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 19px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; color: #6f707a; background: rgba(255,255,255,.78); font-size: 12px; font-weight: 750; cursor: pointer; transition: color .18s ease, border-color .18s ease, transform .18s ease; }
+.settings-back:hover { color: var(--purple); border-color: #d9d2ff; transform: translateX(-2px); }
+.settings-back svg { width: 15px; height: 15px; }
+.settings-heading { margin-bottom: 26px; }
+.settings-heading > span { color: var(--purple); font-size: 10px; font-weight: 850; letter-spacing: 1.5px; text-transform: uppercase; }
+.settings-heading h1 { margin: 5px 0 7px; font-size: 38px; letter-spacing: -1.7px; }
+.settings-heading p { max-width: 500px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.settings-list { display: grid; gap: 13px; }
+.setting-card { display: grid; grid-template-columns: 48px minmax(0, 1fr) minmax(270px, .9fr); align-items: center; gap: 15px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 9px 26px rgba(48,40,70,.045); }
+.setting-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; color: var(--purple); background: var(--lavender); }
+.setting-icon svg { width: 21px; height: 21px; stroke-width: 2; }
+.setting-copy h2 { margin: 0 0 4px; font-size: 14px; }
+.setting-copy p { margin: 0; color: #8d8b95; font-size: 10px; line-height: 1.45; }
+.setting-options { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 4px; border: 1px solid #ebe7ef; border-radius: 13px; background: #f8f6fa; }
+.setting-options button { min-width: 0; min-height: 48px; display: grid; place-content: center; gap: 2px; padding: 7px 9px; border: 1px solid transparent; border-radius: 9px; color: #777782; background: transparent; cursor: pointer; transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.setting-options button:hover { color: var(--purple); }
+.setting-options button.active { color: var(--purple); border-color: #d8d0ff; background: #fff; box-shadow: 0 4px 12px rgba(68,52,155,.09); }
+.setting-options button:active { transform: scale(.97); }
+.setting-options strong { font-size: 11px; }
+.setting-options span { color: #9b99a3; font-size: 8.5px; }
+.settings-saved { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 18px 0 0; color: #96939d; font-size: 10px; }
+.settings-saved svg { width: 14px; height: 14px; color: var(--purple); }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
 .add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; overflow: hidden; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
 .add-modal-stack { width: min(680px, 100%); height: min(820px, calc(100svh - 48px)); display: flex; flex-direction: column; gap: 10px; }
@@ -397,7 +422,11 @@ button { color: inherit; }
   .profile-stats div + div { border-left: 1px solid #ece8f0; }
   .profile-stats strong { color: var(--ink); font-size: 16px; }
   .profile-stats span { color: #94919c; font-size: 9px; }
-  .profile-routines-button { grid-column: 1 / -1; min-height: 36px; border: 0; border-radius: 10px; color: #fff; background: var(--purple); box-shadow: 0 7px 15px rgba(89,70,203,.19); font-size: 11px; font-weight: 800; cursor: pointer; }
+  .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: .82fr 1.18fr; gap: 8px; }
+  .profile-actions button { min-height: 38px; border-radius: 10px; font-size: 10.5px; font-weight: 800; cursor: pointer; }
+  .profile-settings-button { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #e5e0ed; color: #66636e; background: #f8f6fa; }
+  .profile-settings-button svg { width: 14px; height: 14px; color: var(--purple); }
+  .profile-routines-button { border: 0; color: #fff; background: var(--purple); box-shadow: 0 7px 15px rgba(89,70,203,.19); }
   @keyframes profile-arrive { from { opacity: 0; transform: translateY(-7px) scale(.97); } }
   .bottom-nav { position: fixed; inset: auto 18px 12px; height: 64px; padding: 6px 10px 5px; display: grid; grid-template-columns: repeat(3, 1fr); overflow: hidden; isolation: isolate; background: rgba(255,255,255,.95); backdrop-filter: blur(22px) saturate(1.16); -webkit-backdrop-filter: blur(22px) saturate(1.16); border: 1px solid rgba(229,223,214,.82); border-radius: 20px; box-shadow: 0 14px 30px rgba(50,43,38,.105), 0 2px 6px rgba(50,43,38,.035), inset 0 1px 0 rgba(255,255,255,.92); z-index: 30; }
   .bottom-nav button { position: relative; z-index: 1; justify-content: center; flex-direction: column; gap: 3px; padding: 3px; border-radius: 0; font-size: 9.5px; font-weight: 700; letter-spacing: -.08px; transition: color .22s ease, transform .2s ease; }
@@ -425,6 +454,7 @@ button { color: inherit; }
   .today-page .routine-list { min-height: 0; flex: 1; padding: 3px 1px 116px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; background: transparent; }
   .today-page .routine-list::-webkit-scrollbar { display: none; }
   .calendar-page, .routines-page { padding-bottom: 132px; scroll-padding-bottom: 132px; }
+  .settings-page { padding-bottom: 132px; scroll-padding-bottom: 132px; }
   .routines-page { scrollbar-width: none; }
   .routines-page::-webkit-scrollbar { display: none; }
   .progress-card { padding: 18px 19px 17px; color: var(--ink); background: rgba(255,255,255,.94); border: 1px solid rgba(235,228,216,.95); border-radius: 22px; box-shadow: 0 17px 40px rgba(63,51,42,.09); }
@@ -448,6 +478,17 @@ button { color: inherit; }
   .calendar-card { padding: 17px 10px; }
   .day-cell { min-height: 61px; padding: 7px 2px; }
   .calendar-toolbar { padding: 0 7px; }
+  .settings-page { width: calc(100% - 34px); padding-top: 17px; scrollbar-width: none; }
+  .settings-page::-webkit-scrollbar { display: none; }
+  .settings-back { margin-bottom: 15px; padding: 7px 9px; background: rgba(255,255,255,.7); }
+  .settings-heading { margin-bottom: 20px; }
+  .settings-heading h1 { margin-top: 4px; font-size: 31px; }
+  .settings-heading p { font-size: 11px; }
+  .settings-list { gap: 11px; }
+  .setting-card { grid-template-columns: 42px minmax(0, 1fr); gap: 10px 12px; padding: 15px; border-radius: 17px; }
+  .setting-icon { width: 42px; height: 42px; border-radius: 13px; }
+  .setting-options { grid-column: 1 / -1; }
+  .setting-options button { min-height: 45px; }
   .routine-grid { grid-template-columns: 1fr; }
   .desktop-routine-add { display: none; }
   .form-grid { grid-template-columns: 1fr; }
