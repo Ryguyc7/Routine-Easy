@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -123,6 +123,7 @@ export default function Home() {
   const [selectedRoutine, setSelectedRoutine] = useState<number | "all">("all");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingList, setSavingList] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
@@ -201,6 +202,15 @@ export default function Home() {
   const doneCount = todayRoutines.filter(isRoutineDone).length;
   const progress = todayRoutines.length ? Math.round((doneCount / todayRoutines.length) * 100) : 0;
   const animatedProgress = useAnimatedNumber(progress);
+
+  useEffect(() => {
+    if (!showProfile) return;
+    const closeProfile = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowProfile(false);
+    };
+    window.addEventListener("keydown", closeProfile);
+    return () => window.removeEventListener("keydown", closeProfile);
+  }, [showProfile]);
 
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
@@ -386,10 +396,20 @@ export default function Home() {
 
       <section className="content">
         <header className="mobile-header">
-          <span className="mobile-header-spacer" aria-hidden="true" />
+          <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="RoutineEZ">Routine<span>EZ</span></div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
+
+        {showProfile && <div className="profile-popover-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowProfile(false); }}>
+          <section className="profile-card" role="dialog" aria-label="Your RoutineEZ profile">
+            <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile">×</button>
+            <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
+            <div className="profile-copy"><small>Your profile</small><h2>My RoutineEZ</h2><p>Small routines. Easier days.</p></div>
+            <div className="profile-stats"><div><strong>{routines.length}</strong><span>Routines</span></div><div><strong>{doneCount}/{todayRoutines.length}</strong><span>Done today</span></div></div>
+            <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}>Manage routines</button>
+          </section>
+        </div>}
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
 

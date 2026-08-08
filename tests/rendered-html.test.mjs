@@ -111,7 +111,10 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
-  assert.match(page, /mobile-header-spacer/);
+  assert.match(page, /mobile-profile/);
+  assert.match(page, /CircleUserRound/);
+  assert.match(page, /profile-popover-backdrop/);
+  assert.match(page, /Manage routines/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
