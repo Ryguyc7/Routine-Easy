@@ -41,6 +41,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.completed \{ opacity: 1/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row:hover, \.routine-row:active \{ transform: none/);
   assert.match(page, /function DateTile/);
+  assert.match(page, /function CalendarNavButton/);
+  assert.match(page, /date-nav-icon/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
@@ -48,7 +50,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /☀️/);
   assert.match(page, /mobile-wordmark/);
-  assert.doesNotMatch(page, /mobile-header-spacer/);
+  assert.match(page, /mobile-header-spacer/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);

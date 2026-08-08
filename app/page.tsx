@@ -335,7 +335,7 @@ export default function Home() {
 
       <section className="content">
         <header className="mobile-header">
-          <DateTile date={today} />
+          <span className="mobile-header-spacer" aria-hidden="true" />
           <div className="mobile-wordmark" aria-label="RoutineEZ">Routine<span>EZ</span></div>
           <button className="mobile-add" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
@@ -425,7 +425,7 @@ export default function Home() {
 
       <nav className="bottom-nav" aria-label="Main navigation">
         <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
-        <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarDays} label="Calendar" />
+        <CalendarNavButton active={tab === "calendar"} onClick={() => setTab("calendar")} date={today} />
         <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
       </nav>
     </main>
@@ -471,6 +471,10 @@ function OnboardingSplash() {
 
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
   return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon"><Icon aria-hidden="true" strokeWidth={active ? 2.4 : 2} /></span>{label}</button>;
+}
+
+function CalendarNavButton({ active, onClick, date }: { active: boolean; onClick: () => void; date: Date }) {
+  return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon date-nav-icon" aria-hidden="true"><i /><strong>{date.getDate()}</strong></span>Calendar</button>;
 }
 
 function DateTile({ date }: { date: Date }) {

@@ -305,9 +305,10 @@ button { color: inherit; }
   .onboarding-note { width: 100%; }
   .app-shell { display: block; height: 100svh; padding: 0; overflow: hidden; }
   .sidebar { display: none; }
-  .content { height: 100svh; min-height: 0; padding-top: 78px; overflow: hidden; background: radial-gradient(circle at -36px 145px, rgba(255,128,101,.16) 0 68px, transparent 69px), radial-gradient(circle at calc(100% + 50px) 350px, rgba(83,151,218,.13) 0 92px, transparent 93px), radial-gradient(circle at 18px calc(100% - 90px), rgba(73,160,120,.11) 0 68px, transparent 69px), linear-gradient(180deg, #fffdfa, #fbf8f2 72%); }
-  .page { width: calc(100% - 40px); height: calc(100svh - 78px); padding: 8px 0 0; overflow-y: auto; }
-  .mobile-header { position: fixed; inset: 0 0 auto; height: 78px; padding: 10px 22px 8px; background: linear-gradient(180deg, rgba(255,253,249,.98), rgba(255,253,249,.93)); border: 0; z-index: 30; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 1px 0 rgba(229,221,209,.42); }
+  .content { height: 100svh; min-height: 0; padding-top: 68px; overflow: hidden; background: radial-gradient(circle at -36px 145px, rgba(255,128,101,.16) 0 68px, transparent 69px), radial-gradient(circle at calc(100% + 50px) 350px, rgba(83,151,218,.13) 0 92px, transparent 93px), radial-gradient(circle at 18px calc(100% - 90px), rgba(73,160,120,.11) 0 68px, transparent 69px), linear-gradient(180deg, #fffdfa, #fbf8f2 72%); }
+  .page { width: calc(100% - 40px); height: calc(100svh - 68px); padding: 8px 0 0; overflow-y: auto; }
+  .mobile-header { position: fixed; inset: 0 0 auto; height: 68px; padding: 8px 22px; background: linear-gradient(180deg, rgba(255,253,249,.98), rgba(255,253,249,.93)); border: 0; z-index: 30; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 1px 0 rgba(229,221,209,.42); }
+  .mobile-header-spacer { width: 40px; height: 40px; justify-self: start; }
   .mobile-wordmark { justify-self: center; color: #191b25; font-size: 19px; font-weight: 900; letter-spacing: -.85px; }
   .mobile-wordmark span { color: var(--purple); }
   .mobile-add { justify-self: end; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid rgba(255,255,255,.82); border-radius: 50%; background: linear-gradient(145deg, #735ff1, #593fdf); color: #fff; box-shadow: 0 10px 24px rgba(82,66,194,.3), inset 0 1px 0 rgba(255,255,255,.35); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
@@ -317,6 +318,9 @@ button { color: inherit; }
   .bottom-nav button { position: relative; justify-content: center; flex-direction: column; gap: 5px; padding: 4px; border-radius: 0; font-size: 10px; font-weight: 700; letter-spacing: -.1px; transition: color .2s ease, transform .2s ease; }
   .bottom-nav .nav-icon { width: 25px; height: 23px; transition: color .2s ease, transform .2s ease, filter .2s ease; }
   .bottom-nav .nav-icon svg { width: 20px; height: 20px; }
+  .bottom-nav .date-nav-icon { width: 23px; height: 23px; grid-template-rows: 6px 1fr; overflow: hidden; border: 1.5px solid currentColor; border-radius: 6px; background: #fff; }
+  .bottom-nav .date-nav-icon i { display: block; width: 100%; height: 100%; background: currentColor; }
+  .bottom-nav .date-nav-icon strong { display: grid; place-items: center; color: currentColor; font-size: 10px; line-height: 1; font-weight: 850; }
   .bottom-nav button.active { color: var(--purple); background: transparent; font-weight: 800; }
   .bottom-nav button.active .nav-icon { color: var(--purple); transform: translateY(-1px); filter: drop-shadow(0 3px 5px rgba(108,92,231,.2)); }
   .bottom-nav button.active::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 3px; height: 3px; border-radius: 50%; background: var(--purple); transform: translateX(-50%); }
@@ -324,10 +328,6 @@ button { color: inherit; }
   .page-heading { margin-bottom: 27px; }
   .page-heading h1 { font-size: 39px; letter-spacing: -1.8px; }
   .desktop-today-date { display: none; }
-  .mobile-header .date-tile { justify-self: start; width: 50px; height: 50px; aspect-ratio: 1; border-radius: 11px; box-shadow: 0 6px 17px rgba(35,30,77,.08); }
-  .mobile-header .date-tile span { padding: 3px; font-size: 8px; line-height: 1.1; }
-  .mobile-header .date-tile strong { padding: 4px 0 0; font-size: 19px; line-height: .95; }
-  .mobile-header .date-tile small { padding: 3px 0 4px; font-size: 6px; line-height: 1; }
   .today-page { display: flex; flex-direction: column; overflow: hidden; }
   .today-page .progress-card { flex: 0 0 auto; margin-bottom: 25px; }
   .today-page .routine-section { min-height: 0; flex: 1; display: flex; flex-direction: column; background: transparent; }
