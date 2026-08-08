@@ -40,7 +40,10 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /scroller\.scrollBy|picker-scroll-hint/);
   assert.match(page, /picker-scrollbar/);
   assert.match(page, /ResizeObserver/);
+  assert.match(page, /keepModalAligned/);
+  assert.match(page, /modal\.scrollLeft = 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar span/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /emoji-picker input, \.color-picker input \{ position: absolute; inset: 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar \{[\s\S]*width: 88px; height: 3px/);
   assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);

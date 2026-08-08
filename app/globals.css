@@ -195,7 +195,7 @@ button { color: inherit; }
 .add-card-header h2 { margin: 0; font-size: 21px; }
 .add-card-header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 .add-card-header > button, .delete-button { border: 0; background: transparent; color: #aaa8b2; font-size: 23px; cursor: pointer; }
-.form-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 18px; }
+.form-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 18px; overflow-x: clip; }
 .form-grid > * { min-width: 0; max-width: 100%; }
 .field { min-width: 0; display: grid; gap: 7px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .field span small { color: #a09fa8; font-size: 10px; font-weight: 600; }
@@ -246,11 +246,13 @@ button { color: inherit; }
 .picker-shell { position: relative; min-width: 0; width: 100%; }
 .picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 2px 2px 7px; scrollbar-width: none; overscroll-behavior-inline: contain; scroll-behavior: smooth; scroll-snap-type: x proximity; touch-action: pan-x; }
 .picker-scroll::-webkit-scrollbar { display: none; }
-.picker-scroll label { flex: 0 0 auto; scroll-snap-align: start; }
+.picker-scroll label { position: relative; flex: 0 0 auto; scroll-snap-align: start; }
 .picker-scrollbar { position: relative; width: 88px; height: 3px; margin: 4px auto 0; overflow: hidden; border-radius: 999px; background: #e8e3f4; box-shadow: inset 0 1px 1px rgba(72,54,139,.06); pointer-events: none; }
 .picker-scrollbar span { position: absolute; top: 0; bottom: 0; min-width: 22%; border-radius: inherit; background: var(--purple); box-shadow: 0 1px 3px rgba(92,69,220,.18); transition: width .16s ease; will-change: left; }
 .picker-scroll:focus-visible { outline: 2px solid rgba(108,92,231,.2); outline-offset: 3px; border-radius: 9px; }
-.emoji-picker input, .color-picker input, .day-picker input { position: absolute; opacity: 0; pointer-events: none; }
+.emoji-picker input, .color-picker input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
+.day-picker input { position: absolute; opacity: 0; pointer-events: none; }
+.emoji-picker input:focus-visible + span, .color-picker input:focus-visible + span { outline: 2px solid rgba(108,92,231,.35); outline-offset: 2px; }
 .emoji-picker span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
 .emoji-picker input:checked + span { background: var(--lavender); border-color: var(--purple); }
 .color-picker span { display: block; width: 25px; height: 25px; border: 4px solid #fff; outline: 1px solid #ddd; border-radius: 50%; cursor: pointer; }
