@@ -438,7 +438,7 @@ export default function Home() {
     <main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="RoutineEZ home">
-          <img className="brand-logo" src="/routineez-logo.png" alt="" />
+          <img className="brand-logo" src="/routineez-checklist.png" alt="" />
           <span>Routine<span className="brand-ez">EZ</span></span>
         </div>
         <nav className="side-nav" aria-label="Main navigation">
@@ -458,7 +458,7 @@ export default function Home() {
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="RoutineEZ">
-            <img src="/routineez-logo.png" alt="" />
+            <img src="/routineez-checklist.png" alt="" />
             <span className="mobile-wordmark-name">Routine<span className="mobile-wordmark-ez">EZ</span></span>
           </div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
@@ -613,7 +613,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
     <div className="onboarding-glow glow-two" aria-hidden="true" />
     <section className="onboarding-card" aria-labelledby="onboarding-title">
       <header className="onboarding-top">
-        <div className="brand" aria-label="RoutineEZ"><img className="brand-logo" src="/routineez-logo.png" alt="" /><span>Routine<span className="brand-ez">EZ</span></span></div>
+        <div className="brand" aria-label="RoutineEZ"><img className="brand-logo" src="/routineez-checklist.png" alt="" /><span>Routine<span className="brand-ez">EZ</span></span></div>
         <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
       </header>
       <div className="onboarding-layout">
@@ -643,7 +643,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
 function OnboardingSplash() {
   return <main className="onboarding-splash" aria-label="Loading RoutineEZ">
     <div className="splash-brand">
-      <img className="splash-logo" src="/routineez-logo.png" alt="" />
+      <img className="splash-logo" src="/routineez-checklist.png" alt="" />
       <div className="splash-wordmark" aria-hidden="true">
         <span className="splash-routine">Routine</span><span className="splash-ez">EZ</span>
       </div>

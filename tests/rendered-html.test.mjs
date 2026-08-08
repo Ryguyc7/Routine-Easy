@@ -115,7 +115,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /date-nav-icon/);
   assert.match(page, /month: "short"/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: transparent; border: 0/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{ width: 29px/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{ width: 36px/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav \{[\s\S]*height: 64px;[\s\S]*border-radius: 20px/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button\.active::after \{ display: none/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routines-page \{ padding-bottom: 132px/);
@@ -139,7 +139,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
-  assert.match(page, /routineez-logo\.png/);
+  assert.match(page, /routineez-checklist\.png/);
+  assert.doesNotMatch(page, /src="\/routineez-logo\.png"/);
   assert.doesNotMatch(page, /routineez-mark\.png/);
   assert.match(layout, /routineez-logo\.png/);
   assert.match(page, /mobile-profile/);
