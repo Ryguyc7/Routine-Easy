@@ -568,10 +568,10 @@ export default function Home() {
 
         {tab === "routines" && (
           <div className="page routines-page">
-            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} timeFormat={preferences.timeFormat} />}
+            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} timeFormat={preferences.timeFormat} usedEmojis={routines.map((routine) => routine.emoji)} usedColors={routines.map((routine) => routine.color)} />}
             {editingRoutineId !== null && (() => {
               const routine = routines.find((item) => item.id === editingRoutineId);
-              return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} /> : null;
+              return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
             })()}
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</button></div></div>
@@ -852,7 +852,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
   </section>;
 }
 
-function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; timeFormat: TimeFormat }) {
+function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat, usedEmojis, usedColors }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; timeFormat: TimeFormat; usedEmojis: string[]; usedColors: string[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   const stepLockRef = useRef(false);
   const stepTimerRef = useRef<number | undefined>(undefined);
@@ -865,7 +865,20 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
   const [previewColor, setPreviewColor] = useState(COLORS[8]);
   const [previewLists, setPreviewLists] = useState<RoutineListDraft[]>([]);
   const [previewAmounts, setPreviewAmounts] = useState<RoutineAmount[]>([]);
+  const [hideUsedEmojis, setHideUsedEmojis] = useState(false);
+  const [hideUsedColors, setHideUsedColors] = useState(false);
   const trackingMode = trackingModeFor(previewLists, previewAmounts);
+  const usedColorKeys = useMemo(() => new Set(usedColors.map((color) => color.toLowerCase())), [usedColors]);
+  const availableEmojis = hideUsedEmojis ? EMOJIS.filter((emoji) => !usedEmojis.includes(emoji)) : EMOJIS;
+  const availableColors = hideUsedColors ? COLORS.filter((color) => !usedColorKeys.has(color.toLowerCase())) : COLORS;
+  const toggleUsedEmojis = (checked: boolean) => {
+    setHideUsedEmojis(checked);
+    if (checked && usedEmojis.includes(previewEmoji)) setPreviewEmoji(EMOJIS.find((emoji) => !usedEmojis.includes(emoji)) ?? previewEmoji);
+  };
+  const toggleUsedColors = (checked: boolean) => {
+    setHideUsedColors(checked);
+    if (checked && usedColorKeys.has(previewColor.toLowerCase())) setPreviewColor(COLORS.find((color) => !usedColorKeys.has(color.toLowerCase())) ?? previewColor);
+  };
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -947,8 +960,9 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
         <TrackingBuilder lists={previewLists} amounts={previewAmounts} onListsChange={setPreviewLists} onAmountsChange={setPreviewAmounts} />
       </section>
       <section className="wizard-step" hidden={step !== 2} aria-label="Appearance and schedule">
-        <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
-        <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+        <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{availableEmojis.map((emoji) => <label key={emoji}><input type="radio" name="emoji" value={emoji} checked={previewEmoji === emoji} onChange={(event) => { setPreviewEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
+        <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{availableColors.map((color) => <label key={color}><input type="radio" name="color" value={color} checked={previewColor.toLowerCase() === color.toLowerCase()} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+        <UniqueChoiceToggles hideUsedEmojis={hideUsedEmojis} hideUsedColors={hideUsedColors} onEmojisChange={toggleUsedEmojis} onColorsChange={toggleUsedColors} />
         <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
         <DayPlanSettings scheduledDays={selectedDays} />
       </section>
@@ -964,11 +978,44 @@ function AddRoutineForm({ onSubmit, onCancel, saving, timeFormat }: { onSubmit: 
   </div>;
 }
 
-function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
+function UniqueChoiceToggles({ hideUsedEmojis, hideUsedColors, onEmojisChange, onColorsChange }: { hideUsedEmojis: boolean; hideUsedColors: boolean; onEmojisChange: (checked: boolean) => void; onColorsChange: (checked: boolean) => void }) {
+  return <fieldset className="choice-uniqueness">
+    <legend>Keep choices unique <small>Optional</small></legend>
+    <div className="choice-uniqueness-grid">
+      <label className="choice-toggle">
+        <input type="checkbox" checked={hideUsedEmojis} onChange={(event) => onEmojisChange(event.target.checked)} />
+        <span className="toggle-track"><i /></span>
+        <span><strong>Don’t reuse icons</strong><small>Hide icons already in use</small></span>
+      </label>
+      <label className="choice-toggle">
+        <input type="checkbox" checked={hideUsedColors} onChange={(event) => onColorsChange(event.target.checked)} />
+        <span className="toggle-track"><i /></span>
+        <span><strong>Don’t reuse colors</strong><small>Hide colors already in use</small></span>
+      </label>
+    </div>
+  </fieldset>;
+}
+
+function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis, usedColors }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; usedEmojis: string[]; usedColors: string[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [selectedDays, setSelectedDays] = useState(() => [...routine.days]);
   const [lists, setLists] = useState<RoutineListDraft[]>(() => routine.lists.map((list) => ({ ...list, items: routine.items.filter((item) => item.listKey === list.key).map((item) => item.title).join("\n") })));
   const [amounts, setAmounts] = useState<RoutineAmount[]>(() => routine.amounts);
+  const [selectedEmoji, setSelectedEmoji] = useState(routine.emoji);
+  const [selectedColor, setSelectedColor] = useState(routine.color);
+  const [hideUsedEmojis, setHideUsedEmojis] = useState(false);
+  const [hideUsedColors, setHideUsedColors] = useState(false);
+  const usedColorKeys = useMemo(() => new Set(usedColors.map((color) => color.toLowerCase())), [usedColors]);
+  const availableEmojis = hideUsedEmojis ? EMOJIS.filter((emoji) => !usedEmojis.includes(emoji)) : EMOJIS;
+  const availableColors = hideUsedColors ? COLORS.filter((color) => !usedColorKeys.has(color.toLowerCase())) : COLORS;
+  const toggleUsedEmojis = (checked: boolean) => {
+    setHideUsedEmojis(checked);
+    if (checked && usedEmojis.includes(selectedEmoji)) setSelectedEmoji(EMOJIS.find((emoji) => !usedEmojis.includes(emoji)) ?? selectedEmoji);
+  };
+  const toggleUsedColors = (checked: boolean) => {
+    setHideUsedColors(checked);
+    if (checked && usedColorKeys.has(selectedColor.toLowerCase())) setSelectedColor(COLORS.find((color) => !usedColorKeys.has(color.toLowerCase())) ?? selectedColor);
+  };
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -998,8 +1045,9 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
       <TimeField defaultValue={routine.time} />
       <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       <TrackingBuilder lists={lists} amounts={amounts} onListsChange={setLists} onAmountsChange={setAmounts} />
-      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={emoji === routine.emoji} onChange={(event) => keepModalAligned(event.currentTarget)} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
-      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={color.toLowerCase() === routine.color.toLowerCase()} onChange={(event) => keepModalAligned(event.currentTarget)} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{availableEmojis.map((emoji) => <label key={emoji}><input type="radio" name="emoji" value={emoji} checked={selectedEmoji === emoji} onChange={(event) => { setSelectedEmoji(emoji); keepModalAligned(event.currentTarget); }} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{availableColors.map((color) => <label key={color}><input type="radio" name="color" value={color} checked={selectedColor.toLowerCase() === color.toLowerCase()} onChange={(event) => { setSelectedColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
+      <UniqueChoiceToggles hideUsedEmojis={hideUsedEmojis} hideUsedColors={hideUsedColors} onEmojisChange={toggleUsedEmojis} onColorsChange={toggleUsedColors} />
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
       <DayPlanSettings scheduledDays={selectedDays} variants={routine.dayVariants} />
     </div>
@@ -1070,10 +1118,13 @@ function ScrollablePicker({ label, children, className = "", scrollClassName = "
     if (!scroller) return;
     const frame = window.requestAnimationFrame(updateIndicator);
     const observer = new ResizeObserver(updateIndicator);
+    const mutationObserver = new MutationObserver(() => window.requestAnimationFrame(updateIndicator));
     observer.observe(scroller);
+    mutationObserver.observe(scroller, { childList: true });
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
+      mutationObserver.disconnect();
     };
   }, []);
 
