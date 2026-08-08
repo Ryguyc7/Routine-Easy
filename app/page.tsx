@@ -432,26 +432,32 @@ function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; on
 }
 
 function RoutineRow({ routine, completed, completedItemIds, quantityCount: count, onToggle, onToggleItem, onSetQuantity }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; quantityCount: number; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetQuantity: (count: number) => void }) {
-  const [expanded, setExpanded] = useState(routine.trackingMode === "checklist" && routine.items.length > 0 && !completed);
+  const hasDetails = (routine.trackingMode === "checklist" && routine.items.length > 0) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
+  const hasMultiple = (routine.trackingMode === "checklist" && routine.items.length > 1) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
+  const [expanded, setExpanded] = useState(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
+  const progressValue = routine.trackingMode === "quantity"
+    ? Math.min(100, Math.round((count / routine.targetCount) * 100))
+    : routine.trackingMode === "checklist" && routine.items.length
+      ? Math.round((completedCount / routine.items.length) * 100)
+      : 0;
   const detail = routine.trackingMode === "quantity"
     ? `${count}/${routine.targetCount} ${routine.unit}`
     : routine.trackingMode === "checklist"
       ? `${completedCount}/${routine.items.length} items`
       : "";
   const handleMainClick = () => {
-    if (routine.trackingMode === "checklist") setExpanded((value) => !value);
-    else if (routine.trackingMode === "quantity") onSetQuantity(Math.min(count + 1, routine.targetCount));
+    if (hasDetails) setExpanded((value) => !value);
     else onToggle();
   };
   return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
-    <button className="routine-main" onClick={handleMainClick} aria-expanded={routine.trackingMode === "checklist" ? expanded : undefined}>
+    <button className="routine-main" onClick={handleMainClick} aria-expanded={hasDetails ? expanded : undefined}>
       <span className="routine-emoji">{routine.emoji}</span>
       <span className="routine-info"><strong>{routine.name}</strong><small>{routine.time || "Anytime"}{detail ? ` · ${detail}` : ""}</small></span>
-      {routine.trackingMode === "checklist" && routine.items.length > 0 && <span className="expand-chevron" aria-hidden="true" />}
+      {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
-    {routine.trackingMode === "quantity" && <QuantityTracker routine={routine} count={count} onChange={onSetQuantity} />}
+    {routine.trackingMode === "quantity" && expanded && <QuantityTracker routine={routine} count={count} onChange={onSetQuantity} />}
     {routine.trackingMode === "checklist" && routine.items.length > 0 && expanded && <div className="routine-checklist">
       {routine.items.map((item) => {
         const checked = completedItemIds.has(item.id);
@@ -459,6 +465,9 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
           <span className="item-check">✓</span><span>{item.title}</span>
         </button>;
       })}
+    </div>}
+    {hasMultiple && !expanded && <div className="collapsed-progress" role="progressbar" aria-label={`${routine.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}>
+      <span style={{ width: `${progressValue}%` }} />
     </div>}
   </article>;
 }

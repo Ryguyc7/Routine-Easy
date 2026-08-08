@@ -144,6 +144,8 @@ button { color: inherit; }
 .quantity-pill button span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 850; }
 .routine-row.mode-quantity.completed { opacity: 1; }
 .routine-row.mode-quantity.completed .routine-info strong { text-decoration: none; }
+.collapsed-progress { position: absolute; inset: auto 0 0 4px; height: 4px; overflow: hidden; background: color-mix(in srgb, var(--routine) 11%, #f4f2f5); }
+.collapsed-progress span { display: block; width: 0; height: 100%; border-radius: 0 999px 999px 0; background: var(--routine); box-shadow: 0 0 8px color-mix(in srgb, var(--routine) 35%, transparent); transition: width .28s ease; }
 
 .primary-button, .secondary-button { border: 0; padding: 11px 17px; border-radius: 10px; font-weight: 750; font-size: 13px; cursor: pointer; transition: .18s ease; }
 .primary-button { color: #fff; background: var(--purple); box-shadow: 0 8px 18px rgba(108,92,231,.2); }
