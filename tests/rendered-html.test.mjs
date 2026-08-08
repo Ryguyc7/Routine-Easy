@@ -122,6 +122,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
+  assert.match(page, /routineez-logo\.png/);
   assert.match(page, /mobile-profile/);
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);

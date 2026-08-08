@@ -433,7 +433,7 @@ export default function Home() {
     <main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="RoutineEZ home">
-          <span className="brand-mark"><i /><i /><i /></span>
+          <img className="brand-logo" src="/routineez-logo.png" alt="" />
           <span>RoutineEZ</span>
         </div>
         <nav className="side-nav" aria-label="Main navigation">
@@ -452,7 +452,7 @@ export default function Home() {
       <section className="content">
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
-          <div className="mobile-wordmark" aria-label="RoutineEZ">Routine<span>EZ</span></div>
+          <div className="mobile-wordmark" aria-label="RoutineEZ"><img src="/routineez-logo.png" alt="" />Routine<span>EZ</span></div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
@@ -605,7 +605,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
     <div className="onboarding-glow glow-two" aria-hidden="true" />
     <section className="onboarding-card" aria-labelledby="onboarding-title">
       <header className="onboarding-top">
-        <div className="brand" aria-label="RoutineEZ"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div>
+        <div className="brand" aria-label="RoutineEZ"><img className="brand-logo" src="/routineez-logo.png" alt="" /><span>RoutineEZ</span></div>
         <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
       </header>
       <div className="onboarding-layout">
@@ -633,7 +633,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
 }
 
 function OnboardingSplash() {
-  return <main className="onboarding-splash" aria-label="Loading RoutineEZ"><div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div></main>;
+  return <main className="onboarding-splash" aria-label="Loading RoutineEZ"><div className="brand"><img className="brand-logo" src="/routineez-logo.png" alt="" /><span>Routine<span>EZ</span></span></div></main>;
 }
 
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
