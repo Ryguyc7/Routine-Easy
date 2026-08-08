@@ -573,7 +573,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
   <form className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label="Add a routine">
     <div className="form-grid">
       <label className="field wide"><span>Routine name</span><input name="name" placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
-      <label className="field"><span>Time <small>Optional</small></span><input name="time" type="time" /></label>
+      <TimeField />
       <DateRangeSettings />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
@@ -607,7 +607,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
   <form className="add-card checklist-editor edit-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
     <div className="add-card-header"><div><span className="eyebrow">How {routine.name} works</span><h2>Routine options</h2><p>Choose the check-off style that fits this routine.</p></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
     <div className="form-grid options-grid">
-      <label className="field"><span>Time <small>Optional</small></span><input name="time" type="time" defaultValue={routine.time} /></label>
+      <TimeField defaultValue={routine.time} />
       <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} autoFocus /></label>}
@@ -652,6 +652,11 @@ function DateRangeSettings({ startDate = "", endDate = "" }: { startDate?: strin
       <label className="field"><span>Stop date</span><span className="date-input-wrap"><input name="endDate" type="date" value={end} min={start || undefined} onChange={(event) => setEnd(event.target.value)} /><button type="button" onClick={() => setEnd("")} disabled={!end}>Clear</button></span></label>
     </div>}
   </section>;
+}
+
+function TimeField({ defaultValue = "" }: { defaultValue?: string }) {
+  const [time, setTime] = useState(defaultValue);
+  return <label className="field"><span>Time <small>Optional</small></span><span className="date-input-wrap time-input-wrap"><input name="time" type="time" value={time} onChange={(event) => setTime(event.target.value)} /><button type="button" onClick={() => setTime("")} disabled={!time}>Clear</button></span></label>;
 }
 
 function DayPlanSettings({ scheduledDays, variants = {} }: { scheduledDays: number[]; variants?: Partial<Record<number, string>> }) {

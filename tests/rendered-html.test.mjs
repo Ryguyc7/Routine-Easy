@@ -30,6 +30,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Active dates/);
   assert.match(page, /name="startDate"/);
   assert.match(page, /name="endDate"/);
+  assert.match(page, /function TimeField/);
+  assert.match(page, /onClick=\{\(\) => setTime\(""\)\}/);
   assert.match(page, /picker-scroll/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
