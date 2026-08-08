@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
@@ -666,7 +666,11 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
 
 function ScrollablePicker({ label, children }: { label: string; children: ReactNode }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLButtonElement>(null);
+  const dragOffsetRef = useRef(0);
   const [thumb, setThumb] = useState({ left: 0, width: 100 });
+  const [dragging, setDragging] = useState(false);
 
   const updateIndicator = () => {
     const scroller = scrollerRef.current;
@@ -676,6 +680,43 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
     const width = Math.max(22, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100));
     const left = maxScroll ? (boundedScroll / maxScroll) * (100 - width) : 0;
     setThumb({ left, width });
+  };
+
+  const scrollFromThumb = (clientX: number) => {
+    const scroller = scrollerRef.current;
+    const track = trackRef.current;
+    const thumbButton = thumbRef.current;
+    if (!scroller || !track || !thumbButton) return;
+    const trackRect = track.getBoundingClientRect();
+    const maxThumbLeft = Math.max(0, track.clientWidth - thumbButton.offsetWidth);
+    const nextThumbLeft = Math.min(maxThumbLeft, Math.max(0, clientX - trackRect.left - dragOffsetRef.current));
+    const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    scroller.scrollLeft = maxThumbLeft ? (nextThumbLeft / maxThumbLeft) * maxScroll : 0;
+  };
+
+  const beginThumbDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    dragOffsetRef.current = event.clientX - event.currentTarget.getBoundingClientRect().left;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  };
+
+  const moveThumb = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) scrollFromThumb(event.clientX);
+  };
+
+  const endThumbDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setDragging(false);
+  };
+
+  const moveThumbWithKeyboard = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    scroller.scrollTo({ left: scroller.scrollLeft + direction * Math.max(48, scroller.clientWidth * .45), behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -692,7 +733,9 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
 
   return <div className="picker-shell">
     <div ref={scrollerRef} className="picker-scroll" onScroll={updateIndicator} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
-    <div className="picker-scrollbar" aria-hidden="true"><span style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} /></div>
+    <div ref={trackRef} className="picker-scrollbar">
+      <button ref={thumbRef} type="button" className={`picker-thumb${dragging ? " dragging" : ""}`} style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} aria-label={`Scroll ${label} choices`} onPointerDown={beginThumbDrag} onPointerMove={moveThumb} onPointerUp={endThumbDrag} onPointerCancel={endThumbDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={moveThumbWithKeyboard} />
+    </div>
   </div>;
 }
 
