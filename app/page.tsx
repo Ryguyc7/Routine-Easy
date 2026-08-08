@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
@@ -27,7 +27,7 @@ type QuantityCompletion = { routineId: number; date: string; count: number };
 type Tab = "today" | "calendar" | "routines";
 type OnboardingState = "checking" | "show" | "done";
 
-const COLORS = ["#6C5CE7", "#FF8A65", "#F4B942", "#49A078", "#4D96FF", "#EC6F91", "#00A896", "#8E7DBE", "#E76F51", "#2A9D8F", "#8D6E63", "#EF476F"];
+const COLORS = ["#6C5CE7", "#FF8A65", "#F4B942", "#49A078", "#4D96FF", "#EC6F91", "#00A896", "#8E7DBE", "#E76F51", "#2A9D8F", "#8D6E63", "#EF476F", "#3A86FF", "#8338EC", "#6A994E", "#FFBE0B"];
 const EMOJIS = ["✨", "💊", "🏋️", "🥣", "🥗", "🍲", "🧘", "💧", "🍳", "🥑", "☕", "🍎", "🥕", "🥪", "🍝", "🥤", "🏃", "🚶", "🚴", "📚", "🛏️", "🧹", "🐕", "🌿", "🧴", "🪥"];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_FULL_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -616,8 +616,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>Checklist items <small>One per line</small></span><textarea name="checklist" placeholder={"Warm up\nMain workout\nCool down"} maxLength={1000} /></label>}
       {trackingMode === "quantity" && <QuantitySettings />}
-      <fieldset className="emoji-picker"><legend>Icon</legend><div className="picker-scroll">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} /><span>{emoji}</span></label>)}</div></fieldset>
-      <fieldset className="color-picker"><legend>Color</legend><div className="picker-scroll">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} /><span style={{ background: color }} /></label>)}</div></fieldset>
+      <fieldset className="emoji-picker"><legend>Icon</legend><ScrollablePicker label="Icon">{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} /><span>{emoji}</span></label>)}</ScrollablePicker></fieldset>
+      <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
       <DayPlanSettings scheduledDays={selectedDays} />
     </div>
@@ -654,6 +654,31 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Saving…" : "Save options"}</button></div>
   </form>
+  </div>;
+}
+
+function ScrollablePicker({ label, children }: { label: string; children: ReactNode }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [hasMore, setHasMore] = useState(true);
+
+  const updateHint = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    setHasMore(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 6);
+  };
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(updateHint);
+    window.addEventListener("resize", updateHint);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateHint);
+    };
+  }, []);
+
+  return <div className={`picker-shell ${hasMore ? "has-more" : "at-end"}`}>
+    <div ref={scrollerRef} className="picker-scroll" onScroll={updateHint} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
+    <span className="picker-scroll-hint" aria-hidden="true"><b>More</b><i /></span>
   </div>;
 }
 

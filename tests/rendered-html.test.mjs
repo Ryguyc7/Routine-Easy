@@ -35,6 +35,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /function TimeField/);
   assert.match(page, /onClick=\{\(\) => setTime\(""\)\}/);
   assert.match(page, /picker-scroll/);
+  assert.match(page, /function ScrollablePicker/);
+  assert.match(page, /Scroll horizontally for more/);
+  assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /repeat\(3, minmax\(0, 1fr\)\)/);
