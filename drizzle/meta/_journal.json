@@ -43,6 +43,13 @@
       "when": 1786222020808,
       "tag": "0005_public_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786222653861,
+      "tag": "0006_magenta_nomad",
+      "breakpoints": true
     }
   ]
 }

@@ -144,6 +144,9 @@ button { color: inherit; }
 .routine-checklist { flex: 0 0 100%; display: grid; gap: 7px; padding: 4px 17px 15px 78px; }
 .routine-checklist::before { content: ""; height: 1px; margin: 0 0 4px; background: #f0eef3; }
 .quantity-trackers + .routine-checklist::before { display: none; }
+.routine-list-group { display: grid; gap: 5px; }
+.routine-list-group + .routine-list-group { margin-top: 5px; padding-top: 9px; border-top: 1px solid #f0eef3; }
+.routine-list-name { margin: 0 8px 1px; color: #575762; font-size: 11px; }
 .routine-checklist button { display: flex; align-items: center; gap: 10px; min-height: 35px; padding: 5px 8px; border: 0; border-radius: 9px; background: transparent; color: #575762; font-size: 12px; text-align: left; cursor: pointer; transition: background .18s ease, color .18s ease; }
 .routine-checklist button:hover { background: color-mix(in srgb, var(--routine) 7%, #fff); }
 .routine-checklist .item-check { display: grid; place-items: center; width: 20px; height: 20px; flex: 0 0 auto; border: 1.5px solid #d8d6dd; border-radius: 6px; color: transparent; font-size: 11px; }
@@ -257,6 +260,9 @@ button { color: inherit; }
 .preview-list::before { content: ""; display: block; height: 1px; margin: 0 0 4px; background: #f0eef3; }
 .preview-amount + .preview-list::before { display: none; }
 .preview-list { overflow: visible; }
+.preview-list-group { display: grid; gap: 4px; }
+.preview-list-group + .preview-list-group { margin-top: 6px; padding-top: 9px; border-top: 1px solid #f0eef3; }
+.preview-list-group > strong { margin: 0 8px 1px; color: #575762; font-size: 11px; }
 .preview-list button { width: 100%; min-height: 35px; padding: 5px 8px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 9px; background: transparent; color: #575762; font-size: 12px; text-align: left; cursor: pointer; }
 .preview-list button > span { width: 20px; height: 20px; flex: 0 0 auto; display: grid; place-items: center; border: 1.5px solid #d8d6dd; border-radius: 6px; color: transparent; background: #fff; font-size: 10px; }
 .preview-list button.checked > span { border-color: var(--preview); color: #fff; background: var(--preview); }
@@ -296,7 +302,7 @@ button { color: inherit; }
 .wizard-step { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 18px; min-width: 0; animation: wizard-step-in .22s ease both; }
 .wizard-step[hidden] { display: none; }
 .wizard-step > * { min-width: 0; max-width: 100%; }
-.wizard-step .wide, .wizard-step .date-range-settings, .wizard-step .tracking-picker, .wizard-step .checklist-field, .wizard-step .quantity-settings, .wizard-step .day-picker, .wizard-step .day-plan-settings { grid-column: 1 / -1; }
+.wizard-step .wide, .wizard-step .date-range-settings, .wizard-step .tracking-builder, .wizard-step .day-picker, .wizard-step .day-plan-settings { grid-column: 1 / -1; }
 .wizard-actions { min-height: 66px; }
 @keyframes wizard-step-in { from { opacity: 0; transform: translateX(8px); } }
 .edit-routine-modal .add-card-header { position: sticky; top: -23px; z-index: 3; margin: -23px -23px 22px; padding: 23px 23px 16px; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
@@ -315,35 +321,28 @@ button { color: inherit; }
 .field input, .field textarea { width: 100%; border: 1px solid #dfdde2; padding: 11px 12px; border-radius: 9px; outline: none; color: var(--ink); background: #fff; }
 .field textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
 .field input:focus, .field textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--lavender); }
-.checklist-field { grid-column: 1 / -1; }
-.tracking-picker { width: 100%; min-width: 0; grid-column: 1 / -1; padding: 0; border: 0; }
-.tracking-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
-.tracking-base { position: relative; display: flex; align-items: center; gap: 11px; min-height: 62px; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--purple) 23%, #dfdde2); border-radius: 12px; background: color-mix(in srgb, var(--purple) 4%, #fff); }
-.tracking-base > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
-.tracking-base strong { color: var(--ink); font-size: 11px; }
-.tracking-base small { color: #9999a2; font-size: 9px; font-weight: 600; line-height: 1.3; }
-.tracking-base b { margin-left: auto; padding: 5px 7px; border-radius: 999px; color: var(--purple); background: var(--lavender); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .55px; }
-.tracking-addon-label { margin: 12px 1px 8px; color: #8f8d97; font-size: 9px; font-weight: 700; }
-.tracking-options { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
-.tracking-options.tracking-addons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.tracking-options label { width: 100%; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px; border: 1px solid #dfdde2; border-radius: 12px; background: #fff; cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
-.tracking-options label.selected { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 5%, #fff); box-shadow: 0 0 0 3px var(--lavender); }
-.tracking-options input { position: absolute; opacity: 0; pointer-events: none; }
-.tracking-icon { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 auto; border-radius: 9px; color: var(--purple); background: var(--lavender); font-size: 15px; font-weight: 800; }
-.tracking-options label > span:last-child { display: grid; gap: 3px; min-width: 0; }
-.tracking-options strong { color: var(--ink); font-size: 11px; }
-.tracking-options small { color: #9999a2; font-size: 9px; font-weight: 600; line-height: 1.25; }
-.quantity-settings { grid-column: 1 / -1; min-width: 0; display: grid; gap: 11px; padding: 15px; border: 1px solid color-mix(in srgb, var(--purple) 22%, #e5e2e9); border-radius: 13px; background: color-mix(in srgb, var(--purple) 3%, #fff); }
-.quantity-settings > legend { padding: 0 5px; font-size: 12px; font-weight: 800; }
-.amount-settings-list { display: grid; gap: 10px; }
-.amount-setting-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 82px 28px; align-items: end; gap: 9px; }
-.amount-setting-row .field { min-width: 0; }
-.amount-setting-row .field input { min-width: 0; }
-.remove-amount { width: 28px; height: 41px; display: grid; place-items: center; padding: 0; border: 0; color: #e75c67; background: transparent; cursor: pointer; }
-.remove-amount svg { width: 16px; height: 16px; }
-.add-amount-button { justify-self: start; min-height: 34px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--purple) 28%, #ddd); border-radius: 10px; color: var(--purple); background: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
-.add-amount-button:disabled { opacity: .45; cursor: default; }
-.quantity-settings > p { margin: -1px 0 0; color: #93919b; font-size: 10px; line-height: 1.4; }
+.tracking-builder { width: 100%; min-width: 0; grid-column: 1 / -1; display: grid; gap: 10px; padding: 0; border: 0; }
+.tracking-builder > legend { margin-bottom: 1px; color: #5e5e68; font-size: 11px; font-weight: 750; }
+.tracking-add-wrap { position: relative; justify-self: start; }
+.tracking-add-button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 10px; color: #fff; background: var(--purple); box-shadow: 0 6px 15px rgba(108,92,231,.18); font-size: 11px; font-weight: 800; cursor: pointer; }
+.tracking-add-menu { position: absolute; z-index: 5; top: calc(100% + 6px); left: 0; width: 238px; display: grid; gap: 5px; padding: 7px; border: 1px solid #e3dfe9; border-radius: 12px; background: #fff; box-shadow: 0 14px 34px rgba(39,32,69,.16); }
+.tracking-add-menu > button { display: flex; align-items: center; gap: 10px; padding: 9px; border: 0; border-radius: 9px; background: transparent; text-align: left; cursor: pointer; }
+.tracking-add-menu > button:hover { background: var(--lavender); }
+.tracking-add-menu > button:disabled { opacity: .45; cursor: default; }
+.tracking-add-menu > button > span { display: grid; place-items: center; width: 29px; height: 29px; flex: 0 0 auto; border-radius: 8px; color: var(--purple); background: var(--lavender); font-size: 14px; }
+.tracking-add-menu > button > div { display: grid; gap: 2px; }
+.tracking-add-menu strong { color: var(--ink); font-size: 10px; }
+.tracking-add-menu small { color: #96949e; font-size: 8px; }
+.tracking-empty-note { margin: 0 1px; color: #9996a0; font-size: 9px; line-height: 1.4; }
+.tracking-blocks { display: grid; gap: 9px; }
+.tracking-block { min-width: 0; display: grid; gap: 10px; padding: 11px; border: 1px solid color-mix(in srgb, var(--purple) 21%, #e2dfe6); border-radius: 12px; background: color-mix(in srgb, var(--purple) 2.5%, #fff); }
+.tracking-block > header { display: flex; align-items: center; gap: 7px; }
+.tracking-block > header > span { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 7px; color: var(--purple); background: var(--lavender); }
+.tracking-block > header > strong { color: var(--ink); font-size: 10px; }
+.tracking-block > header > button { width: 27px; height: 27px; margin-left: auto; display: grid; place-items: center; padding: 0; border: 0; color: #e75c67; background: transparent; cursor: pointer; }
+.tracking-block > header svg { width: 15px; height: 15px; }
+.tracking-list-block textarea { min-height: 72px; }
+.tracking-amount-fields { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 9px; }
 .date-range-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
 .date-range-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .date-range-toggle > span { display: grid; gap: 3px; }
@@ -369,7 +368,6 @@ button { color: inherit; }
 .day-plan-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px 14px; margin-top: 15px; padding-top: 14px; border-top: 1px solid #ece9ef; }
 .day-plan-grid > p { grid-column: 1 / -1; margin: 0; color: #9996a0; font-size: 10px; }
 .options-grid { grid-template-columns: 1fr; }
-.options-grid .tracking-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .emoji-picker, .color-picker, .day-picker { min-width: 0; max-width: 100%; border: 0; padding: 0; margin: 0; }
 .emoji-picker legend, .color-picker legend, .day-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .picker-shell { position: relative; min-width: 0; width: 100%; }
@@ -577,14 +575,9 @@ button { color: inherit; }
   .add-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
   .edit-routine-modal .add-card-header { top: -20px; margin: -20px -20px 20px; padding: 20px 20px 14px; }
   .edit-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
-  .tracking-options, .options-grid .tracking-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-  .tracking-options.tracking-addons, .options-grid .tracking-options.tracking-addons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tracking-options label { min-width: 0; min-height: 70px; padding: 8px 5px; flex-direction: column; justify-content: center; gap: 6px; text-align: center; }
-  .tracking-options label > span:last-child { display: block; }
-  .tracking-options strong { display: block; font-size: 10px; white-space: nowrap; }
-  .tracking-options small { display: none; }
   .tracking-icon { width: 28px; height: 28px; font-size: 13px; }
-  .amount-setting-row { grid-template-columns: minmax(0, 1fr) 76px 26px; gap: 7px; }
+  .tracking-add-menu { width: 224px; }
+  .tracking-amount-fields { grid-template-columns: minmax(0, 1fr) 76px; gap: 7px; }
   .day-plan-grid { grid-template-columns: 1fr; }
   .date-range-fields { grid-template-columns: 1fr; }
   .day-picker { grid-column: auto; }
@@ -709,9 +702,6 @@ button { color: inherit; }
 .calendar-toolbar > button:first-child { color: var(--coral); background: color-mix(in srgb, var(--coral) 6%, #fff); }
 .calendar-toolbar > button:last-child { color: var(--sky); background: color-mix(in srgb, var(--sky) 6%, #fff); }
 .calendar-toolbar button.calendar-today-button { color: #a96c00; border-color: color-mix(in srgb, var(--gold) 34%, #e4dfd5); background: color-mix(in srgb, var(--gold) 13%, #fff); }
-.tracking-options label:nth-child(1).selected { border-color: var(--purple); box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple) 12%, #fff); }
-.tracking-options label:nth-child(2).selected { border-color: var(--sky); background: color-mix(in srgb, var(--sky) 5%, #fff); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky) 12%, #fff); }
-.tracking-options label:nth-child(3).selected { border-color: var(--coral); background: color-mix(in srgb, var(--coral) 5%, #fff); box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 12%, #fff); }
 .day-picker label:nth-of-type(4n + 1) input:checked + span { background: var(--purple); border-color: var(--purple); }
 .day-picker label:nth-of-type(4n + 2) input:checked + span { background: var(--sky); border-color: var(--sky); }
 .day-picker label:nth-of-type(4n + 3) input:checked + span { color: #5b4300; background: var(--gold); border-color: var(--gold); }
@@ -737,8 +727,8 @@ button, input, textarea, select { font-family: inherit; }
 .side-nav button, .bottom-nav button { font-weight: 600; }
 .bottom-nav button.active, .bottom-nav .calendar-nav-button .nav-label { font-weight: 700; }
 .primary-button, .secondary-button, .desktop-routine-add, .onboarding-cta, .profile-actions button, .list-button, .delete-confirm-button { font-weight: 650; }
-.field, .tracking-picker legend, .emoji-picker legend, .color-picker legend, .day-picker legend { font-weight: 600; }
-.tracking-options strong, .day-plan-toggle strong { font-weight: 600; }
+.field, .tracking-builder legend, .emoji-picker legend, .color-picker legend, .day-picker legend { font-weight: 600; }
+.day-plan-toggle strong { font-weight: 600; }
 .weekday-row span, .day-number { font-weight: 600; }
 .progress-number, .quantity-caption strong, .today-variant { font-weight: 700; }
 .date-tile span, .date-tile small, .calendar-toolbar button.calendar-today-button { font-weight: 700; }

@@ -17,6 +17,7 @@ export async function ensureDatabase() {
     target_count INTEGER NOT NULL DEFAULT 1,
     unit TEXT NOT NULL DEFAULT 'times',
     amount_config TEXT NOT NULL DEFAULT '[]',
+    list_config TEXT NOT NULL DEFAULT '[]',
     day_variants TEXT NOT NULL DEFAULT '{}',
     start_date TEXT NOT NULL DEFAULT '',
     end_date TEXT NOT NULL DEFAULT ''
@@ -27,6 +28,7 @@ export async function ensureDatabase() {
   if (!existingColumns.has("target_count")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN target_count INTEGER NOT NULL DEFAULT 1").run();
   if (!existingColumns.has("unit")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN unit TEXT NOT NULL DEFAULT 'times'").run();
   if (!existingColumns.has("amount_config")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN amount_config TEXT NOT NULL DEFAULT '[]'").run();
+  if (!existingColumns.has("list_config")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN list_config TEXT NOT NULL DEFAULT '[]'").run();
   if (!existingColumns.has("day_variants")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN day_variants TEXT NOT NULL DEFAULT '{}'").run();
   if (!existingColumns.has("start_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN start_date TEXT NOT NULL DEFAULT ''").run();
   if (!existingColumns.has("end_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN end_date TEXT NOT NULL DEFAULT ''").run();
@@ -41,8 +43,11 @@ export async function ensureDatabase() {
     owner_key TEXT NOT NULL,
     routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
+    list_key TEXT NOT NULL DEFAULT 'list-1',
     position INTEGER NOT NULL DEFAULT 0
   )`).run();
+  const itemColumns = await env.DB.prepare("PRAGMA table_info(routine_items)").all<{ name: string }>();
+  if (!new Set(itemColumns.results.map((column) => column.name)).has("list_key")) await env.DB.prepare("ALTER TABLE routine_items ADD COLUMN list_key TEXT NOT NULL DEFAULT 'list-1'").run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS item_completions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,
@@ -79,6 +84,12 @@ export async function ensureDatabase() {
   for (const routine of legacyAmounts.results) {
     const amountConfig = JSON.stringify([{ key: "amount-1", name: routine.unit || "pills", targetCount: routine.targetCount || 4 }]);
     await env.DB.prepare("UPDATE routines SET amount_config = ? WHERE id = ? AND owner_key = ?").bind(amountConfig, routine.id, routine.ownerKey).run();
+  }
+  const legacyLists = await env.DB.prepare(`SELECT id, owner_key AS ownerKey
+    FROM routines WHERE tracking_mode IN ('checklist', 'hybrid') AND list_config = '[]'`).all<{ id: number; ownerKey: string }>();
+  for (const routine of legacyLists.results) {
+    const item = await env.DB.prepare("SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ? LIMIT 1").bind(routine.ownerKey, routine.id).first();
+    if (item) await env.DB.prepare("UPDATE routines SET list_config = ? WHERE id = ? AND owner_key = ?").bind(JSON.stringify([{ key: "list-1", name: "Checklist" }]), routine.id, routine.ownerKey).run();
   }
   await env.DB.prepare(`INSERT OR IGNORE INTO amount_completions (owner_key, routine_id, amount_key, date, count)
     SELECT owner_key, routine_id, 'amount-1', date, count FROM quantity_completions`).run();

@@ -12,6 +12,7 @@ export const routines = sqliteTable("routines", {
   targetCount: integer("target_count").notNull().default(1),
   unit: text("unit").notNull().default("times"),
   amountConfig: text("amount_config").notNull().default("[]"),
+  listConfig: text("list_config").notNull().default("[]"),
   dayVariants: text("day_variants").notNull().default("{}"),
   startDate: text("start_date").notNull().default(""),
   endDate: text("end_date").notNull().default(""),
@@ -29,6 +30,7 @@ export const routineItems = sqliteTable("routine_items", {
   ownerKey: text("owner_key").notNull(),
   routineId: integer("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  listKey: text("list_key").notNull().default("list-1"),
   position: integer("position").notNull().default(0),
 }, (table) => [index("idx_routine_items_owner_routine_position").on(table.ownerKey, table.routineId, table.position)]);
 
