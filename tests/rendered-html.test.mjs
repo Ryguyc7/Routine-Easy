@@ -74,6 +74,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /trackingModeFor\(lists, amounts\)/);
   assert.match(page, /tracking-list-block/);
   assert.match(page, /tracking-amount-block/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /tracking-add-menu \{ position: static/);
   assert.match(page, /usesChecklist\(routine\.trackingMode\)[\s\S]*usesQuantity\(routine\.trackingMode\)/);
   assert.match(routinesRoute, /mode === "hybrid"/);
   assert.match(routinesRoute, /function cleanLists/);
