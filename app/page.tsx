@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
-import { LiquidButton } from "@/components/ui/liquid-glass-button";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -372,7 +371,7 @@ export default function Home() {
         <header className="mobile-header">
           <span className="mobile-header-spacer" aria-hidden="true" />
           <div className="mobile-wordmark" aria-label="RoutineEZ">Routine<span>EZ</span></div>
-          <LiquidButton size="icon" className="mobile-add" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></LiquidButton>
+          <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
@@ -449,7 +448,7 @@ export default function Home() {
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} /> : null;
             })()}
             <section className="routine-library">
-              <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><LiquidButton size="sm" className="desktop-routine-add" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</LiquidButton></div></div>
+              <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
                 {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => deleteRoutine(routine.id)} />)}
               </div>
@@ -486,7 +485,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
             <div><span className="benefit-icon coral">●</span><p><strong>Color-coded plans</strong><small>Your routines at a glance.</small></p></div>
             <div><span className="benefit-icon green">↗</span><p><strong>Gentle progress</strong><small>Small wins that add up.</small></p></div>
           </div>
-          <LiquidButton size="lg" className="onboarding-cta" onClick={() => onComplete(true)}><span>Build my first routine</span><i aria-hidden="true">→</i></LiquidButton>
+          <button className="onboarding-cta premium-action" onClick={() => onComplete(true)}><span>Build my first routine</span><i aria-hidden="true">→</i></button>
           <p className="onboarding-note">No pressure. Start with just one thing.</p>
         </div>
         <div className="onboarding-visual">
@@ -622,7 +621,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
       <DayPlanSettings scheduledDays={selectedDays} />
     </div>
-    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><LiquidButton className="primary-button" disabled={saving}>{saving ? "Adding…" : "Add routine"}</LiquidButton></div>
+    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
   </form>
   </div>;
 }
@@ -653,7 +652,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
       {trackingMode === "quantity" && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
       <DayPlanSettings scheduledDays={routine.days} variants={routine.dayVariants} />
     </div>
-    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><LiquidButton className="primary-button" disabled={saving}>{saving ? "Saving…" : "Save options"}</LiquidButton></div>
+    <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button premium-action" disabled={saving}>{saving ? "Saving…" : "Save options"}</button></div>
   </form>
   </div>;
 }
@@ -729,5 +728,5 @@ function LoadingRows() {
 }
 
 function EmptyToday({ onAdd }: { onAdd: () => void }) {
-  return <div className="empty-state"><span className="empty-state-icon" aria-hidden="true"><CalendarPlus2 /></span><h3>Your day is wide open</h3><p>Add a routine and it’ll appear here on the right days.</p><LiquidButton className="primary-button" onClick={onAdd}>Add your first routine</LiquidButton></div>;
+  return <div className="empty-state"><span className="empty-state-icon" aria-hidden="true"><CalendarPlus2 /></span><h3>Your day is wide open</h3><p>Add a routine and it’ll appear here on the right days.</p><button className="primary-button premium-action" onClick={onAdd}>Add your first routine</button></div>;
 }

@@ -49,10 +49,10 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: transparent; border: 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav \{[\s\S]*overflow: hidden;[\s\S]*border-radius: 22px/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav::before, \.bottom-nav::after/);
-  assert.match(page, /LiquidButton/);
-  assert.match(await readFile(new URL("../components/ui/liquid-glass-button.tsx", import.meta.url), "utf8"), /feDisplacementMap/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /21st\.dev liquid-glass surface, tuned to RoutineEZ/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-add \.(?:liquid-glass-surface)/);
+  assert.doesNotMatch(page, /LiquidButton|liquid-glass/);
+  assert.match(page, /premium-action/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Premium actions: solid, polished/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes routine-reveal/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
