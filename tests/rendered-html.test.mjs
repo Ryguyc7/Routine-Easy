@@ -49,6 +49,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: transparent; border: 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav \{[\s\S]*overflow: hidden;[\s\S]*border-radius: 22px/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav::before, \.bottom-nav::after/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Liquid-glass treatment adapted from the selected 21st\.dev button style/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /radial-gradient\(circle at 28% 0%/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
