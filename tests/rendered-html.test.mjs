@@ -39,6 +39,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Interactive routine preview/);
   assert.match(page, /preview-quantity/);
   assert.match(page, /preview-list/);
+  assert.doesNotMatch(page, /filter\(Boolean\)\.slice\(0, 8\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-live-preview \{[^}]*flex: 0 0 auto/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /preview-list \{ overflow: visible; \}/);
   assert.match(page, /setPreviewChecklist/);
   assert.match(page, /onValueChange=\{\(targetCount, unit\)/);
   assert.match(page, /Live preview/);

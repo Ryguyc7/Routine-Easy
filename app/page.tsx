@@ -609,7 +609,7 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
 }
 
 function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist, targetCount, unit }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; checklist: string; targetCount: number; unit: string }) {
-  const items = useMemo(() => checklist.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, 8), [checklist]);
+  const items = useMemo(() => checklist.split(/\r?\n/).map((item) => item.trim()).filter(Boolean), [checklist]);
   const [expanded, setExpanded] = useState(false);
   const [simpleDone, setSimpleDone] = useState(false);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
