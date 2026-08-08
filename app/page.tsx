@@ -672,8 +672,9 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
     const scroller = scrollerRef.current;
     if (!scroller) return;
     const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    const boundedScroll = Math.min(maxScroll, Math.max(0, scroller.scrollLeft));
     const width = Math.max(22, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100));
-    const left = maxScroll ? (scroller.scrollLeft / maxScroll) * (100 - width) : 0;
+    const left = maxScroll ? (boundedScroll / maxScroll) * (100 - width) : 0;
     setThumb({ left, width });
   };
 
@@ -691,7 +692,7 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
 
   return <div className="picker-shell">
     <div ref={scrollerRef} className="picker-scroll" onScroll={updateIndicator} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
-    <div className="picker-scrollbar" aria-hidden="true"><span style={{ left: `${thumb.left}%`, width: `${thumb.width}%` }} /></div>
+    <div className="picker-scrollbar" aria-hidden="true"><span style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} /></div>
   </div>;
 }
 
