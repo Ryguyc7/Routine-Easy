@@ -367,7 +367,6 @@ export default function Home() {
 
         {tab === "calendar" && (
           <div className="page calendar-page">
-            <div className="page-heading"><p className="eyebrow">Your rhythm at a glance</p><h1>Calendar<span className="accent-dot">.</span></h1><p>Select a routine to see its days across the month.</p></div>
             <div className="filter-pills" role="list" aria-label="Filter calendar by routine">
               <button className={selectedRoutine === "all" ? "active" : ""} onClick={() => setSelectedRoutine("all")}>All routines</button>
               {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}

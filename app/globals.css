@@ -156,6 +156,7 @@ button { color: inherit; }
 .mobile-header, .bottom-nav { display: none; }
 
 .filter-pills { display: flex; align-items: center; gap: 8px; margin: -10px 0 20px; padding-bottom: 5px; overflow-x: auto; scrollbar-width: none; }
+.calendar-page .filter-pills { margin-top: 0; }
 .filter-pills::-webkit-scrollbar { display: none; }
 .filter-pills button { --pill: var(--purple); flex: 0 0 auto; border: 1px solid var(--line); padding: 8px 12px; border-radius: 999px; background: #fff; color: #6f707a; font-size: 12px; cursor: pointer; }
 .filter-pills button span { margin-right: 6px; }

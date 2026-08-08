@@ -25,6 +25,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /setTimeout\(\(\) =>/);
   assert.match(page, /Different plan by day/);
   assert.match(page, /dayVariant-/);
+  assert.doesNotMatch(page, /Your rhythm at a glance/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
