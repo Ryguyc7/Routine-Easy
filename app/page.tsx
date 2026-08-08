@@ -439,7 +439,7 @@ export default function Home() {
       <aside className="sidebar">
         <div className="brand" aria-label="RoutineEZ home">
           <img className="brand-logo" src="/routineez-logo.png" alt="" />
-          <span>RoutineEZ</span>
+          <span>Routine<span className="brand-ez">EZ</span></span>
         </div>
         <nav className="side-nav" aria-label="Main navigation">
           <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
@@ -468,7 +468,7 @@ export default function Home() {
           <section className="profile-card" role="dialog" aria-label="Your RoutineEZ profile">
             <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile">×</button>
             <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
-            <div className="profile-copy"><small>Your profile</small><h2>My RoutineEZ</h2><p>Small routines. Easier days.</p></div>
+            <div className="profile-copy"><small>Your profile</small><h2>My Routine<span className="brand-ez">EZ</span></h2><p>Small routines. Easier days.</p></div>
             <div className="profile-stats"><div><strong>{routines.length}</strong><span>Routines</span></div><div><strong>{doneCount}/{todayRoutines.length}</strong><span>Done today</span></div></div>
             <div className="profile-actions">
               <button className="profile-settings-button" onClick={openSettings}><Settings2 aria-hidden="true" />Settings</button>
@@ -613,7 +613,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
     <div className="onboarding-glow glow-two" aria-hidden="true" />
     <section className="onboarding-card" aria-labelledby="onboarding-title">
       <header className="onboarding-top">
-        <div className="brand" aria-label="RoutineEZ"><img className="brand-logo" src="/routineez-logo.png" alt="" /><span>RoutineEZ</span></div>
+        <div className="brand" aria-label="RoutineEZ"><img className="brand-logo" src="/routineez-logo.png" alt="" /><span>Routine<span className="brand-ez">EZ</span></span></div>
         <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
       </header>
       <div className="onboarding-layout">
