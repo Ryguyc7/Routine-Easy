@@ -61,7 +61,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /onValueChange=\{\(targetCount, unit\)/);
   assert.doesNotMatch(page, /<small>Live preview<\/small>/);
   assert.match(page, /className="preview-progress" role="progressbar"/);
-  assert.match(page, /className="preview-detail-heading"/);
+  assert.doesNotMatch(page, /className="preview-detail-heading"/);
+  assert.doesNotMatch(page, /className="quantity-caption"/);
   assert.match(page, /"simple" \| "checklist" \| "quantity" \| "hybrid"/);
   assert.match(page, /const usesChecklist/);
   assert.match(page, /const usesQuantity/);

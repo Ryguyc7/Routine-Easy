@@ -714,7 +714,6 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
 
 function QuantityTracker({ routine, count, onChange }: { routine: Routine; count: number; onChange: (count: number) => void }) {
   return <div className="quantity-tracker">
-    <div className="quantity-caption"><span>Daily amount</span><strong>{count} of {routine.targetCount} {routine.unit}</strong></div>
     <div className="quantity-pill" style={{ "--segments": routine.targetCount } as React.CSSProperties} role="group" aria-label={`${routine.name}: ${count} of ${routine.targetCount} ${routine.unit}`}>
       {Array.from({ length: routine.targetCount }, (_, index) => {
         const amount = index + 1;
@@ -816,14 +815,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
     </div>
-    {expanded && usesChecklist(trackingMode) && <div className="preview-details preview-list">
-      {items.length ? items.map((item, index) => {
-        const checked = checkedItems.includes(index);
-        return <button type="button" key={`${item}-${index}`} className={checked ? "checked" : ""} onClick={() => setCheckedItems((current) => checked ? current.filter((value) => value !== index) : [...current, index].sort((a, b) => a - b))}><span>{checked ? "✓" : ""}</span>{item}</button>;
-      }) : <p>Type checklist items below to try them here.</p>}
-    </div>}
     {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">
-      <div className="preview-detail-heading"><span>Daily amount</span><strong>{quantity} of {targetCount} {unit || "times"}</strong></div>
       <div className="preview-quantity" style={{ "--preview-segments": targetCount } as React.CSSProperties}>
         {Array.from({ length: targetCount }, (_, index) => {
           const amount = index + 1;
@@ -831,6 +823,12 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, checklist,
           return <button type="button" key={amount} className={filled ? "filled" : ""} onClick={() => setQuantity(filled ? amount - 1 : amount)} aria-label={`${filled ? "Remove" : "Record"} ${unit || "amount"} ${amount}`}>{filled ? "✓" : amount}</button>;
         })}
       </div>
+    </div>}
+    {expanded && usesChecklist(trackingMode) && <div className="preview-details preview-list">
+      {items.length ? items.map((item, index) => {
+        const checked = checkedItems.includes(index);
+        return <button type="button" key={`${item}-${index}`} className={checked ? "checked" : ""} onClick={() => setCheckedItems((current) => checked ? current.filter((value) => value !== index) : [...current, index].sort((a, b) => a - b))}><span>{checked ? "✓" : ""}</span>{item}</button>;
+      }) : <p>Type checklist items below to try them here.</p>}
     </div>}
     {!expanded && <div className="preview-progress" role="progressbar" aria-label="Preview progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span style={{ width: `${progressValue}%` }} /></div>}
   </section>;
