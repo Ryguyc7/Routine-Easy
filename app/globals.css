@@ -330,6 +330,10 @@ button { color: inherit; }
   .today-page .routine-list { min-height: 0; flex: 1; padding: 0 1px 104px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   .today-page .routine-list::-webkit-scrollbar { display: none; }
   .calendar-page, .routines-page { padding-bottom: 110px; }
+  .routines-page { padding-right: 8px; scrollbar-width: thin; scrollbar-color: rgba(122,119,132,.25) transparent; }
+  .routines-page::-webkit-scrollbar { width: 4px; }
+  .routines-page::-webkit-scrollbar-track { background: transparent; }
+  .routines-page::-webkit-scrollbar-thumb { background: rgba(122,119,132,.25); border-radius: 999px; }
   .progress-card { padding: 21px; border-radius: 22px; box-shadow: 0 18px 38px rgba(86,70,190,.22); }
   .progress-icon { display: none; }
   .routine-row { min-height: 72px; border-color: rgba(225,222,218,.86); border-radius: 18px; box-shadow: 0 9px 24px rgba(35,30,77,.055); }
