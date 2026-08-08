@@ -176,6 +176,12 @@ button { color: inherit; }
 .calendar-legend { margin-top: 12px; color: #92929c; font-size: 11px; text-align: center; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
+.add-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
+.add-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
+.add-routine-modal .add-card-header { position: sticky; top: -23px; z-index: 2; margin: -23px -23px 22px; padding: 23px 23px 16px; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
+@keyframes modal-fade { from { opacity: 0; } }
+@keyframes modal-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } }
 .add-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
 .add-card-header h2 { margin: 0; font-size: 21px; }
 .add-card-header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
@@ -296,6 +302,10 @@ button { color: inherit; }
   .routine-grid { grid-template-columns: 1fr; }
   .desktop-routine-add { display: none; }
   .form-grid { grid-template-columns: 1fr; }
+  .add-modal-backdrop { align-items: center; padding: 14px; }
+  .add-routine-modal { max-height: calc(100svh - 28px); padding: 20px; border-radius: 23px; }
+  .add-routine-modal .add-card-header { top: -20px; margin: -20px -20px 20px; padding: 20px 20px 14px; }
+  .add-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
   .tracking-options { grid-template-columns: 1fr; }
   .tracking-options label { min-height: 56px; }
   .options-grid .tracking-options { grid-template-columns: 1fr; }

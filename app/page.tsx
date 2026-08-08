@@ -290,7 +290,7 @@ export default function Home() {
       <section className="content">
         <header className="mobile-header">
           <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div>
-          <button className="mobile-add" onClick={() => { setTab("routines"); setShowAdd(true); }} aria-label="Add routine"><span aria-hidden="true">+</span></button>
+          <button className="mobile-add" onClick={() => { setTab("routines"); setEditingRoutineId(null); setShowAdd(true); }} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
@@ -504,8 +504,22 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
 
 function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
-  return <form className="add-card" onSubmit={onSubmit}>
-    <div className="add-card-header"><div><span className="eyebrow">A new small promise</span><h2>Add a routine</h2></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onCancel]);
+
+  return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+  <form className="add-card add-routine-modal" onSubmit={onSubmit} role="dialog" aria-modal="true" aria-labelledby="add-routine-title">
+    <div className="add-card-header"><div><span className="eyebrow">A new small promise</span><h2 id="add-routine-title">Add a routine</h2></div><button type="button" onClick={onCancel} aria-label="Close">×</button></div>
     <div className="form-grid">
       <label className="field wide"><span>Routine name</span><input name="name" placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
       <label className="field"><span>Time <small>Optional</small></span><input name="time" type="time" /></label>
@@ -517,7 +531,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
       <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} defaultChecked /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
-  </form>;
+  </form>
+  </div>;
 }
 
 function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine: Routine; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {

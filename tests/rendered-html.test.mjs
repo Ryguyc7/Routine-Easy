@@ -18,6 +18,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Daily amount/);
   assert.match(page, /quantity-completions/);
   assert.match(page, /collapsed-progress/);
+  assert.match(page, /add-modal-backdrop/);
+  assert.match(page, /aria-modal="true"/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
