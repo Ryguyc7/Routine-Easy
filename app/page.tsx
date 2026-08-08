@@ -32,6 +32,7 @@ type MotionPreference = "full" | "reduced";
 type AppPreferences = { timeFormat: TimeFormat; weekStartsOn: WeekStart; motion: MotionPreference };
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
+const SPLASH_DURATION_MS = 1200;
 
 const COLORS = [
   "#6C5CE7", "#845EF7", "#8338EC", "#9C36B5", "#CC5DE8", "#8E7DBE", "#5F3DC4", "#6741D9",
@@ -175,9 +176,12 @@ export default function Home() {
     } catch {
       setPreferences(DEFAULT_PREFERENCES);
     }
-    setOnboardingState(forceOnboarding || !completed ? "show" : "done");
+    const splashTimer = window.setTimeout(() => {
+      setOnboardingState(forceOnboarding || !completed ? "show" : "done");
+    }, SPLASH_DURATION_MS);
     loadData();
     return () => {
+      window.clearTimeout(splashTimer);
       if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
     };
   }, []);

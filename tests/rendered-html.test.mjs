@@ -14,6 +14,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Add a routine/);
   assert.match(page, /Build my first routine/);
   assert.match(page, /routineez-onboarding-complete/);
+  assert.match(page, /SPLASH_DURATION_MS = 1200/);
+  assert.match(page, /window\.clearTimeout\(splashTimer\)/);
   assert.match(page, /Routine options/);
   assert.match(page, /Daily amount/);
   assert.match(page, /quantity-completions/);
