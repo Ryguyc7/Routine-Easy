@@ -60,6 +60,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
+  assert.match(page, /#212529/);
+  assert.match(page, /#CC5DE8/);
+  assert.match(page, /🏊/);
+  assert.match(page, /🧩/);
+  assert.match(page, /👨‍👩‍👧‍👦/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routines-page \{ scrollbar-width: none/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /radial-gradient\(circle at -36px 145px/);
@@ -83,7 +88,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /day-fill/);
   assert.match(page, /selected-routine-day/);
   assert.doesNotMatch(page, /day-dots/);
-  assert.doesNotMatch(page, /☀️/);
+  assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
   assert.match(page, /mobile-header-spacer/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
