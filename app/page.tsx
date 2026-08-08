@@ -734,7 +734,7 @@ function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine
     <div className="card-color"><span>{routine.emoji}</span></div>
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
     <button className="list-button" onClick={onEditOptions} aria-label={`Edit ${routine.name}`}>Edit</button>
-    <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}>×</button>
+    <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}><Trash2 aria-hidden="true" /></button>
   </article>;
 }
 

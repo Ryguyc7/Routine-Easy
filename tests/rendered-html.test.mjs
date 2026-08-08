@@ -144,6 +144,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /routineez-mark\.png/);
   assert.match(layout, /routineez-logo\.png/);
   assert.match(page, /mobile-profile/);
+  assert.match(page, /className="delete-button"[\s\S]*?<Trash2 aria-hidden="true"/);
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);
   assert.match(page, /profile-settings-button/);

@@ -277,7 +277,7 @@ button { color: inherit; }
 .add-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
 .add-card-header h2 { margin: 0; font-size: 21px; }
 .add-card-header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
-.add-card-header > button, .delete-button { border: 0; background: transparent; color: #aaa8b2; font-size: 23px; cursor: pointer; }
+.add-card-header > button { border: 0; background: transparent; color: #aaa8b2; font-size: 23px; cursor: pointer; }
 .form-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 18px; overflow-x: clip; }
 .form-grid > * { min-width: 0; max-width: 100%; }
 .field { min-width: 0; display: grid; gap: 7px; color: #5e5e68; font-size: 11px; font-weight: 750; }
@@ -361,8 +361,11 @@ button { color: inherit; }
 .card-body small { color: #9999a2; font-size: 11px; }
 .card-body .date-range-label { display: block; margin-top: 3px; color: #aaa8b2; font-size: 9px; }
 .list-button { position: absolute; right: 13px; bottom: 11px; padding: 5px 8px; border: 0; border-radius: 7px; background: var(--lavender); color: var(--purple); font-size: 9px; font-weight: 800; cursor: pointer; }
-.delete-button { position: absolute; top: 10px; right: 12px; opacity: 0; transition: opacity .18s; }
-.routine-card:hover .delete-button, .delete-button:focus { opacity: 1; }
+.delete-button { position: absolute; top: 10px; right: 12px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 9px; color: #d84b5f; background: #fff1f3; opacity: 0; cursor: pointer; transition: opacity .18s, color .18s, background .18s, transform .18s, box-shadow .18s; }
+.delete-button svg { width: 14px; height: 14px; stroke-width: 2.15; }
+.routine-card:hover .delete-button, .delete-button:focus-visible { opacity: 1; }
+.delete-button:hover { color: #fff; background: #d9485f; box-shadow: 0 6px 14px rgba(217,72,95,.24); }
+.delete-button:active { transform: scale(.92); }
 .loading-list { display: grid; gap: 10px; width: 100%; grid-column: 1 / -1; }
 .loading-list i { height: 74px; border-radius: 14px; background: linear-gradient(90deg, #efede9 25%, #f8f7f4 50%, #efede9 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
