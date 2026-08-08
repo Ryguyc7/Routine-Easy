@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CalendarDays, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type Routine = {
@@ -230,9 +231,9 @@ export default function Home() {
           <span>RoutineEZ</span>
         </div>
         <nav className="side-nav" aria-label="Main navigation">
-          <NavButton active={tab === "today"} onClick={() => setTab("today")} icon="◉" label="Today" />
-          <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon="▦" label="Calendar" />
-          <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon="☷" label="Routines" />
+          <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
+          <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarDays} label="Calendar" />
+          <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
         </nav>
         <div className="sidebar-note">
           <span className="spark">✦</span>
@@ -334,9 +335,9 @@ export default function Home() {
       </section>
 
       <nav className="bottom-nav" aria-label="Main navigation">
-        <NavButton active={tab === "today"} onClick={() => setTab("today")} icon="◉" label="Today" />
-        <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon="▦" label="Calendar" />
-        <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon="☷" label="Routines" />
+        <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
+        <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarDays} label="Calendar" />
+        <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
       </nav>
     </main>
   );
@@ -379,8 +380,8 @@ function OnboardingSplash() {
   return <main className="onboarding-splash" aria-label="Loading RoutineEZ"><div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div></main>;
 }
 
-function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {
-  return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span>{icon}</span>{label}</button>;
+function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
+  return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon"><Icon aria-hidden="true" strokeWidth={active ? 2.4 : 2} /></span>{label}</button>;
 }
 
 function RoutineRow({ routine, completed, completedItemIds, onToggle, onToggleItem }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; onToggle: () => void; onToggleItem: (itemId: number) => void }) {
