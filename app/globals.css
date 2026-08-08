@@ -314,14 +314,11 @@ button { color: inherit; }
   .mobile-add { justify-self: end; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid rgba(255,255,255,.82); border-radius: 50%; background: linear-gradient(145deg, #735ff1, #593fdf); color: #fff; box-shadow: 0 10px 24px rgba(82,66,194,.3), inset 0 1px 0 rgba(255,255,255,.35); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
   .mobile-add span { display: grid; place-items: center; width: 100%; height: 100%; padding-bottom: 2px; font-family: Arial, sans-serif; font-size: 25px; font-weight: 400; line-height: 1; }
   .mobile-add:active { transform: scale(.94); box-shadow: 0 5px 14px rgba(82,66,194,.25); }
-  .bottom-nav { position: fixed; inset: auto 16px 14px; height: 70px; padding: 7px 9px 6px; display: grid; grid-template-columns: repeat(3, 1fr); overflow: visible; isolation: isolate; background: rgba(255,255,255,.94); backdrop-filter: blur(24px) saturate(1.25); -webkit-backdrop-filter: blur(24px) saturate(1.25); border: 1px solid rgba(233,226,215,.9); border-radius: 22px; box-shadow: 0 15px 36px rgba(43,38,34,.12), 0 2px 8px rgba(43,38,34,.05); z-index: 30; }
-  .bottom-nav::before, .bottom-nav::after { content: ""; position: absolute; left: 50%; z-index: 0; width: 102px; height: 40px; pointer-events: none; background: rgba(255,255,255,.97); border: 1px solid rgba(233,226,215,.9); border-radius: 50%; transform: translateX(-50%); }
-  .bottom-nav::before { top: -19px; clip-path: inset(0 0 45% 0); }
-  .bottom-nav::after { bottom: -19px; clip-path: inset(45% 0 0 0); }
+  .bottom-nav { position: fixed; inset: auto 16px 14px; height: 70px; padding: 7px 9px 6px; display: grid; grid-template-columns: repeat(3, 1fr); overflow: visible; isolation: isolate; background: #fff; border: 0; border-radius: 22px; box-shadow: none; filter: drop-shadow(0 0 .7px rgba(211,203,192,.9)) drop-shadow(0 15px 18px rgba(43,38,34,.13)); z-index: 30; }
   .bottom-nav button { position: relative; z-index: 1; justify-content: center; flex-direction: column; gap: 5px; padding: 4px; border-radius: 0; font-size: 10px; font-weight: 700; letter-spacing: -.1px; transition: color .2s ease, transform .2s ease; }
   .bottom-nav .nav-icon { width: 25px; height: 23px; transition: color .2s ease, transform .2s ease, filter .2s ease; }
   .bottom-nav .nav-icon svg { width: 20px; height: 20px; }
-  .bottom-nav button.calendar-nav-button, .bottom-nav button.calendar-nav-button.active { position: relative; z-index: 2; width: 100%; height: 100%; align-self: center; justify-self: center; justify-content: center; gap: 4px; padding: 3px 4px; color: #7e7f89; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+  .bottom-nav button.calendar-nav-button, .bottom-nav button.calendar-nav-button.active { position: relative; z-index: 2; width: 92px; height: 88px; align-self: center; justify-self: center; justify-content: center; gap: 4px; padding: 8px 4px; color: #7e7f89; background: #fff; border: 0; border-radius: 29px; box-shadow: none; }
   .bottom-nav button.calendar-nav-button.active { color: var(--purple); }
   .bottom-nav .date-nav-icon { width: 35px; height: 38px; grid-template-rows: 11px 1fr; overflow: hidden; border: 1.5px solid currentColor; border-radius: 8px; background: #fff; }
   .bottom-nav .date-nav-icon i { display: grid; place-items: center; width: 100%; height: 100%; color: #fff; background: #858690; font-size: 7px; line-height: 1; font-style: normal; font-weight: 850; letter-spacing: .5px; text-transform: uppercase; }
@@ -329,6 +326,7 @@ button { color: inherit; }
   .bottom-nav .date-nav-icon strong { display: grid; place-items: center; color: currentColor; font-size: 14px; line-height: 1; font-weight: 850; }
   .bottom-nav .calendar-nav-button .nav-label { font-size: 9px; font-weight: 800; }
   .bottom-nav .calendar-nav-button::after { display: none; }
+  .bottom-nav button.calendar-nav-button:active { transform: none; }
   .bottom-nav button.active { color: var(--purple); background: transparent; font-weight: 800; }
   .bottom-nav button.active .nav-icon { color: var(--purple); transform: translateY(-1px); filter: drop-shadow(0 3px 5px rgba(108,92,231,.2)); }
   .bottom-nav button.active::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 3px; height: 3px; border-radius: 50%; background: var(--purple); transform: translateX(-50%); }

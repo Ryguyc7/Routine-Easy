@@ -46,8 +46,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /function CalendarNavButton/);
   assert.match(page, /date-nav-icon/);
   assert.match(page, /month: "short"/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: transparent; border: 0/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav::before, \.bottom-nav::after/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: #fff; border: 0/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav \{[\s\S]*filter: drop-shadow/);
+  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav::before, \.bottom-nav::after/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
