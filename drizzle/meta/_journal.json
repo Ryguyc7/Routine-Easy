@@ -15,6 +15,13 @@
       "when": 1786150370622,
       "tag": "0001_thin_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786152043300,
+      "tag": "0002_mute_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

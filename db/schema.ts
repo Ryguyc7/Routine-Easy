@@ -8,6 +8,9 @@ export const routines = sqliteTable("routines", {
   color: text("color").notNull(),
   time: text("time").notNull(),
   days: text("days").notNull(),
+  trackingMode: text("tracking_mode").notNull().default("simple"),
+  targetCount: integer("target_count").notNull().default(1),
+  unit: text("unit").notNull().default("times"),
 });
 
 export const completions = sqliteTable("completions", {
@@ -31,3 +34,11 @@ export const itemCompletions = sqliteTable("item_completions", {
   itemId: integer("item_id").notNull().references(() => routineItems.id, { onDelete: "cascade" }),
   date: text("date").notNull(),
 }, (table) => [uniqueIndex("idx_item_completions_owner_item_date").on(table.ownerKey, table.itemId, table.date)]);
+
+export const quantityCompletions = sqliteTable("quantity_completions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerKey: text("owner_key").notNull(),
+  routineId: integer("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  count: integer("count").notNull().default(0),
+}, (table) => [uniqueIndex("idx_quantity_completions_owner_routine_date").on(table.ownerKey, table.routineId, table.date)]);

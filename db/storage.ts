@@ -12,8 +12,16 @@ export async function ensureDatabase() {
     emoji TEXT NOT NULL,
     color TEXT NOT NULL,
     time TEXT NOT NULL,
-    days TEXT NOT NULL
+    days TEXT NOT NULL,
+    tracking_mode TEXT NOT NULL DEFAULT 'simple',
+    target_count INTEGER NOT NULL DEFAULT 1,
+    unit TEXT NOT NULL DEFAULT 'times'
   )`).run();
+  const routineColumns = await env.DB.prepare("PRAGMA table_info(routines)").all<{ name: string }>();
+  const existingColumns = new Set(routineColumns.results.map((column) => column.name));
+  if (!existingColumns.has("tracking_mode")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN tracking_mode TEXT NOT NULL DEFAULT 'simple'").run();
+  if (!existingColumns.has("target_count")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN target_count INTEGER NOT NULL DEFAULT 1").run();
+  if (!existingColumns.has("unit")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN unit TEXT NOT NULL DEFAULT 'times'").run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS completions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,
@@ -33,11 +41,20 @@ export async function ensureDatabase() {
     item_id INTEGER NOT NULL REFERENCES routine_items(id) ON DELETE CASCADE,
     date TEXT NOT NULL
   )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS quantity_completions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_key TEXT NOT NULL,
+    routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0
+  )`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_completions_owner_routine_date
     ON completions(owner_key, routine_id, date)`).run();
   await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_routine_items_owner_routine_position
     ON routine_items(owner_key, routine_id, position)`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_item_completions_owner_item_date
     ON item_completions(owner_key, item_id, date)`).run();
+  await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_quantity_completions_owner_routine_date
+    ON quantity_completions(owner_key, routine_id, date)`).run();
   await env.DB.prepare("PRAGMA optimize").run();
 }
