@@ -117,6 +117,7 @@ button { color: inherit; }
 .routine-info { display: grid; gap: 5px; }
 .routine-info strong { font-size: 14px; }
 .routine-info small { color: var(--muted); font-size: 12px; }
+.today-variant { color: var(--routine); font-weight: 800; }
 .expand-chevron { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 auto; margin-left: auto; color: #aaa8b2; transition: transform .2s ease, color .2s ease; transform-origin: 50% 50%; }
 .expand-chevron::before { content: ""; display: block; width: 7px; height: 7px; border-right: 1.7px solid currentColor; border-bottom: 1.7px solid currentColor; transform: rotate(45deg) translate(-1px, -1px); transform-origin: 50% 50%; }
 .routine-row.expanded .expand-chevron { transform: rotate(180deg); }
@@ -206,6 +207,18 @@ button { color: inherit; }
 .tracking-options small { color: #9999a2; font-size: 9px; font-weight: 600; line-height: 1.25; }
 .quantity-settings { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 2fr; gap: 12px 18px; padding: 15px; border: 1px solid color-mix(in srgb, var(--purple) 22%, #e5e2e9); border-radius: 13px; background: color-mix(in srgb, var(--purple) 3%, #fff); }
 .quantity-settings > p { grid-column: 1 / -1; margin: -3px 0 0; color: #93919b; font-size: 10px; line-height: 1.4; }
+.day-plan-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
+.day-plan-toggle { display: flex; align-items: center; gap: 11px; cursor: pointer; }
+.day-plan-toggle > input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle-track { position: relative; width: 35px; height: 21px; flex: 0 0 auto; border-radius: 999px; background: #d8d5de; transition: background .18s ease; }
+.toggle-track i { position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(26,24,35,.18); transition: transform .18s ease; }
+.day-plan-toggle > input:checked + .toggle-track { background: var(--purple); }
+.day-plan-toggle > input:checked + .toggle-track i { transform: translateX(14px); }
+.day-plan-toggle > span:last-child { display: grid; gap: 3px; }
+.day-plan-toggle strong { color: var(--ink); font-size: 11px; }
+.day-plan-toggle small { color: #96949e; font-size: 9px; line-height: 1.3; }
+.day-plan-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px 14px; margin-top: 15px; padding-top: 14px; border-top: 1px solid #ece9ef; }
+.day-plan-grid > p { grid-column: 1 / -1; margin: 0; color: #9996a0; font-size: 10px; }
 .options-grid { grid-template-columns: 1fr; }
 .options-grid .tracking-options { grid-template-columns: repeat(3, 1fr); }
 .emoji-picker, .color-picker, .day-picker { border: 0; padding: 0; margin: 0; }
@@ -310,6 +323,7 @@ button { color: inherit; }
   .tracking-options label { min-height: 56px; }
   .options-grid .tracking-options { grid-template-columns: 1fr; }
   .quantity-settings { grid-template-columns: 1fr 1.45fr; }
+  .day-plan-grid { grid-template-columns: 1fr; }
   .day-picker { grid-column: auto; }
   .delete-button { opacity: 1; }
   .error-banner { left: 50%; top: 75px; }

@@ -15,6 +15,7 @@ type Routine = {
   trackingMode: TrackingMode;
   targetCount: number;
   unit: string;
+  dayVariants: Partial<Record<number, string>>;
   items: RoutineItem[];
 };
 
@@ -27,6 +28,7 @@ type OnboardingState = "checking" | "show" | "done";
 const COLORS = ["#6C5CE7", "#FF8A65", "#F4B942", "#49A078", "#4D96FF", "#EC6F91"];
 const EMOJIS = ["✨", "💊", "🏋️", "🥣", "🥗", "🍲", "🧘", "💧"];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_FULL_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function localDateKey(date = new Date()) {
   const offset = date.getTimezoneOffset() * 60000;
@@ -39,6 +41,15 @@ function formatLongDate(date: Date) {
     month: "long",
     day: "numeric",
   }).format(date);
+}
+
+function readDayVariants(form: FormData) {
+  const variants: Record<string, string> = {};
+  DAY_NAMES.forEach((_, day) => {
+    const value = String(form.get(`dayVariant-${day}`) ?? "").trim();
+    if (value) variants[String(day)] = value;
+  });
+  return variants;
 }
 
 export default function Home() {
@@ -218,6 +229,7 @@ export default function Home() {
         trackingMode,
         targetCount: Number(form.get("targetCount") ?? 4),
         unit: form.get("unit"),
+        dayVariants: readDayVariants(form),
         items: trackingMode === "checklist" ? String(form.get("checklist") ?? "").split("\n").map((item) => item.trim()).filter(Boolean) : [],
       }),
     });
@@ -256,6 +268,7 @@ export default function Home() {
         trackingMode,
         targetCount: Number(form.get("targetCount") ?? 4),
         unit: form.get("unit"),
+        dayVariants: readDayVariants(form),
         items,
       }),
     });
@@ -374,7 +387,7 @@ export default function Home() {
                   const isToday = key === todayKey;
                   return <div className={`day-cell ${isToday ? "is-today" : ""}`} key={key}>
                     <span className="day-number">{date.getDate()}</span>
-                    <div className="day-dots">{matches.slice(0, 5).map((routine) => <i key={routine.id} style={{ background: routine.color }} title={routine.name} />)}</div>
+                    <div className="day-dots">{matches.slice(0, 5).map((routine) => <i key={routine.id} style={{ background: routine.color }} title={routine.dayVariants?.[date.getDay()] ? `${routine.name}: ${routine.dayVariants[date.getDay()]}` : routine.name} />)}</div>
                   </div>;
                 })}
               </div>
@@ -455,6 +468,7 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
   const hasMultiple = (routine.trackingMode === "checklist" && routine.items.length > 1) || (routine.trackingMode === "quantity" && routine.targetCount > 1);
   const [expanded, setExpanded] = useState(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
+  const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
   const progressValue = routine.trackingMode === "quantity"
     ? Math.min(100, Math.round((count / routine.targetCount) * 100))
     : routine.trackingMode === "checklist" && routine.items.length
@@ -472,7 +486,7 @@ function RoutineRow({ routine, completed, completedItemIds, quantityCount: count
   return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
     <button className="routine-main" onClick={handleMainClick} aria-expanded={hasDetails ? expanded : undefined}>
       <span className="routine-emoji">{routine.emoji}</span>
-      <span className="routine-info"><strong>{routine.name}</strong><small>{routine.time || "Anytime"}{detail ? ` · ${detail}` : ""}</small></span>
+      <span className="routine-info"><strong>{routine.name}</strong><small>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{routine.time || "Anytime"}{detail ? ` · ${detail}` : ""}</small></span>
       {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
@@ -523,6 +537,7 @@ function RoutineCard({ routine, onEditOptions, onDelete }: { routine: Routine; o
 
 function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean }) {
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("simple");
+  const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -546,7 +561,8 @@ function AddRoutineForm({ onSubmit, onCancel, saving }: { onSubmit: (event: Form
       {trackingMode === "quantity" && <QuantitySettings />}
       <fieldset className="emoji-picker"><legend>Icon</legend>{EMOJIS.map((emoji, i) => <label key={emoji}><input type="radio" name="emoji" value={emoji} defaultChecked={i === 0} /><span>{emoji}</span></label>)}</fieldset>
       <fieldset className="color-picker"><legend>Color</legend>{COLORS.map((color, i) => <label key={color}><input type="radio" name="color" value={color} defaultChecked={i === 0} /><span style={{ background: color }} /></label>)}</fieldset>
-      <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} defaultChecked /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
+      <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
+      <DayPlanSettings scheduledDays={selectedDays} />
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Adding…" : "Add routine"}</button></div>
   </form>
@@ -562,6 +578,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
       <TrackingModePicker value={trackingMode} onChange={setTrackingMode} />
       {trackingMode === "checklist" && <label className="field checklist-field"><span>List items <small>One item per line</small></span><textarea name="checklist" defaultValue={routine.items.map((item) => item.title).join("\n")} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} autoFocus /></label>}
       {trackingMode === "quantity" && <QuantitySettings targetCount={routine.targetCount} unit={routine.unit} />}
+      <DayPlanSettings scheduledDays={routine.days} variants={routine.dayVariants} />
     </div>
     <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Saving…" : "Save options"}</button></div>
   </form>;
@@ -583,6 +600,24 @@ function TrackingModePicker({ value, onChange }: { value: TrackingMode; onChange
       </label>)}
     </div>
   </fieldset>;
+}
+
+function DayPlanSettings({ scheduledDays, variants = {} }: { scheduledDays: number[]; variants?: Partial<Record<number, string>> }) {
+  const hasPlans = scheduledDays.some((day) => Boolean(variants[day]));
+  const [enabled, setEnabled] = useState(hasPlans);
+  return <section className="day-plan-settings">
+    <label className="day-plan-toggle">
+      <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
+      <span className="toggle-track"><i /></span>
+      <span><strong>Different plan by day</strong><small>Give each day its own meal, workout, or variation.</small></span>
+    </label>
+    {enabled && <div className="day-plan-grid">
+      {scheduledDays.length ? scheduledDays.map((day) => <label className="field" key={day}>
+        <span>{DAY_FULL_NAMES[day]}</span>
+        <input name={`dayVariant-${day}`} defaultValue={variants[day] ?? ""} placeholder={day === 1 ? "e.g. Oatmeal" : day === 2 ? "e.g. Eggs and toast" : "What’s the plan?"} maxLength={80} />
+      </label>) : <p>Choose at least one repeat day first.</p>}
+    </div>}
+  </section>;
 }
 
 function QuantitySettings({ targetCount = 4, unit = "pills" }: { targetCount?: number; unit?: string }) {

@@ -1,0 +1,1 @@
+ALTER TABLE `routines` ADD `day_variants` text DEFAULT '{}' NOT NULL;

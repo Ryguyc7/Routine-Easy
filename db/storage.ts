@@ -15,13 +15,15 @@ export async function ensureDatabase() {
     days TEXT NOT NULL,
     tracking_mode TEXT NOT NULL DEFAULT 'simple',
     target_count INTEGER NOT NULL DEFAULT 1,
-    unit TEXT NOT NULL DEFAULT 'times'
+    unit TEXT NOT NULL DEFAULT 'times',
+    day_variants TEXT NOT NULL DEFAULT '{}'
   )`).run();
   const routineColumns = await env.DB.prepare("PRAGMA table_info(routines)").all<{ name: string }>();
   const existingColumns = new Set(routineColumns.results.map((column) => column.name));
   if (!existingColumns.has("tracking_mode")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN tracking_mode TEXT NOT NULL DEFAULT 'simple'").run();
   if (!existingColumns.has("target_count")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN target_count INTEGER NOT NULL DEFAULT 1").run();
   if (!existingColumns.has("unit")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN unit TEXT NOT NULL DEFAULT 'times'").run();
+  if (!existingColumns.has("day_variants")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN day_variants TEXT NOT NULL DEFAULT '{}'").run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS completions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,

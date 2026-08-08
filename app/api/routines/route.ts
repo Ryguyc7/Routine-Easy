@@ -12,11 +12,12 @@ type RoutineRow = {
   trackingMode: string;
   targetCount: number;
   unit: string;
+  dayVariants: string;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; position: number };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days,
-  tracking_mode AS trackingMode, target_count AS targetCount, unit`;
+  tracking_mode AS trackingMode, target_count AS targetCount, unit, day_variants AS dayVariants`;
 
 function cleanItems(items: unknown) {
   if (!Array.isArray(items)) return [];
@@ -38,9 +39,21 @@ function cleanUnit(unit: unknown, mode: TrackingMode) {
   return String(unit ?? "pills").trim().slice(0, 24) || "pills";
 }
 
+function cleanDayVariants(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const clean: Record<string, string> = {};
+  for (let day = 0; day < 7; day += 1) {
+    const label = String((value as Record<string, unknown>)[day] ?? "").trim().slice(0, 80);
+    if (label) clean[String(day)] = label;
+  }
+  return clean;
+}
+
 function normalize(row: RoutineRow, items: RoutineItemRow[]) {
   const trackingMode = row.trackingMode === "simple" && items.length ? "checklist" : cleanMode(row.trackingMode);
-  return { ...row, trackingMode, days: JSON.parse(row.days) as number[], items };
+  let dayVariants: Record<string, string> = {};
+  try { dayVariants = cleanDayVariants(JSON.parse(row.dayVariants)); } catch { dayVariants = {}; }
+  return { ...row, trackingMode, dayVariants, days: JSON.parse(row.days) as number[], items };
 }
 
 async function getItems(owner: string) {
@@ -101,18 +114,19 @@ export async function POST(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; items?: string[];
   };
   const name = payload.name?.trim();
   if (!name || !payload.days?.length) return Response.json({ error: "Name and days are required" }, { status: 400 });
   const trackingMode = cleanMode(payload.trackingMode);
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
+  const dayVariants = cleanDayVariants(payload.dayVariants);
   const result = await env.DB.prepare(`INSERT INTO routines
-    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, day_variants)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING ${ROUTINE_SELECT}`)
-    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(payload.days), trackingMode, targetCount, unit)
+    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(payload.days), trackingMode, targetCount, unit, JSON.stringify(dayVariants))
     .first<RoutineRow>();
   const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
   if (itemTitles.length) {
@@ -129,7 +143,7 @@ export async function PUT(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
   const payload = await request.json() as {
-    id?: number; time?: string; trackingMode?: TrackingMode; targetCount?: number; unit?: string; items?: string[];
+    id?: number; time?: string; trackingMode?: TrackingMode; targetCount?: number; unit?: string; dayVariants?: Record<string, string>; items?: string[];
   };
   if (!Number.isInteger(payload.id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const existing = await getRoutine(owner, payload.id!);
@@ -137,10 +151,13 @@ export async function PUT(request: Request) {
   const trackingMode = cleanMode(payload.trackingMode ?? existing.trackingMode);
   const targetCount = cleanCount(payload.targetCount ?? existing.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit ?? existing.unit, trackingMode);
+  let currentDayVariants: Record<string, string> = {};
+  try { currentDayVariants = cleanDayVariants(JSON.parse(existing.dayVariants)); } catch { currentDayVariants = {}; }
+  const dayVariants = cleanDayVariants(payload.dayVariants ?? currentDayVariants);
   const itemTitles = trackingMode === "checklist" ? cleanItems(payload.items) : [];
   await env.DB.batch([
-    env.DB.prepare("UPDATE routines SET time = ?, tracking_mode = ?, target_count = ?, unit = ? WHERE owner_key = ? AND id = ?")
-      .bind(payload.time ?? existing.time, trackingMode, targetCount, unit, owner, existing.id),
+    env.DB.prepare("UPDATE routines SET time = ?, tracking_mode = ?, target_count = ?, unit = ?, day_variants = ? WHERE owner_key = ? AND id = ?")
+      .bind(payload.time ?? existing.time, trackingMode, targetCount, unit, JSON.stringify(dayVariants), owner, existing.id),
     env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, existing.id),
     env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
     env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
