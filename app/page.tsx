@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus2, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
 type TrackingMode = "simple" | "checklist" | "quantity";
@@ -684,5 +684,5 @@ function LoadingRows() {
 }
 
 function EmptyToday({ onAdd }: { onAdd: () => void }) {
-  return <div className="empty-state"><span>☀️</span><h3>Your day is wide open</h3><p>Add a routine and it’ll appear here on the right days.</p><button className="primary-button" onClick={onAdd}>Add your first routine</button></div>;
+  return <div className="empty-state"><span className="empty-state-icon" aria-hidden="true"><CalendarPlus2 /></span><h3>Your day is wide open</h3><p>Add a routine and it’ll appear here on the right days.</p><button className="primary-button" onClick={onAdd}>Add your first routine</button></div>;
 }

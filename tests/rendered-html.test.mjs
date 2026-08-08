@@ -38,6 +38,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /radial-gradient\(circle at -36px 145px/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.completed \{ opacity: 1/);
   assert.match(page, /function DateTile/);
+  assert.match(page, /CalendarPlus2/);
+  assert.doesNotMatch(page, /☀️/);
   assert.match(page, /mobile-wordmark/);
   assert.doesNotMatch(page, /mobile-header-spacer/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);

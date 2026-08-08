@@ -269,9 +269,10 @@ button { color: inherit; }
 .loading-list { display: grid; gap: 10px; width: 100%; grid-column: 1 / -1; }
 .loading-list i { height: 74px; border-radius: 14px; background: linear-gradient(90deg, #efede9 25%, #f8f7f4 50%, #efede9 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
-.empty-state { padding: 55px 25px; border: 1px dashed #d8d3ec; background: #fff; border-radius: 17px; text-align: center; }
-.empty-state > span { font-size: 34px; }
-.empty-state h3 { margin: 14px 0 6px; }
+.empty-state { padding: 55px 25px; border: 0; background: transparent; text-align: center; }
+.empty-state-icon { width: 52px; height: 52px; margin: 0 auto; display: grid; place-items: center; color: var(--purple); background: linear-gradient(145deg, #f0ecff, #fff); border: 1px solid #e6e0ff; border-radius: 50%; box-shadow: 0 10px 24px rgba(87,70,190,.1); }
+.empty-state-icon svg { width: 23px; height: 23px; stroke-width: 1.9; }
+.empty-state h3 { margin: 16px 0 6px; }
 .empty-state p { margin: 0 0 19px; color: var(--muted); font-size: 13px; }
 .error-banner { position: fixed; top: 20px; left: calc(50% + 120px); transform: translateX(-50%); z-index: 50; width: min(500px, calc(100% - 40px)); padding: 12px 46px 12px 15px; background: #fff1f3; border: 1px solid #f2bec6; border-radius: 10px; color: #9a3846; font-size: 12px; box-shadow: 0 8px 25px rgba(110,30,45,.12); }
 .error-banner button { position: absolute; right: 12px; top: 5px; border: 0; background: none; font-size: 22px; color: inherit; cursor: pointer; }
