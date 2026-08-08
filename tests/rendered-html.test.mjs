@@ -21,6 +21,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /add-modal-backdrop/);
   assert.match(page, /aria-modal="true" aria-label="Add a routine"/);
   assert.doesNotMatch(page, /A new small promise/);
+  assert.match(page, /openAddFromHeader/);
+  assert.match(page, /setTimeout\(\(\) =>/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CircleCheckBig, ListChecks, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; position: number };
@@ -56,6 +56,7 @@ export default function Home() {
   const [savingList, setSavingList] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const addTimerRef = useRef<number | null>(null);
   const today = useMemo(() => new Date(), []);
   const todayKey = localDateKey(today);
 
@@ -81,7 +82,25 @@ export default function Home() {
     const completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
     setOnboardingState(forceOnboarding || !completed ? "show" : "done");
     loadData();
+    return () => {
+      if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
+    };
   }, []);
+
+  function openAddFromHeader() {
+    if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
+    setEditingRoutineId(null);
+    if (tab === "routines") {
+      setShowAdd(true);
+      return;
+    }
+    setShowAdd(false);
+    setTab("routines");
+    addTimerRef.current = window.setTimeout(() => {
+      setShowAdd(true);
+      addTimerRef.current = null;
+    }, 200);
+  }
 
   function completeOnboarding(addRoutine = false) {
     window.localStorage.setItem("routineez-onboarding-complete", "true");
@@ -290,7 +309,7 @@ export default function Home() {
       <section className="content">
         <header className="mobile-header">
           <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div>
-          <button className="mobile-add" onClick={() => { setTab("routines"); setEditingRoutineId(null); setShowAdd(true); }} aria-label="Add routine"><span aria-hidden="true">+</span></button>
+          <button className="mobile-add" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
