@@ -8,7 +8,6 @@
   --coral: #ff8065;
   --gold: #f4b942;
   --sky: #4d96ff;
-  --brand-spectrum: linear-gradient(90deg, #6c5ce7 0%, #6c5ce7 24%, #4d96ff 42%, #f4b942 68%, #ff8065 100%);
   --lavender: #f0edff;
   --cream: #fbf8f2;
   --line: #ebe6dc;
@@ -636,20 +635,19 @@ button { color: inherit; }
 
 /* App-icon palette: one coordinated system instead of a purple-only UI. */
 .brand-ez, .mobile-wordmark-ez, .splash-ez {
-  color: transparent;
-  background: linear-gradient(105deg, var(--sky) 0 34%, var(--gold) 48% 66%, var(--coral) 82% 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--coral);
+  background: none;
+  -webkit-text-fill-color: var(--coral);
 }
 .premium-action {
-  background: linear-gradient(135deg, #6c5ce7 0%, #4d96ff 43%, #f4b942 72%, #ff8065 100%);
-  box-shadow: 0 10px 22px rgba(77,150,255,.2), 0 6px 18px rgba(255,128,101,.13), inset 0 1px 0 rgba(255,255,255,.42);
+  background: var(--sky);
+  box-shadow: 0 10px 22px rgba(77,150,255,.24), inset 0 1px 0 rgba(255,255,255,.42);
 }
-.progress-track span, .picker-thumb::after, .modal-scroll-thumb::after { background: var(--brand-spectrum); }
-.progress-icon { background: linear-gradient(145deg, var(--coral), var(--gold)); box-shadow: 0 7px 16px rgba(255,128,101,.22); }
-.date-tile span { background: linear-gradient(100deg, var(--purple), var(--sky)); }
-.calendar-grid .is-today .day-number { color: #fff; background: linear-gradient(145deg, var(--purple), var(--sky)); box-shadow: 0 5px 11px rgba(77,150,255,.22); }
+.progress-track span { background: var(--coral); }
+.picker-thumb::after, .modal-scroll-thumb::after { background: var(--purple); }
+.progress-icon { background: var(--gold); box-shadow: 0 7px 16px rgba(244,185,66,.24); }
+.date-tile span { background: var(--sky); }
+.calendar-grid .is-today .day-number { color: #fff; background: var(--sky); box-shadow: 0 5px 11px rgba(77,150,255,.22); }
 .calendar-toolbar > button:first-child { color: var(--coral); background: color-mix(in srgb, var(--coral) 6%, #fff); }
 .calendar-toolbar > button:last-child { color: var(--sky); background: color-mix(in srgb, var(--sky) 6%, #fff); }
 .calendar-toolbar button.calendar-today-button { color: #a96c00; border-color: color-mix(in srgb, var(--gold) 34%, #e4dfd5); background: color-mix(in srgb, var(--gold) 13%, #fff); }
@@ -667,6 +665,6 @@ button { color: inherit; }
 @media (max-width: 760px) {
   .bottom-nav button:nth-child(1).active, .bottom-nav button:nth-child(1).active .nav-icon { color: var(--coral); }
   .bottom-nav button:nth-child(2).active, .bottom-nav button:nth-child(2).active .nav-icon { color: var(--sky); }
-  .bottom-nav button:nth-child(2).calendar-nav-button.active .date-nav-icon i { background: linear-gradient(90deg, var(--purple), var(--sky)); }
+  .bottom-nav button:nth-child(2).calendar-nav-button.active .date-nav-icon i { background: var(--sky); }
   .bottom-nav button:nth-child(3).active, .bottom-nav button:nth-child(3).active .nav-icon { color: #d38b0d; }
 }

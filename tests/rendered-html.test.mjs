@@ -123,9 +123,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /LiquidButton|liquid-glass/);
   assert.match(page, /premium-action/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Premium actions: solid, polished/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /--brand-spectrum: linear-gradient/);
+  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /--brand-spectrum/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /App-icon palette: one coordinated system/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(2\)\.active[^}]*color: var\(--sky\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.brand-ez, \.mobile-wordmark-ez, \.splash-ez \{\s*color: var\(--coral\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes routine-reveal/);
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
