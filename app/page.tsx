@@ -352,10 +352,11 @@ export default function Home() {
         {tab === "today" && (
           <div className="page today-page">
             <div className="page-heading split-heading">
-              <div>
+              <div className="date-tile" aria-hidden="true"><span>{today.toLocaleDateString("en-US", { month: "short" })}</span><strong>{today.getDate()}</strong></div>
+              <div className="today-date-copy">
                 <p className="eyebrow">{formatLongDate(today)}</p>
               </div>
-              <div className="date-tile" aria-hidden="true"><span>{today.toLocaleDateString("en-US", { month: "short" })}</span><strong>{today.getDate()}</strong></div>
+              <span className="date-balance" aria-hidden="true" />
             </div>
 
             <section className="progress-card">

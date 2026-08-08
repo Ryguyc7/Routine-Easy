@@ -87,7 +87,10 @@ button { color: inherit; }
 .today-page .page-heading { margin-bottom: 18px; }
 .today-page .page-heading .eyebrow { margin-bottom: 0; }
 .accent-dot { color: var(--purple); }
-.split-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 30px; }
+.split-heading { display: grid; grid-template-columns: 68px minmax(0, 1fr) 68px; align-items: center; gap: 16px; }
+.today-date-copy { min-width: 0; text-align: center; }
+.today-date-copy .eyebrow { text-align: center; }
+.date-balance { display: block; width: 68px; }
 .date-tile { width: 68px; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 14px; text-align: center; box-shadow: 0 8px 24px rgba(35, 30, 77, .06); }
 .date-tile span { display: block; padding: 6px; background: var(--purple); color: #fff; text-transform: uppercase; font-size: 10px; letter-spacing: 1.2px; font-weight: 800; }
 .date-tile strong { display: block; padding: 7px 0 8px; font-size: 25px; }
@@ -319,9 +322,13 @@ button { color: inherit; }
   .bottom-nav button:active { transform: scale(.96); }
   .page-heading { margin-bottom: 27px; }
   .page-heading h1 { font-size: 39px; letter-spacing: -1.8px; }
-  .split-heading { align-items: center; }
+  .split-heading { grid-template-columns: 58px minmax(0, 1fr) 58px; align-items: center; gap: 8px; }
   .split-heading .primary-button { flex: 0 0 auto; }
-  .date-tile { display: none; }
+  .date-tile { display: block; width: 58px; border-radius: 12px; box-shadow: 0 7px 20px rgba(35,30,77,.08); }
+  .date-tile span { padding: 5px; font-size: 9px; }
+  .date-tile strong { padding: 6px 0 7px; font-size: 22px; }
+  .date-balance { width: 58px; }
+  .today-date-copy .eyebrow { white-space: nowrap; font-size: 10px; letter-spacing: 1.2px; }
   .progress-card { padding: 21px; border-radius: 22px; box-shadow: 0 18px 38px rgba(86,70,190,.22); }
   .progress-icon { display: none; }
   .routine-row { min-height: 72px; border-color: rgba(225,222,218,.86); border-radius: 18px; box-shadow: 0 9px 24px rgba(35,30,77,.055); }
