@@ -33,6 +33,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /picker-scroll/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);

@@ -179,7 +179,7 @@ button { color: inherit; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
 .add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
-.add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
+.add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
 .add-routine-modal .form-actions button { min-width: 122px; }
@@ -192,17 +192,18 @@ button { color: inherit; }
 .add-card-header h2 { margin: 0; font-size: 21px; }
 .add-card-header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 .add-card-header > button, .delete-button { border: 0; background: transparent; color: #aaa8b2; font-size: 23px; cursor: pointer; }
-.form-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px 18px; }
-.field { display: grid; gap: 7px; color: #5e5e68; font-size: 11px; font-weight: 750; }
+.form-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 18px; }
+.form-grid > * { min-width: 0; max-width: 100%; }
+.field { min-width: 0; display: grid; gap: 7px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .field span small { color: #a09fa8; font-size: 10px; font-weight: 600; }
 .field input, .field textarea { width: 100%; border: 1px solid #dfdde2; padding: 11px 12px; border-radius: 9px; outline: none; color: var(--ink); background: #fff; }
 .field textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
 .field input:focus, .field textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--lavender); }
 .checklist-field { grid-column: 1 / -1; }
-.tracking-picker { grid-column: 1 / -1; padding: 0; border: 0; }
+.tracking-picker { width: 100%; min-width: 0; grid-column: 1 / -1; padding: 0; border: 0; }
 .tracking-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
-.tracking-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
-.tracking-options label { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px; border: 1px solid #dfdde2; border-radius: 12px; background: #fff; cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.tracking-options { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.tracking-options label { width: 100%; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px; border: 1px solid #dfdde2; border-radius: 12px; background: #fff; cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
 .tracking-options label.selected { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 5%, #fff); box-shadow: 0 0 0 3px var(--lavender); }
 .tracking-options input { position: absolute; opacity: 0; pointer-events: none; }
 .tracking-icon { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 auto; border-radius: 9px; color: var(--purple); background: var(--lavender); font-size: 15px; font-weight: 800; }
@@ -236,10 +237,10 @@ button { color: inherit; }
 .day-plan-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px 14px; margin-top: 15px; padding-top: 14px; border-top: 1px solid #ece9ef; }
 .day-plan-grid > p { grid-column: 1 / -1; margin: 0; color: #9996a0; font-size: 10px; }
 .options-grid { grid-template-columns: 1fr; }
-.options-grid .tracking-options { grid-template-columns: repeat(3, 1fr); }
-.emoji-picker, .color-picker, .day-picker { border: 0; padding: 0; margin: 0; }
+.options-grid .tracking-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.emoji-picker, .color-picker, .day-picker { min-width: 0; max-width: 100%; border: 0; padding: 0; margin: 0; }
 .emoji-picker legend, .color-picker legend, .day-picker legend { margin-bottom: 9px; color: #5e5e68; font-size: 11px; font-weight: 750; }
-.picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; overflow-x: auto; padding: 2px 2px 5px; scrollbar-width: none; overscroll-behavior-inline: contain; }
+.picker-scroll { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 2px 2px 5px; scrollbar-width: none; overscroll-behavior-inline: contain; }
 .picker-scroll::-webkit-scrollbar { display: none; }
 .picker-scroll label { flex: 0 0 auto; }
 .emoji-picker input, .color-picker input, .day-picker input { position: absolute; opacity: 0; pointer-events: none; }
@@ -339,7 +340,7 @@ button { color: inherit; }
   .add-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
   .edit-routine-modal .add-card-header { top: -20px; margin: -20px -20px 20px; padding: 20px 20px 14px; }
   .edit-routine-modal .form-actions { bottom: -20px; margin: 17px -20px -20px; padding: 14px 20px 20px; }
-  .tracking-options, .options-grid .tracking-options { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .tracking-options, .options-grid .tracking-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
   .tracking-options label { min-width: 0; min-height: 70px; padding: 8px 5px; flex-direction: column; justify-content: center; gap: 6px; text-align: center; }
   .tracking-options label > span:last-child { display: block; }
   .tracking-options strong { display: block; font-size: 10px; white-space: nowrap; }
