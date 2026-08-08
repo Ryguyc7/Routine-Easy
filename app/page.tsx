@@ -495,7 +495,6 @@ export default function Home() {
             </section>
 
             <section className="routine-section">
-              <div className="section-title"><h2>Today’s routines</h2><span>{todayRoutines.length} items</span></div>
               <div className="routine-list">
                 {loading ? <LoadingRows /> : todayRoutines.length ? todayRoutines.map((routine) => (
                   <RoutineRow

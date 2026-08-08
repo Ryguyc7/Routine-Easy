@@ -9,7 +9,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /Today’s routines/);
+  assert.doesNotMatch(page, /Today’s routines/);
   assert.match(page, /Calendar/);
   assert.match(page, /Add a routine/);
   assert.match(page, /Build my first routine/);
