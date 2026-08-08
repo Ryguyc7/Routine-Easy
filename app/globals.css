@@ -193,7 +193,10 @@ button { color: inherit; }
 .preview-copy > span { color: #92909a; font-size: 10px; }
 .preview-check { width: 26px; height: 26px; flex: 0 0 auto; margin-left: auto; border: 1.5px solid color-mix(in srgb, var(--preview) 34%, #d9d6df); border-radius: 50%; background: #fff; }
 @keyframes preview-arrive { from { opacity: 0; transform: translateY(8px) scale(.98); } }
-.add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
+.add-routine-modal, .edit-routine-modal { width: min(680px, 100%); max-height: calc(100svh - 48px); margin: 0; overflow-x: hidden; overflow-y: scroll; overscroll-behavior: contain; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: #6c5ce7 #e5dfef; border-radius: 22px; box-shadow: 0 28px 80px rgba(29,24,63,.22), 0 5px 18px rgba(29,24,63,.1); animation: modal-rise .24s ease; }
+.add-routine-modal::-webkit-scrollbar, .edit-routine-modal::-webkit-scrollbar { display: block; width: 7px; }
+.add-routine-modal::-webkit-scrollbar-track, .edit-routine-modal::-webkit-scrollbar-track { margin-block: 12px; border-radius: 999px; background: linear-gradient(90deg, transparent 0 2px, #e5dfef 2px 5px, transparent 5px); }
+.add-routine-modal::-webkit-scrollbar-thumb, .edit-routine-modal::-webkit-scrollbar-thumb { min-height: 36px; border: 1px solid transparent; border-radius: 4px; background: #6c5ce7; background-clip: padding-box; }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
 .add-routine-modal .form-actions button { min-width: 122px; }
