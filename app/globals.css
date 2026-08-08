@@ -318,12 +318,12 @@ button { color: inherit; }
   .bottom-nav button { position: relative; justify-content: center; flex-direction: column; gap: 5px; padding: 4px; border-radius: 0; font-size: 10px; font-weight: 700; letter-spacing: -.1px; transition: color .2s ease, transform .2s ease; }
   .bottom-nav .nav-icon { width: 25px; height: 23px; transition: color .2s ease, transform .2s ease, filter .2s ease; }
   .bottom-nav .nav-icon svg { width: 20px; height: 20px; }
-  .bottom-nav button.calendar-nav-button, .bottom-nav button.calendar-nav-button.active { position: relative; z-index: 2; width: 84px; height: 84px; align-self: center; justify-self: center; gap: 4px; padding: 7px 8px 6px; color: #7e7f89; background: rgba(255,255,255,.98); border: 1px solid rgba(231,225,216,.95); border-radius: 25px; box-shadow: 0 0 0 6px rgba(251,248,242,.96), 0 13px 30px rgba(43,38,34,.14); }
+  .bottom-nav button.calendar-nav-button, .bottom-nav button.calendar-nav-button.active { position: relative; z-index: 2; width: 100%; height: 100%; align-self: center; justify-self: center; justify-content: center; gap: 4px; padding: 3px 4px; color: #7e7f89; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
   .bottom-nav button.calendar-nav-button.active { color: var(--purple); }
-  .bottom-nav .date-nav-icon { width: 39px; height: 42px; grid-template-rows: 12px 1fr; overflow: hidden; border: 1.5px solid currentColor; border-radius: 9px; background: #fff; }
+  .bottom-nav .date-nav-icon { width: 35px; height: 38px; grid-template-rows: 11px 1fr; overflow: hidden; border: 1.5px solid currentColor; border-radius: 8px; background: #fff; }
   .bottom-nav .date-nav-icon i { display: grid; place-items: center; width: 100%; height: 100%; color: #fff; background: #858690; font-size: 7px; line-height: 1; font-style: normal; font-weight: 850; letter-spacing: .5px; text-transform: uppercase; }
   .bottom-nav .calendar-nav-button.active .date-nav-icon i { background: var(--purple); }
-  .bottom-nav .date-nav-icon strong { display: grid; place-items: center; color: currentColor; font-size: 15px; line-height: 1; font-weight: 850; }
+  .bottom-nav .date-nav-icon strong { display: grid; place-items: center; color: currentColor; font-size: 14px; line-height: 1; font-weight: 850; }
   .bottom-nav .calendar-nav-button .nav-label { font-size: 9px; font-weight: 800; }
   .bottom-nav .calendar-nav-button::after { display: none; }
   .bottom-nav button.active { color: var(--purple); background: transparent; font-weight: 800; }
