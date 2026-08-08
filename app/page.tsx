@@ -1077,11 +1077,13 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
   const dragOffsetRef = useRef(0);
   const [thumb, setThumb] = useState({ top: 0, height: 100 });
   const [dragging, setDragging] = useState(false);
+  const [scrollable, setScrollable] = useState(false);
 
   const updateIndicator = () => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
     const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    setScrollable(maxScroll > 1);
     const boundedScroll = Math.min(maxScroll, Math.max(0, scroller.scrollTop));
     const height = Math.max(12, Math.min(100, (scroller.clientHeight / scroller.scrollHeight) * 100));
     const top = maxScroll ? (boundedScroll / maxScroll) * (100 - height) : 0;
@@ -1141,6 +1143,8 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
       scroller.scrollTo({ top: scroller.scrollTop + amounts[event.key], behavior: "smooth" });
     }
   };
+
+  if (!scrollable) return null;
 
   return <div ref={trackRef} className="modal-scrollbar">
     <button ref={thumbRef} type="button" className={`modal-scroll-thumb${dragging ? " dragging" : ""}`} style={{ top: `calc(${thumb.top}% + 1px)`, height: `calc(${thumb.height}% - 2px)` }} aria-label={`Scroll ${label}`} onPointerDown={beginDrag} onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) scrollFromThumb(event.clientY); }} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={handleKeyDown} />

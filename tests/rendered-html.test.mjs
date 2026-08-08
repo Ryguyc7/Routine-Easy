@@ -76,6 +76,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /setPreviewEmoji/);
   assert.match(page, /setPreviewColor/);
   assert.match(page, /function VerticalScrollIndicator/);
+  assert.match(page, /setScrollable\(maxScroll > 1\)/);
+  assert.match(page, /if \(!scrollable\) return null/);
   assert.match(page, /mutationObserver/);
   assert.match(page, /Scroll \$\{label\}/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /modal-scrollbar::before/);
