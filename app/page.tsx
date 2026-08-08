@@ -155,7 +155,7 @@ export default function Home() {
       <section className="content">
         <header className="mobile-header">
           <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>Daydrop</span></div>
-          <button className="mobile-add" onClick={() => { setTab("routines"); setShowAdd(true); }} aria-label="Add routine">+</button>
+          <button className="mobile-add" onClick={() => { setTab("routines"); setShowAdd(true); }} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
