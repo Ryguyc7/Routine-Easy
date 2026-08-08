@@ -161,6 +161,9 @@ button { color: inherit; }
 .filter-pills button span { margin-right: 6px; }
 .filter-pills button.active { color: #fff; background: var(--pill); border-color: var(--pill); }
 .filter-pills button:first-child.active { --pill: var(--ink); }
+.calendar-filter-picker { margin: 0 0 15px; }
+.calendar-filter-picker .filter-pills { margin: 0; padding-bottom: 7px; }
+.calendar-filter-picker .picker-scrollbar { margin-top: -1px; }
 .calendar-card { padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 9px 28px rgba(35,30,77,.05); }
 .calendar-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
 .calendar-toolbar h2 { margin: 0; font-size: 18px; }

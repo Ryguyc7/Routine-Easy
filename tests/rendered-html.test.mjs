@@ -51,6 +51,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /modal-scroll-thumb::after[\s\S]*width: 5px[\s\S]*background: #6c5ce7/);
   assert.match(page, /picker-scroll/);
   assert.match(page, /function ScrollablePicker/);
+  assert.match(page, /Calendar routine filters/);
+  assert.match(page, /calendar-filter-picker/);
+  assert.match(page, /scrollClassName="filter-pills"/);
   assert.match(page, /Scroll horizontally for more/);
   assert.doesNotMatch(page, /scroller\.scrollBy|picker-scroll-hint/);
   assert.match(page, /picker-scrollbar/);

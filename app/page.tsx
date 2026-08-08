@@ -428,10 +428,10 @@ export default function Home() {
 
         {tab === "calendar" && (
           <div className="page calendar-page">
-            <div className="filter-pills" role="list" aria-label="Filter calendar by routine">
+            <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills">
               <button className={selectedRoutine === "all" ? "active" : ""} onClick={() => setSelectedRoutine("all")}>All routines</button>
               {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
-            </div>
+            </ScrollablePicker>
             <section className="calendar-card">
               <div className="calendar-toolbar">
                 <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft aria-hidden="true" /></button>
@@ -765,7 +765,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving }: { routine
   </div>;
 }
 
-function ScrollablePicker({ label, children }: { label: string; children: ReactNode }) {
+function ScrollablePicker({ label, children, className = "", scrollClassName = "" }: { label: string; children: ReactNode; className?: string; scrollClassName?: string }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLButtonElement>(null);
@@ -832,8 +832,8 @@ function ScrollablePicker({ label, children }: { label: string; children: ReactN
     };
   }, []);
 
-  return <div className="picker-shell">
-    <div ref={scrollerRef} className="picker-scroll" onScroll={updateIndicator} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
+  return <div className={`picker-shell${className ? ` ${className}` : ""}`}>
+    <div ref={scrollerRef} className={`picker-scroll${scrollClassName ? ` ${scrollClassName}` : ""}`} onScroll={updateIndicator} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
     <div ref={trackRef} className="picker-scrollbar">
       <button ref={thumbRef} type="button" className={`picker-thumb${dragging ? " dragging" : ""}`} style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} aria-label={`Scroll ${label} choices`} onPointerDown={beginThumbDrag} onPointerMove={moveThumb} onPointerUp={endThumbDrag} onPointerCancel={endThumbDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={moveThumbWithKeyboard} />
     </div>
