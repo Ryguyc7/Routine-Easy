@@ -49,6 +49,10 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar \{[\s\S]*width: 100%; height: 10px/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar::before \{[\s\S]*height: 3px[\s\S]*transform: translateY\(-50%\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar span \{[\s\S]*height: 5px[\s\S]*background: #6c5ce7[\s\S]*transform: translateY\(-50%\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.emoji-picker label > span/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.color-picker label > span/);
+  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.emoji-picker span \{/);
+  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.color-picker span \{/);
   assert.match(page, /#8338EC/);
   assert.match(page, /🪥/);
   assert.match(page, /#00A896/);
