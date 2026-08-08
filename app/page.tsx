@@ -13,6 +13,7 @@ type Routine = {
 
 type Completion = { routineId: number; date: string };
 type Tab = "today" | "calendar" | "routines";
+type OnboardingState = "checking" | "show" | "done";
 
 const COLORS = ["#6C5CE7", "#FF8A65", "#F4B942", "#49A078", "#4D96FF", "#EC6F91"];
 const EMOJIS = ["✨", "💊", "🏋️", "🥣", "🥗", "🍲", "🧘", "💧"];
@@ -32,6 +33,7 @@ function formatLongDate(date: Date) {
 }
 
 export default function Home() {
+  const [onboardingState, setOnboardingState] = useState<OnboardingState>("checking");
   const [tab, setTab] = useState<Tab>("today");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
@@ -60,8 +62,23 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const forceOnboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
+    const completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
+    setOnboardingState(forceOnboarding || !completed ? "show" : "done");
     loadData();
   }, []);
+
+  function completeOnboarding(addRoutine = false) {
+    window.localStorage.setItem("routineez-onboarding-complete", "true");
+    if (new URLSearchParams(window.location.search).has("onboarding")) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    if (addRoutine) {
+      setTab("routines");
+      setShowAdd(true);
+    }
+    setOnboardingState("done");
+  }
 
   const todayRoutines = routines.filter((routine) => routine.days.includes(today.getDay()));
   const completedToday = new Set(
@@ -132,6 +149,9 @@ export default function Home() {
     while (cells.length % 7) cells.push(null);
     return cells;
   }, [month]);
+
+  if (onboardingState === "checking") return <OnboardingSplash />;
+  if (onboardingState === "show") return <OnboardingPage onComplete={completeOnboarding} />;
 
   return (
     <main className="app-shell">
@@ -246,6 +266,43 @@ export default function Home() {
       </nav>
     </main>
   );
+}
+
+function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => void }) {
+  return <main className="onboarding-shell">
+    <div className="onboarding-glow glow-one" aria-hidden="true" />
+    <div className="onboarding-glow glow-two" aria-hidden="true" />
+    <section className="onboarding-card" aria-labelledby="onboarding-title">
+      <header className="onboarding-top">
+        <div className="brand" aria-label="RoutineEZ"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div>
+        <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
+      </header>
+      <div className="onboarding-layout">
+        <div className="onboarding-copy">
+          <p className="eyebrow">Welcome to your new rhythm</p>
+          <h1 id="onboarding-title">Small routines.<br /><span>Easier days.</span></h1>
+          <p className="onboarding-lead">Plan the little things that keep your day moving—from workouts and vitamins to breakfast, lunch, and dinner.</p>
+          <div className="onboarding-benefits" aria-label="RoutineEZ features">
+            <div><span className="benefit-icon purple">✓</span><p><strong>Simple check-offs</strong><small>See today and keep moving.</small></p></div>
+            <div><span className="benefit-icon coral">●</span><p><strong>Color-coded plans</strong><small>Your routines at a glance.</small></p></div>
+            <div><span className="benefit-icon green">↗</span><p><strong>Gentle progress</strong><small>Small wins that add up.</small></p></div>
+          </div>
+          <button className="onboarding-cta" onClick={() => onComplete(true)}><span>Build my first routine</span><i aria-hidden="true">→</i></button>
+          <p className="onboarding-note">No pressure. Start with just one thing.</p>
+        </div>
+        <div className="onboarding-visual">
+          <div className="onboarding-image-wrap">
+            <img src="/og.png" alt="RoutineEZ color-coded routine checklist preview" />
+          </div>
+          <div className="onboarding-mini-card"><span>✦</span><div><strong>A calmer day starts small.</strong><small>One routine is enough.</small></div></div>
+        </div>
+      </div>
+    </section>
+  </main>;
+}
+
+function OnboardingSplash() {
+  return <main className="onboarding-splash" aria-label="Loading RoutineEZ"><div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>RoutineEZ</span></div></main>;
 }
 
 function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {

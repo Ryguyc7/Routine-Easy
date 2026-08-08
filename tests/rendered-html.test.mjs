@@ -12,6 +12,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Today’s routines/);
   assert.match(page, /Calendar/);
   assert.match(page, /Add a routine/);
+  assert.match(page, /Build my first routine/);
+  assert.match(page, /routineez-onboarding-complete/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
