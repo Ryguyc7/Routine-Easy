@@ -111,7 +111,8 @@ button { color: inherit; }
 .routine-info { display: grid; gap: 5px; }
 .routine-info strong { font-size: 14px; }
 .routine-info small { color: var(--muted); font-size: 12px; }
-.expand-chevron { margin-left: auto; color: #aaa8b2; font-size: 19px; line-height: 1; transition: transform .2s ease; }
+.expand-chevron { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 auto; margin-left: auto; color: #aaa8b2; transition: transform .2s ease, color .2s ease; transform-origin: 50% 50%; }
+.expand-chevron::before { content: ""; display: block; width: 7px; height: 7px; border-right: 1.7px solid currentColor; border-bottom: 1.7px solid currentColor; transform: rotate(45deg) translate(-1px, -1px); transform-origin: 50% 50%; }
 .routine-row.expanded .expand-chevron { transform: rotate(180deg); }
 .check-circle { display: grid; place-items: center; flex: 0 0 auto; margin-right: 17px; width: 28px; height: 28px; padding: 0; border: 1.5px solid #d8d6dd; background: #fff; border-radius: 50%; color: transparent; cursor: pointer; transition: .2s ease; }
 .routine-row.completed { opacity: .66; }

@@ -396,7 +396,7 @@ function RoutineRow({ routine, completed, completedItemIds, onToggle, onToggleIt
     <button className="routine-main" onClick={() => routine.items.length ? setExpanded((value) => !value) : onToggle()} aria-expanded={routine.items.length ? expanded : undefined}>
       <span className="routine-emoji">{routine.emoji}</span>
       <span className="routine-info"><strong>{routine.name}</strong><small>{routine.time}{routine.items.length ? ` · ${completedCount}/${routine.items.length} items` : ""}</small></span>
-      {routine.items.length > 0 && <span className="expand-chevron" aria-hidden="true">⌄</span>}
+      {routine.items.length > 0 && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
     {routine.items.length > 0 && expanded && <div className="routine-checklist">
