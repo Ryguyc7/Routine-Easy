@@ -147,7 +147,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /date-nav-icon/);
   assert.match(page, /month: "short"/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: transparent; border: 0/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{ width: 38px[^}]*drop-shadow\(0 12px 16px/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{ width: 38px[^}]*drop-shadow\(0 0 13px rgba\(32,34,44/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{[^}]*transform: translateY\(2px\)/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{[^}]*border:/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav \{[\s\S]*height: 64px;[\s\S]*border-radius: 20px/);
