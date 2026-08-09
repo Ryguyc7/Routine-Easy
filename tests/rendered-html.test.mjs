@@ -225,6 +225,9 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /routine-swipe-surface/);
   assert.match(page, /setPointerCapture/);
   assert.match(page, /Math\.abs\(dragXRef\.current\) >= 70/);
+  assert.match(page, /function undoRoutineSkip/);
+  assert.match(page, /onClick=\{skipped \? onSkip : onToggle\}/);
+  assert.match(page, /setAmount\(routine\.id, amount, 0, date, false\)/);
   assert.match(page, /aria-description=\{skipped/);
   assert.doesNotMatch(page, /className="skip-today-button"/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.skipped \.collapsed-progress span \{ width: 100% !important/);

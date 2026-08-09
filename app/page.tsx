@@ -356,10 +356,10 @@ export default function Home() {
     if (!response.ok) loadData();
   }
 
-  async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey) {
+  async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey, clearSkipped = true) {
     const routine = routines.find((item) => item.id === routineId);
     if (!routine || !usesQuantity(routine.trackingMode)) return;
-    await clearSkip(routineId, date);
+    if (clearSkipped) await clearSkip(routineId, date);
     const safeCount = Math.min(amount.targetCount, Math.max(0, Math.round(count)));
     setAmountCompletions((items) => safeCount === 0
       ? items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date))
@@ -371,6 +371,14 @@ export default function Home() {
       body: JSON.stringify({ routineId, amountKey: amount.key, date, count: safeCount }),
     });
     if (!response.ok) loadData();
+  }
+
+  async function undoRoutineSkip(routine: Routine, date = todayKey) {
+    await setRoutineSkip(routine.id, false, date);
+    await Promise.all([
+      usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, false, date) : Promise.resolve(),
+      ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routine.id, amount, 0, date, false)) : []),
+    ]);
   }
 
   async function toggleItem(itemId: number, date = todayKey) {
@@ -603,7 +611,7 @@ export default function Home() {
                     onToggle={() => toggleRoutine(routine.id)}
                     onToggleItem={toggleItem}
                     onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
-                    onSkip={() => setRoutineSkip(routine.id, !skippedToday.has(routine.id))}
+                    onSkip={() => skippedToday.has(routine.id) ? undoRoutineSkip(routine) : setRoutineSkip(routine.id, true)}
                     timeFormat={preferences.timeFormat}
                   />
                 )) : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
@@ -902,7 +910,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
         <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
         {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
       </button>
-      <button className="check-circle" onClick={onToggle} aria-label={skipped ? `Complete ${routine.name} instead` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>{skipped ? <SkipForward aria-hidden="true" /> : "✓"}</button>
+      <button className="check-circle" onClick={skipped ? onSkip : onToggle} aria-label={skipped ? `Undo skip and reset ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>{skipped ? <SkipForward aria-hidden="true" /> : "✓"}</button>
       <button className="routine-skip-accessible" onClick={onSkip}>{skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}</button>
     </div>
     {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
