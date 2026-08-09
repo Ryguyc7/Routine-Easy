@@ -894,7 +894,8 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     if (gestureAxisRef.current === "horizontal" && Math.abs(dragXRef.current) >= 70) {
       suppressClickRef.current = true;
-      window.setTimeout(() => { suppressClickRef.current = false; }, 350);
+      event.preventDefault();
+      window.setTimeout(() => { suppressClickRef.current = false; }, 0);
       onSkip();
     }
     gestureAxisRef.current = "pending";

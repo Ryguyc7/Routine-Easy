@@ -225,6 +225,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /routine-swipe-surface/);
   assert.match(page, /setPointerCapture/);
   assert.match(page, /Math\.abs\(dragXRef\.current\) >= 70/);
+  assert.match(page, /event\.preventDefault\(\);[\s\S]*setTimeout\(\(\) => \{ suppressClickRef\.current = false; \}, 0\)/);
+  assert.doesNotMatch(page, /suppressClickRef\.current = false; \}, 350/);
   assert.match(page, /function undoRoutineSkip/);
   assert.match(page, /onClick=\{skipped \? onSkip : onToggle\}/);
   assert.match(page, /setAmount\(routine\.id, amount, 0, date, false\)/);
