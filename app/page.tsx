@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, ListChecks, Settings2, Sparkles, Trash2, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, History, ListChecks, SkipForward, Settings2, Sparkles, Trash2, X, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
 type RoutineAmount = { key: string; name: string; targetCount: number };
@@ -28,7 +28,7 @@ type Routine = {
   items: RoutineItem[];
 };
 
-type Completion = { routineId: number; date: string };
+type Completion = { routineId: number; date: string; status: "completed" | "skipped" };
 type ItemCompletion = { itemId: number; date: string };
 type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
 type Tab = "today" | "calendar" | "routines" | "settings";
@@ -37,6 +37,17 @@ type TimeFormat = "12-hour" | "24-hour";
 type WeekStart = "sunday" | "monday";
 type MotionPreference = "full" | "reduced";
 type AppPreferences = { timeFormat: TimeFormat; weekStartsOn: WeekStart; motion: MotionPreference };
+type RoutineTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  color: string;
+  time: string;
+  days: number[];
+  lists?: RoutineListDraft[];
+  amounts?: RoutineAmount[];
+};
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
 const SPLASH_DURATION_MS = 2100;
@@ -62,6 +73,14 @@ const EMOJIS = [
 ];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_FULL_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const ROUTINE_TEMPLATES: RoutineTemplate[] = [
+  { id: "vitamins", name: "Morning vitamins", description: "A simple daily supplement check.", emoji: "💊", color: "#6C5CE7", time: "08:00", days: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "workout", name: "Workout", description: "Warm up, train, and cool down.", emoji: "🏋️", color: "#4D96FF", time: "07:30", days: [1, 3, 5], lists: [{ key: "workout-list", name: "Workout", items: "Warm up\nMain workout\nCool down" }] },
+  { id: "breakfast", name: "Breakfast", description: "Keep your first meal consistent.", emoji: "🥣", color: "#F4B942", time: "08:30", days: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "evening-reset", name: "Evening reset", description: "Close the day with a clean slate.", emoji: "🌙", color: "#845EF7", time: "20:30", days: [0, 1, 2, 3, 4, 5, 6], lists: [{ key: "evening-list", name: "Reset", items: "Tidy up\nPlan tomorrow\nPut phone away" }] },
+  { id: "cleaning", name: "Weekly clean", description: "A compact weekend cleaning list.", emoji: "🧹", color: "#00A896", time: "10:00", days: [6], lists: [{ key: "cleaning-list", name: "Cleaning", items: "Kitchen\nBathroom\nFloors" }] },
+  { id: "bedtime", name: "Bedtime routine", description: "Wind down without overthinking it.", emoji: "😴", color: "#9C36B5", time: "22:00", days: [0, 1, 2, 3, 4, 5, 6], lists: [{ key: "bedtime-list", name: "Wind down", items: "Brush teeth\nSet alarm\nRead" }] },
+];
 
 function localDateKey(date = new Date()) {
   const offset = date.getTimezoneOffset() * 60000;
@@ -158,6 +177,10 @@ export default function Home() {
   const [selectedRoutine, setSelectedRoutine] = useState<number | "all">("all");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
+  const [historyRoutine, setHistoryRoutine] = useState<Routine | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
   const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
@@ -210,13 +233,13 @@ export default function Home() {
     if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
     setEditingRoutineId(null);
     if (tab === "routines") {
-      setShowAdd(true);
+      setShowTemplatePicker(true);
       return;
     }
     setShowAdd(false);
     setTab("routines");
     addTimerRef.current = window.setTimeout(() => {
-      setShowAdd(true);
+      setShowTemplatePicker(true);
       addTimerRef.current = null;
     }, 200);
   }
@@ -241,15 +264,16 @@ export default function Home() {
     }
     if (addRoutine) {
       setTab("routines");
-      setShowAdd(true);
+      setShowTemplatePicker(true);
     }
     setOnboardingState("done");
   }
 
   const todayRoutines = routines.filter((routine) => routine.days.includes(today.getDay()) && routineActiveOnDate(routine, todayKey));
   const completedToday = new Set(
-    completions.filter((item) => item.date === todayKey).map((item) => item.routineId),
+    completions.filter((item) => item.date === todayKey && item.status === "completed").map((item) => item.routineId),
   );
+  const skippedToday = new Set(completions.filter((item) => item.date === todayKey && item.status === "skipped").map((item) => item.routineId));
   const completedItemsToday = new Set(
     itemCompletions.filter((item) => item.date === todayKey).map((item) => item.itemId),
   );
@@ -259,8 +283,9 @@ export default function Home() {
     const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => amountCount(routine.id, amount.key) >= amount.targetCount));
     return routine.trackingMode === "simple" ? completedToday.has(routine.id) : checklistDone && quantityDone;
   };
-  const doneCount = todayRoutines.filter(isRoutineDone).length;
-  const progress = todayRoutines.length ? Math.round((doneCount / todayRoutines.length) * 100) : 0;
+  const eligibleTodayRoutines = todayRoutines.filter((routine) => !skippedToday.has(routine.id));
+  const doneCount = eligibleTodayRoutines.filter(isRoutineDone).length;
+  const progress = eligibleTodayRoutines.length ? Math.round((doneCount / eligibleTodayRoutines.length) * 100) : 0;
   const animatedProgress = useAnimatedNumber(progress, preferences.motion === "reduced" ? 0 : 600);
 
   useEffect(() => {
@@ -274,21 +299,23 @@ export default function Home() {
 
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
+    const wasSkipped = completions.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped");
+    await clearSkip(routineId, date);
     if (routine && routine.trackingMode !== "simple") {
       const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => itemCompletions.some((completion) => completion.itemId === item.id && completion.date === date)));
       const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => amountCount(routineId, amount.key, date) >= amount.targetCount));
-      const completeEverything = !(checklistDone && quantityDone);
+      const completeEverything = wasSkipped || !(checklistDone && quantityDone);
       await Promise.all([
         usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, completeEverything, date) : Promise.resolve(),
         ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routineId, amount, completeEverything ? amount.targetCount : 0, date)) : []),
       ]);
       return;
     }
-    const currentlyDone = completions.some((item) => item.routineId === routineId && item.date === date);
+    const currentlyDone = completions.some((item) => item.routineId === routineId && item.date === date && item.status === "completed");
     setCompletions((items) =>
       currentlyDone
         ? items.filter((item) => !(item.routineId === routineId && item.date === date))
-        : [...items, { routineId, date }],
+        : [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, status: "completed" }],
     );
     const response = await fetch("/api/completions", {
       method: "POST",
@@ -296,6 +323,23 @@ export default function Home() {
       body: JSON.stringify({ routineId, date, completed: !currentlyDone }),
     });
     if (!response.ok) loadData();
+  }
+
+  async function setRoutineSkip(routineId: number, skipped: boolean, date = todayKey) {
+    setCompletions((items) => skipped
+      ? [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, status: "skipped" }]
+      : items.filter((item) => !(item.routineId === routineId && item.date === date && item.status === "skipped")),
+    );
+    const response = await fetch("/api/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ routineId, date, status: skipped ? "skipped" : null }),
+    });
+    if (!response.ok) loadData();
+  }
+
+  async function clearSkip(routineId: number, date = todayKey) {
+    if (completions.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped")) await setRoutineSkip(routineId, false, date);
   }
 
   async function setChecklistCompletion(routine: Routine, completed: boolean, date = todayKey) {
@@ -315,6 +359,7 @@ export default function Home() {
   async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
     if (!routine || !usesQuantity(routine.trackingMode)) return;
+    await clearSkip(routineId, date);
     const safeCount = Math.min(amount.targetCount, Math.max(0, Math.round(count)));
     setAmountCompletions((items) => safeCount === 0
       ? items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date))
@@ -329,6 +374,8 @@ export default function Home() {
   }
 
   async function toggleItem(itemId: number, date = todayKey) {
+    const routine = routines.find((candidate) => candidate.items.some((item) => item.id === itemId));
+    if (routine) await clearSkip(routine.id, date);
     const currentlyDone = itemCompletions.some((item) => item.itemId === itemId && item.date === date);
     setItemCompletions((items) => currentlyDone
       ? items.filter((item) => !(item.itemId === itemId && item.date === date))
@@ -373,11 +420,37 @@ export default function Home() {
       const data = await response.json();
       setRoutines((items) => [...items, data.routine]);
       setShowAdd(false);
+      setSelectedTemplate(null);
       setError("");
     } else {
       setError("That routine could not be added. Please try again.");
     }
     setSaving(false);
+  }
+
+  async function duplicateRoutine(routine: Routine) {
+    setDuplicatingId(routine.id);
+    try {
+      const response = await fetch("/api/routines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${routine.name} copy`, emoji: routine.emoji, color: routine.color, time: routine.time, days: routine.days,
+          trackingMode: routine.trackingMode, amounts: routine.amounts,
+          lists: routine.lists.map((list) => ({ ...list, items: routine.items.filter((item) => item.listKey === list.key).map((item) => item.title) })),
+          dayVariants: routine.dayVariants, startDate: routine.startDate, endDate: routine.endDate,
+        }),
+      });
+      if (!response.ok) throw new Error("Duplicate failed");
+      const data = await response.json();
+      setRoutines((items) => [...items, data.routine]);
+      setEditingRoutineId(data.routine.id);
+      setError("");
+    } catch {
+      setError("That routine could not be duplicated. Please try again.");
+    } finally {
+      setDuplicatingId(null);
+    }
   }
 
   async function deleteRoutine(id: number) {
@@ -490,7 +563,7 @@ export default function Home() {
             <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile">×</button>
             <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
             <div className="profile-copy"><small>Your profile</small><h2>My Routine<span className="brand-ez"><span className="brand-e">E</span><span className="brand-z">Z</span></span></h2><p>Small routines. Easier days.</p></div>
-            <div className="profile-stats"><div><strong>{routines.length}</strong><span>Routines</span></div><div><strong>{doneCount}/{todayRoutines.length}</strong><span>Done today</span></div></div>
+            <div className="profile-stats"><div><strong>{routines.length}</strong><span>Routines</span></div><div><strong>{doneCount}/{eligibleTodayRoutines.length}</strong><span>Done today</span></div></div>
             <div className="profile-actions">
               <button className="profile-settings-button" onClick={openSettings}><Settings2 aria-hidden="true" />Settings</button>
               <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}>Manage routines</button>
@@ -499,6 +572,8 @@ export default function Home() {
         </div>}
 
         {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={() => setRoutineToDelete(null)} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
+        {showTemplatePicker && <TemplateChooser onCancel={() => setShowTemplatePicker(false)} onChoose={(template) => { setSelectedTemplate(template); setShowTemplatePicker(false); setShowAdd(true); }} />}
+        {historyRoutine && <CompletionHistoryDialog routine={historyRoutine} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} todayKey={todayKey} onClose={() => setHistoryRoutine(null)} />}
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
 
@@ -509,7 +584,7 @@ export default function Home() {
             <section className="progress-card">
               <div className="progress-copy">
                 <span className="progress-icon">✦</span>
-                <div><strong>{progress === 100 ? "Beautiful work!" : progress > 50 ? "You’re on a roll!" : "Let’s make a start"}</strong><p>{doneCount} of {todayRoutines.length} routines complete</p></div>
+                <div><strong>{progress === 100 && eligibleTodayRoutines.length ? "Beautiful work!" : progress > 50 ? "You’re on a roll!" : "Let’s make a start"}</strong><p>{doneCount} of {eligibleTodayRoutines.length} routines complete{skippedToday.size ? ` · ${skippedToday.size} skipped` : ""}</p></div>
               </div>
               <div className="progress-number" aria-label={`${progress}% complete`}><span aria-hidden="true">{animatedProgress}%</span></div>
               <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
@@ -521,15 +596,17 @@ export default function Home() {
                   <RoutineRow
                     key={routine.id}
                     routine={routine}
-                    completed={isRoutineDone(routine)}
+                    completed={!skippedToday.has(routine.id) && isRoutineDone(routine)}
+                    skipped={skippedToday.has(routine.id)}
                     completedItemIds={completedItemsToday}
                     amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
                     onToggle={() => toggleRoutine(routine.id)}
                     onToggleItem={toggleItem}
                     onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
+                    onSkip={() => setRoutineSkip(routine.id, !skippedToday.has(routine.id))}
                     timeFormat={preferences.timeFormat}
                   />
-                )) : <EmptyToday onAdd={() => { setTab("routines"); setShowAdd(true); }} />}
+                )) : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
               </div>
             </section>
           </div>
@@ -568,15 +645,15 @@ export default function Home() {
 
         {tab === "routines" && (
           <div className="page routines-page">
-            {showAdd && <AddRoutineForm onSubmit={addRoutine} onCancel={() => setShowAdd(false)} saving={saving} usedEmojis={routines.map((routine) => routine.emoji)} usedColors={routines.map((routine) => routine.color)} />}
+            {showAdd && <AddRoutineForm key={selectedTemplate?.id ?? "blank"} template={selectedTemplate} onSubmit={addRoutine} onCancel={() => { setShowAdd(false); setSelectedTemplate(null); }} saving={saving} usedEmojis={routines.map((routine) => routine.emoji)} usedColors={routines.map((routine) => routine.color)} />}
             {editingRoutineId !== null && (() => {
               const routine = routines.find((item) => item.id === editingRoutineId);
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
             })()}
             <section className="routine-library">
-              <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowAdd(true); }}>+ Add routine</button></div></div>
+              <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => setRoutineToDelete(routine)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} duplicating={duplicatingId === routine.id} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => setHistoryRoutine(routine)} onDelete={() => setRoutineToDelete(routine)} />)}
               </div>
             </section>
           </div>
@@ -687,7 +764,7 @@ function DateTile({ date }: { date: Date }) {
   </div>;
 }
 
-function RoutineRow({ routine, completed, completedItemIds, amountCounts, onToggle, onToggleItem, onSetAmount, timeFormat }: { routine: Routine; completed: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; timeFormat: TimeFormat }) {
+function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, onToggle, onToggleItem, onSetAmount, onSkip, timeFormat }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSkip: () => void; timeFormat: TimeFormat }) {
   const hasDetails = (usesChecklist(routine.trackingMode) && routine.items.length > 0) || (usesQuantity(routine.trackingMode) && routine.amounts.length > 0);
   const [expanded, setExpanded] = useState(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
@@ -705,13 +782,14 @@ function RoutineRow({ routine, completed, completedItemIds, amountCounts, onTogg
     if (hasDetails) setExpanded((value) => !value);
     else onToggle();
   };
-  return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
+  return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
     <button className="routine-main" onClick={handleMainClick} aria-expanded={hasDetails ? expanded : undefined}>
       <span className="routine-emoji">{routine.emoji}</span>
-      <span className="routine-info"><strong>{routine.name}</strong><small>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</small></span>
+      <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
       {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
     </button>
     <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
+    <button className="skip-today-button" onClick={onSkip} aria-label={skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}><SkipForward aria-hidden="true" />{skipped ? "Undo skip" : "Skip today"}</button>
     {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
     {usesChecklist(routine.trackingMode) && routine.items.length > 0 && expanded && <div className="routine-checklist">{routine.lists.map((list) => <section className="routine-list-group" key={list.key}>
       <strong className="routine-list-name">{list.name}</strong>
@@ -743,7 +821,7 @@ function QuantityTracker({ routineName, amount, count, onChange }: { routineName
   </div>;
 }
 
-function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDelete: () => void }) {
+function RoutineCard({ routine, timeFormat, duplicating, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; duplicating: boolean; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const trackingLabel = routine.trackingMode === "simple" ? "Single check" : [
     ...(usesChecklist(routine.trackingMode) ? [`${routine.lists.length} ${routine.lists.length === 1 ? "list" : "lists"}`] : []),
@@ -752,7 +830,11 @@ function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
-    <button className="list-button" onClick={onEditOptions} aria-label={`Edit ${routine.name}`}>Edit</button>
+    <div className="routine-card-actions">
+      <button onClick={onEditOptions} aria-label={`Edit ${routine.name}`}>Edit</button>
+      <button onClick={onDuplicate} disabled={duplicating} aria-label={`Duplicate ${routine.name}`}><Copy aria-hidden="true" />{duplicating ? "Copying…" : "Duplicate"}</button>
+      <button onClick={onHistory} aria-label={`View history for ${routine.name}`}><History aria-hidden="true" />History</button>
+    </div>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}><Trash2 aria-hidden="true" /></button>
   </article>;
 }
@@ -776,6 +858,72 @@ function DeleteRoutineDialog({ routine, deleting, onCancel, onConfirm }: { routi
       <div className="delete-dialog-icon" aria-hidden="true"><Trash2 /></div>
       <div className="delete-dialog-copy"><small>Please confirm</small><h2 id="delete-dialog-title">Delete {routine.name}?</h2><p id="delete-dialog-description">This removes the routine, its checklist items, and its completion history. This can’t be undone.</p></div>
       <div className="delete-dialog-actions"><button type="button" className="secondary-button" onClick={onCancel} disabled={deleting}>Cancel</button><button type="button" className="delete-confirm-button" onClick={onConfirm} disabled={deleting}>{deleting ? "Deleting…" : "Delete routine"}</button></div>
+    </section>
+  </div>;
+}
+
+function TemplateChooser({ onCancel, onChoose }: { onCancel: () => void; onChoose: (template: RoutineTemplate | null) => void }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", closeOnEscape); };
+  }, [onCancel]);
+
+  return <div className="feature-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+    <section className="template-dialog" role="dialog" aria-modal="true" aria-labelledby="template-title">
+      <header><div><span>Quick start</span><h2 id="template-title">Choose a starting point</h2><p>Everything can be changed before you save.</p></div><button onClick={onCancel} aria-label="Close templates"><X /></button></header>
+      <button className="blank-template" onClick={() => onChoose(null)}><span className="template-symbol">+</span><span><strong>Start from scratch</strong><small>Build exactly what you need</small></span><ChevronRight aria-hidden="true" /></button>
+      <div className="template-grid">{ROUTINE_TEMPLATES.map((template) => <button key={template.id} onClick={() => onChoose(template)} style={{ "--template-color": template.color } as React.CSSProperties}>
+        <span className="template-emoji">{template.emoji}</span><span><strong>{template.name}</strong><small>{template.description}</small></span><ChevronRight aria-hidden="true" />
+      </button>)}</div>
+    </section>
+  </div>;
+}
+
+function CompletionHistoryDialog({ routine, completions, itemCompletions, amountCompletions, todayKey, onClose }: { routine: Routine; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; todayKey: string; onClose: () => void }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", closeOnEscape); };
+  }, [onClose]);
+
+  const days = Array.from({ length: 30 }, (_, index) => {
+    const date = new Date(`${todayKey}T12:00:00`);
+    date.setDate(date.getDate() - (29 - index));
+    return { date, key: localDateKey(date) };
+  });
+  const itemIds = new Set(routine.items.map((item) => item.id));
+  const statusFor = (date: string) => {
+    const saved = completions.find((item) => item.routineId === routine.id && item.date === date)?.status;
+    if (saved === "skipped") return "skipped" as const;
+    const scheduled = routine.days.includes(new Date(`${date}T12:00:00`).getDay()) && routineActiveOnDate(routine, date);
+    if (!scheduled) return "off" as const;
+    const checkedItems = itemCompletions.filter((item) => item.date === date && itemIds.has(item.itemId)).length;
+    const amounts = amountCompletions.filter((item) => item.routineId === routine.id && item.date === date);
+    const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && checkedItems === routine.items.length);
+    const amountDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => (amounts.find((item) => item.amountKey === amount.key)?.count ?? 0) >= amount.targetCount));
+    const completed = routine.trackingMode === "simple" ? saved === "completed" : checklistDone && amountDone;
+    if (completed) return "completed" as const;
+    if (checkedItems > 0 || amounts.some((item) => item.count > 0)) return "partial" as const;
+    return date < todayKey ? "missed" as const : "scheduled" as const;
+  };
+  const states = days.map((day) => ({ ...day, status: statusFor(day.key) }));
+  const rateFor = (count: number) => {
+    const eligible = states.slice(-count).filter((day) => day.status !== "off" && day.status !== "skipped" && day.status !== "scheduled");
+    return eligible.length ? Math.round((eligible.filter((day) => day.status === "completed").length / eligible.length) * 100) : 0;
+  };
+
+  return <div className="feature-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-title" style={{ "--history-color": routine.color } as React.CSSProperties}>
+      <header><span className="history-emoji">{routine.emoji}</span><div><span>Completion history</span><h2 id="history-title">{routine.name}</h2><p>Your last 30 days at a glance.</p></div><button onClick={onClose} aria-label="Close history"><X /></button></header>
+      <div className="history-stats"><div><strong>{rateFor(7)}%</strong><span>Last 7 days</span></div><div><strong>{rateFor(30)}%</strong><span>Last 30 days</span></div></div>
+      <div className="history-grid">{states.map((day) => <div key={day.key} className={`history-day ${day.status}`} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>)}</div>
+      <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
+      <button className="history-close-button" onClick={onClose}>Done</button>
     </section>
   </div>;
 }
@@ -852,18 +1000,18 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
   </section>;
 }
 
-function AddRoutineForm({ onSubmit, onCancel, saving, usedEmojis, usedColors }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; usedEmojis: string[]; usedColors: string[] }) {
+function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, usedColors }: { template: RoutineTemplate | null; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; usedEmojis: string[]; usedColors: string[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   const stepLockRef = useRef(false);
   const stepTimerRef = useRef<number | undefined>(undefined);
   const [step, setStep] = useState(0);
   const [stepSettling, setStepSettling] = useState(false);
-  const [selectedDays, setSelectedDays] = useState(() => DAY_NAMES.map((_, day) => day));
-  const [previewName, setPreviewName] = useState("");
-  const [previewEmoji, setPreviewEmoji] = useState(EMOJIS[0]);
-  const [previewColor, setPreviewColor] = useState(COLORS[8]);
-  const [previewLists, setPreviewLists] = useState<RoutineListDraft[]>([]);
-  const [previewAmounts, setPreviewAmounts] = useState<RoutineAmount[]>([]);
+  const [selectedDays, setSelectedDays] = useState(() => template?.days ?? DAY_NAMES.map((_, day) => day));
+  const [previewName, setPreviewName] = useState(template?.name ?? "");
+  const [previewEmoji, setPreviewEmoji] = useState(template?.emoji ?? EMOJIS[0]);
+  const [previewColor, setPreviewColor] = useState(template?.color ?? COLORS[8]);
+  const [previewLists, setPreviewLists] = useState<RoutineListDraft[]>(template?.lists ?? []);
+  const [previewAmounts, setPreviewAmounts] = useState<RoutineAmount[]>(template?.amounts ?? []);
   const [hideUsedEmojis, setHideUsedEmojis] = useState(false);
   const [hideUsedColors, setHideUsedColors] = useState(false);
   const usedColorKeys = useMemo(() => new Set(usedColors.map((color) => color.toLowerCase())), [usedColors]);
@@ -950,7 +1098,7 @@ function AddRoutineForm({ onSubmit, onCancel, saving, usedEmojis, usedColors }: 
     <div className="form-grid">
       <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
         <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
-        <TimeField />
+        <TimeField defaultValue={template?.time ?? ""} />
         <DateRangeSettings />
       </section>
       <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">

@@ -1,0 +1,1 @@
+ALTER TABLE `completions` ADD `status` text DEFAULT 'completed' NOT NULL;

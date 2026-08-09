@@ -3,12 +3,13 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("ships the RoutineEZ product instead of starter content", async () => {
-  const [page, layout, packageJson, routinesRoute, quantityRoute, storage] = await Promise.all([
+  const [page, layout, packageJson, routinesRoute, quantityRoute, completionRoute, storage] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../app/api/routines/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/quantity-completions/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/completions/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../db/storage.ts", import.meta.url), "utf8"),
   ]);
 
@@ -205,6 +206,20 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /weekStartsOn/);
   assert.match(page, /preferences\.motion === "reduced"/);
   assert.match(page, /Manage routines/);
+  assert.match(page, /function TemplateChooser/);
+  assert.match(page, /Choose a starting point/);
+  assert.match(page, /Start from scratch/);
+  assert.match(page, /ROUTINE_TEMPLATES/);
+  assert.match(page, /function CompletionHistoryDialog/);
+  assert.match(page, /Last 30 days/);
+  assert.match(page, /Skip today/);
+  assert.match(page, /Undo skip/);
+  assert.match(page, /Duplicate/);
+  assert.match(page, /setEditingRoutineId\(data\.routine\.id\)/);
+  assert.match(completionRoute, /"completed" \| "skipped"/);
+  assert.match(completionRoute, /ON CONFLICT\(owner_key, routine_id, date\) DO UPDATE SET status/);
+  assert.match(routinesRoute, /routine_id AS routineId, date, status FROM completions/);
+  assert.match(storage, /status TEXT NOT NULL DEFAULT 'completed'/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);
   assert.match(layout, /RoutineEZ — Simple Routine Tracker/);

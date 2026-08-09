@@ -23,6 +23,7 @@ export const completions = sqliteTable("completions", {
   ownerKey: text("owner_key").notNull(),
   routineId: integer("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
   date: text("date").notNull(),
+  status: text("status").notNull().default("completed"),
 }, (table) => [uniqueIndex("idx_completions_owner_routine_date").on(table.ownerKey, table.routineId, table.date)]);
 
 export const routineItems = sqliteTable("routine_items", {

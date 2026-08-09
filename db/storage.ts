@@ -36,8 +36,11 @@ export async function ensureDatabase() {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,
     routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
-    date TEXT NOT NULL
+    date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'completed'
   )`).run();
+  const completionColumns = await env.DB.prepare("PRAGMA table_info(completions)").all<{ name: string }>();
+  if (!new Set(completionColumns.results.map((column) => column.name)).has("status")) await env.DB.prepare("ALTER TABLE completions ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'").run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS routine_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,

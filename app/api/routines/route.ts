@@ -164,7 +164,7 @@ export async function GET(request: Request) {
 
   const [items, completions, itemCompletions, amountCompletions] = await Promise.all([
     getItems(owner),
-    env.DB.prepare("SELECT routine_id AS routineId, date FROM completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; date: string }>(),
+    env.DB.prepare("SELECT routine_id AS routineId, date, status FROM completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; date: string; status: string }>(),
     env.DB.prepare("SELECT item_id AS itemId, date FROM item_completions WHERE owner_key = ?").bind(owner).all<{ itemId: number; date: string }>(),
     env.DB.prepare("SELECT routine_id AS routineId, amount_key AS amountKey, date, count FROM amount_completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; amountKey: string; date: string; count: number }>(),
   ]);
