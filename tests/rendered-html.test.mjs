@@ -233,10 +233,13 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(page, /suppressClickRef/);
   assert.match(page, /role="button" tabIndex=\{0\}/);
   assert.match(page, /onPointerCancel=\{cancelSwipe\}/);
-  assert.match(page, /gestureAxis === "pending"\) activateRoutine\(\)/);
+  assert.match(page, /const tapGesture = gestureAxis === "pending"/);
+  assert.match(page, /Math\.abs\(dragXRef\.current\) < 18/);
   assert.match(page, /event\.key === "Enter" \|\| event\.key === " "/);
   assert.match(page, /function undoRoutineSkip/);
-  assert.match(page, /onClick=\{\(\) => skippedRef\.current \? toggleSkip\(\) : onToggle\(\)\}/);
+  assert.match(page, /className="routine-check-zone"/);
+  assert.match(page, /if \(hasDetails\) setExpanded/);
+  assert.match(page, /else if \(skippedRef\.current\) toggleSkip\(\)/);
   assert.match(page, /setAmount\(routine\.id, amount, 0, date, false\)/);
   assert.match(page, /aria-description=\{skipped/);
   assert.doesNotMatch(page, /className="skip-today-button"/);

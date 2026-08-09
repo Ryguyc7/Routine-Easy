@@ -862,8 +862,8 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     onSkip(nextSkipped);
   };
   const activateRoutine = () => {
-    if (skippedRef.current) return toggleSkip();
     if (hasDetails) setExpanded((value) => !value);
+    else if (skippedRef.current) toggleSkip();
     else onToggle();
   };
   const updateDrag = (value: number) => {
@@ -873,7 +873,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   };
   const beginSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     const target = event.target instanceof Element ? event.target : null;
-    if (event.button !== 0 || target?.closest(".check-circle, .routine-skip-accessible") || (expanded && !target?.closest(".routine-main"))) return;
+    if (event.button !== 0 || target?.closest(".routine-check-zone, .routine-skip-accessible") || (expanded && !target?.closest(".routine-main"))) return;
     pointerActiveRef.current = true;
     dragStartRef.current = { x: event.clientX, y: event.clientY };
     gestureAxisRef.current = "pending";
@@ -896,13 +896,14 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     if (!pointerActiveRef.current) return;
     const gestureAxis = gestureAxisRef.current;
     const completedSwipe = gestureAxis === "horizontal" && Math.abs(dragXRef.current) >= 70;
+    const tapGesture = gestureAxis === "pending" || (gestureAxis === "horizontal" && Math.abs(dragXRef.current) < 18);
     pointerActiveRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     gestureAxisRef.current = "pending";
     setSwiping(false);
     updateDrag(0);
     if (completedSwipe) toggleSkip();
-    else if (gestureAxis === "pending") activateRoutine();
+    else if (tapGesture) activateRoutine();
   };
   const cancelSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!pointerActiveRef.current) return;
@@ -921,12 +922,12 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
           event.preventDefault();
           activateRoutine();
         }
-      }} aria-expanded={hasDetails ? expanded : undefined} aria-description={skipped ? "Swipe left or right to undo skip" : "Swipe left or right to skip today"}>
+      }} aria-label={hasDetails ? `${expanded ? "Collapse" : "Expand"} ${routine.name}` : skipped ? `Undo skip for ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`} aria-expanded={hasDetails ? expanded : undefined} aria-description={skipped ? "Swipe left or right to undo skip" : "Swipe left or right to skip today"}>
         <span className="routine-emoji">{routine.emoji}</span>
         <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
         {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
       </div>
-      <button className="check-circle" onClick={() => skippedRef.current ? toggleSkip() : onToggle()} aria-label={skipped ? `Undo skip and reset ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>{skipped ? <SkipForward aria-hidden="true" /> : "✓"}</button>
+      <button className="routine-check-zone" onClick={() => skippedRef.current ? toggleSkip() : onToggle()} aria-label={skipped ? `Undo skip and reset ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}><span className="check-circle" aria-hidden="true">{skipped ? <SkipForward /> : "✓"}</span></button>
       <button className="routine-skip-accessible" onClick={toggleSkip}>{skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}</button>
     </div>
     {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
