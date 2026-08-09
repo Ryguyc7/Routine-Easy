@@ -139,6 +139,7 @@ button { color: inherit; }
 .routine-skip-accessible { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .routine-skip-accessible:focus-visible { width: auto; height: auto; right: 48px; bottom: 6px; margin: 0; padding: 4px 7px; overflow: visible; clip: auto; border: 1px solid color-mix(in srgb, var(--routine) 30%, #ddd); border-radius: 7px; color: var(--routine); background: #fff; font-size: 9px; font-weight: 700; }
 .routine-main { min-width: 0; flex: 1; min-height: 74px; padding: 13px 8px 13px 17px; display: flex; align-items: center; gap: 15px; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.routine-main:focus-visible { outline: 2px solid color-mix(in srgb, var(--routine) 74%, #fff); outline-offset: -3px; border-radius: inherit; }
 .routine-emoji { display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 auto; border-radius: 13px; background: color-mix(in srgb, var(--routine) 13%, #fff); font-size: 21px; }
 .routine-info { display: grid; gap: 5px; }
 .routine-info strong { font-size: 14px; }
