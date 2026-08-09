@@ -843,7 +843,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   const dragXRef = useRef(0);
   const pointerActiveRef = useRef(false);
   const gestureAxisRef = useRef<"pending" | "horizontal" | "vertical">("pending");
-  const suppressClickRef = useRef(false);
+  const lastSwipeFinishedAtRef = useRef(-Infinity);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
   const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
   const progressParts = [
@@ -856,10 +856,8 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     ...(usesQuantity(routine.trackingMode) ? [routine.amounts.length === 1 ? `${amountCounts[routine.amounts[0].key] ?? 0}/${routine.amounts[0].targetCount} ${routine.amounts[0].name}` : `${routine.amounts.filter((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount).length}/${routine.amounts.length} amounts`] : []),
   ].join(" · ");
   const handleMainClick = () => {
-    if (suppressClickRef.current) {
-      suppressClickRef.current = false;
-      return;
-    }
+    if (performance.now() - lastSwipeFinishedAtRef.current < 80) return;
+    if (skipped) return onSkip();
     if (hasDetails) setExpanded((value) => !value);
     else onToggle();
   };
@@ -893,9 +891,8 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     pointerActiveRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     if (gestureAxisRef.current === "horizontal" && Math.abs(dragXRef.current) >= 70) {
-      suppressClickRef.current = true;
+      lastSwipeFinishedAtRef.current = performance.now();
       event.preventDefault();
-      window.setTimeout(() => { suppressClickRef.current = false; }, 0);
       onSkip();
     }
     gestureAxisRef.current = "pending";
