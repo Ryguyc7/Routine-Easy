@@ -190,8 +190,45 @@ export default function Home() {
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const addTimerRef = useRef<number | null>(null);
+  const completionsRef = useRef<Completion[]>([]);
+  const itemCompletionsRef = useRef<ItemCompletion[]>([]);
+  const amountCompletionsRef = useRef<AmountCompletion[]>([]);
+  const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const today = useMemo(() => new Date(), []);
   const todayKey = localDateKey(today);
+
+  function updateCompletions(updater: (items: Completion[]) => Completion[]) {
+    const next = updater(completionsRef.current);
+    completionsRef.current = next;
+    setCompletions(next);
+  }
+
+  function updateItemCompletions(updater: (items: ItemCompletion[]) => ItemCompletion[]) {
+    const next = updater(itemCompletionsRef.current);
+    itemCompletionsRef.current = next;
+    setItemCompletions(next);
+  }
+
+  function updateAmountCompletions(updater: (items: AmountCompletion[]) => AmountCompletion[]) {
+    const next = updater(amountCompletionsRef.current);
+    amountCompletionsRef.current = next;
+    setAmountCompletions(next);
+  }
+
+  function queueRoutineMutation(routineId: number, request: () => Promise<Response>) {
+    const queues = routineMutationQueuesRef.current;
+    const previous = queues.get(routineId) ?? Promise.resolve();
+    const current = previous.catch(() => undefined).then(async () => {
+      const response = await request();
+      if (!response.ok) throw new Error("Routine update failed");
+    }).catch(async () => {
+      await loadData();
+    }).finally(() => {
+      if (queues.get(routineId) === current) queues.delete(routineId);
+    });
+    queues.set(routineId, current);
+    return current;
+  }
 
   async function loadData() {
     try {
@@ -199,9 +236,12 @@ export default function Home() {
       if (!response.ok) throw new Error("Could not load your routines.");
       const data = await response.json();
       setRoutines(data.routines);
-      setCompletions(data.completions);
-      setItemCompletions(data.itemCompletions ?? []);
-      setAmountCompletions(data.amountCompletions ?? []);
+      completionsRef.current = data.completions;
+      itemCompletionsRef.current = data.itemCompletions ?? [];
+      amountCompletionsRef.current = data.amountCompletions ?? [];
+      setCompletions(completionsRef.current);
+      setItemCompletions(itemCompletionsRef.current);
+      setAmountCompletions(amountCompletionsRef.current);
       setError("");
     } catch {
       setError("Your routines could not be loaded. Please refresh and try again.");
@@ -299,11 +339,11 @@ export default function Home() {
 
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
-    const wasSkipped = completions.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped");
-    await clearSkip(routineId, date);
+    const wasSkipped = completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped");
+    if (wasSkipped) void setRoutineSkip(routineId, false, date);
     if (routine && routine.trackingMode !== "simple") {
-      const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => itemCompletions.some((completion) => completion.itemId === item.id && completion.date === date)));
-      const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => amountCount(routineId, amount.key, date) >= amount.targetCount));
+      const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => itemCompletionsRef.current.some((completion) => completion.itemId === item.id && completion.date === date)));
+      const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => (amountCompletionsRef.current.find((item) => item.routineId === routineId && item.amountKey === amount.key && item.date === date)?.count ?? 0) >= amount.targetCount));
       const completeEverything = wasSkipped || !(checklistDone && quantityDone);
       await Promise.all([
         usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, completeEverything, date) : Promise.resolve(),
@@ -311,71 +351,63 @@ export default function Home() {
       ]);
       return;
     }
-    const currentlyDone = completions.some((item) => item.routineId === routineId && item.date === date && item.status === "completed");
-    setCompletions((items) =>
+    const currentlyDone = completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "completed");
+    updateCompletions((items) =>
       currentlyDone
         ? items.filter((item) => !(item.routineId === routineId && item.date === date))
         : [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, status: "completed" }],
     );
-    const response = await fetch("/api/completions", {
+    await queueRoutineMutation(routineId, () => fetch("/api/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ routineId, date, completed: !currentlyDone }),
-    });
-    if (!response.ok) loadData();
+    }));
   }
 
   async function setRoutineSkip(routineId: number, skipped: boolean, date = todayKey) {
-    setCompletions((items) => skipped
+    updateCompletions((items) => skipped
       ? [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, status: "skipped" }]
       : items.filter((item) => !(item.routineId === routineId && item.date === date && item.status === "skipped")),
     );
-    const response = await fetch("/api/completions", {
+    await queueRoutineMutation(routineId, () => fetch("/api/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ routineId, date, status: skipped ? "skipped" : null }),
-    });
-    if (!response.ok) loadData();
-  }
-
-  async function clearSkip(routineId: number, date = todayKey) {
-    if (completions.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped")) await setRoutineSkip(routineId, false, date);
+    }));
   }
 
   async function setChecklistCompletion(routine: Routine, completed: boolean, date = todayKey) {
     const routineItemIds = new Set(routine.items.map((item) => item.id));
-    setItemCompletions((items) => completed
+    updateItemCompletions((items) => completed
       ? [...items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId)), ...routine.items.map((item) => ({ itemId: item.id, date }))]
       : items.filter((item) => item.date !== date || !routineItemIds.has(item.itemId)),
     );
-    const response = await fetch("/api/item-completions", {
+    await queueRoutineMutation(routine.id, () => fetch("/api/item-completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ routineId: routine.id, date, completed }),
-    });
-    if (!response.ok) loadData();
+    }));
   }
 
   async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey, clearSkipped = true) {
     const routine = routines.find((item) => item.id === routineId);
     if (!routine || !usesQuantity(routine.trackingMode)) return;
-    if (clearSkipped) await clearSkip(routineId, date);
+    if (clearSkipped && completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped")) void setRoutineSkip(routineId, false, date);
     const safeCount = Math.min(amount.targetCount, Math.max(0, Math.round(count)));
-    setAmountCompletions((items) => safeCount === 0
+    updateAmountCompletions((items) => safeCount === 0
       ? items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date))
       : [...items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date)), { routineId, amountKey: amount.key, date, count: safeCount }],
     );
-    const response = await fetch("/api/quantity-completions", {
+    await queueRoutineMutation(routineId, () => fetch("/api/quantity-completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ routineId, amountKey: amount.key, date, count: safeCount }),
-    });
-    if (!response.ok) loadData();
+    }));
   }
 
   async function undoRoutineSkip(routine: Routine, date = todayKey) {
-    await setRoutineSkip(routine.id, false, date);
     await Promise.all([
+      setRoutineSkip(routine.id, false, date),
       usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, false, date) : Promise.resolve(),
       ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routine.id, amount, 0, date, false)) : []),
     ]);
@@ -383,18 +415,17 @@ export default function Home() {
 
   async function toggleItem(itemId: number, date = todayKey) {
     const routine = routines.find((candidate) => candidate.items.some((item) => item.id === itemId));
-    if (routine) await clearSkip(routine.id, date);
-    const currentlyDone = itemCompletions.some((item) => item.itemId === itemId && item.date === date);
-    setItemCompletions((items) => currentlyDone
+    if (routine && completionsRef.current.some((item) => item.routineId === routine.id && item.date === date && item.status === "skipped")) void setRoutineSkip(routine.id, false, date);
+    const currentlyDone = itemCompletionsRef.current.some((item) => item.itemId === itemId && item.date === date);
+    updateItemCompletions((items) => currentlyDone
       ? items.filter((item) => !(item.itemId === itemId && item.date === date))
       : [...items, { itemId, date }],
     );
-    const response = await fetch("/api/item-completions", {
+    await queueRoutineMutation(routine?.id ?? -itemId, () => fetch("/api/item-completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId, date, completed: !currentlyDone }),
-    });
-    if (!response.ok) loadData();
+    }));
   }
 
   async function addRoutine(event: FormEvent<HTMLFormElement>) {
@@ -465,9 +496,9 @@ export default function Home() {
     setDeleting(true);
     const itemIds = new Set(routines.find((routine) => routine.id === id)?.items.map((item) => item.id) ?? []);
     setRoutines((items) => items.filter((routine) => routine.id !== id));
-    setCompletions((items) => items.filter((item) => item.routineId !== id));
-    setItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
-    setAmountCompletions((items) => items.filter((item) => item.routineId !== id));
+    updateCompletions((items) => items.filter((item) => item.routineId !== id));
+    updateItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
+    updateAmountCompletions((items) => items.filter((item) => item.routineId !== id));
     try {
       const response = await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Delete failed");

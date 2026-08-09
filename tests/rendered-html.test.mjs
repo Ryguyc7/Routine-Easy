@@ -230,6 +230,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /const skippedRef = useRef\(skipped\)/);
   assert.match(page, /const nextSkipped = !skippedRef\.current/);
   assert.match(page, /onSkip\(nextSkipped\)/);
+  assert.match(page, /routineMutationQueuesRef/);
+  assert.match(page, /function queueRoutineMutation/);
+  assert.match(page, /const previous = queues\.get\(routineId\) \?\? Promise\.resolve\(\)/);
+  assert.match(page, /setRoutineSkip\(routine\.id, false, date\),/);
+  assert.match(page, /completionsRef\.current/);
   assert.doesNotMatch(page, /suppressClickRef/);
   assert.match(page, /role="button" tabIndex=\{0\}/);
   assert.match(page, /onPointerCancel=\{cancelSwipe\}/);
