@@ -31,7 +31,7 @@ type Routine = {
 type Completion = { routineId: number; date: string; status: "completed" | "skipped" };
 type ItemCompletion = { itemId: number; date: string };
 type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
-type Tab = "today" | "calendar" | "routines" | "settings";
+type Tab = "today" | "calendar" | "routines" | "history" | "settings";
 type OnboardingState = "checking" | "show" | "done";
 type TimeFormat = "12-hour" | "24-hour";
 type WeekStart = "sunday" | "monday";
@@ -175,11 +175,11 @@ export default function Home() {
   const [amountCompletions, setAmountCompletions] = useState<AmountCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRoutine, setSelectedRoutine] = useState<number | "all">("all");
+  const [selectedHistoryRoutine, setSelectedHistoryRoutine] = useState<number | "all">("all");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [showAdd, setShowAdd] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
-  const [historyRoutine, setHistoryRoutine] = useState<Routine | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
@@ -539,6 +539,7 @@ export default function Home() {
           <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
           <NavButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarDays} label="Calendar" />
           <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
+          <NavButton active={tab === "history"} onClick={() => setTab("history")} icon={History} label="History" />
           <NavButton active={tab === "settings"} onClick={openSettings} icon={Settings2} label="Settings" />
         </nav>
         <div className="sidebar-note">
@@ -573,7 +574,6 @@ export default function Home() {
 
         {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={() => setRoutineToDelete(null)} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
         {showTemplatePicker && <TemplateChooser onCancel={() => setShowTemplatePicker(false)} onChoose={(template) => { setSelectedTemplate(template); setShowTemplatePicker(false); setShowAdd(true); }} />}
-        {historyRoutine && <CompletionHistoryDialog routine={historyRoutine} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} todayKey={todayKey} onClose={() => setHistoryRoutine(null)} />}
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
 
@@ -653,11 +653,13 @@ export default function Home() {
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} duplicating={duplicatingId === routine.id} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => setHistoryRoutine(routine)} onDelete={() => setRoutineToDelete(routine)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} duplicating={duplicatingId === routine.id} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />)}
               </div>
             </section>
           </div>
         )}
+
+        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} todayKey={todayKey} loading={loading} />}
 
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} />}
       </section>
@@ -666,9 +668,69 @@ export default function Home() {
         <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
         <CalendarNavButton active={tab === "calendar"} onClick={() => setTab("calendar")} date={today} />
         <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
+        <NavButton active={tab === "history"} onClick={() => setTab("history")} icon={History} label="History" />
       </nav>
     </main>
   );
+}
+
+type HistoryDayState = { date: Date; key: string; status: "completed" | "partial" | "skipped" | "missed" | "scheduled" | "off" };
+
+function buildRoutineHistory(routine: Routine, completions: Completion[], itemCompletions: ItemCompletion[], amountCompletions: AmountCompletion[], todayKey: string): HistoryDayState[] {
+  const itemIds = new Set(routine.items.map((item) => item.id));
+  return Array.from({ length: 30 }, (_, index) => {
+    const date = new Date(`${todayKey}T12:00:00`);
+    date.setDate(date.getDate() - (29 - index));
+    const key = localDateKey(date);
+    const saved = completions.find((item) => item.routineId === routine.id && item.date === key)?.status;
+    if (saved === "skipped") return { date, key, status: "skipped" };
+    const scheduled = routine.days.includes(date.getDay()) && routineActiveOnDate(routine, key);
+    if (!scheduled) return { date, key, status: "off" };
+    const checkedItems = itemCompletions.filter((item) => item.date === key && itemIds.has(item.itemId)).length;
+    const amounts = amountCompletions.filter((item) => item.routineId === routine.id && item.date === key);
+    const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && checkedItems === routine.items.length);
+    const amountDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => (amounts.find((item) => item.amountKey === amount.key)?.count ?? 0) >= amount.targetCount));
+    const completed = routine.trackingMode === "simple" ? saved === "completed" : checklistDone && amountDone;
+    if (completed) return { date, key, status: "completed" };
+    if (checkedItems > 0 || amounts.some((item) => item.count > 0)) return { date, key, status: "partial" };
+    return { date, key, status: key < todayKey ? "missed" : "scheduled" };
+  });
+}
+
+function historyRate(states: HistoryDayState[], count: number) {
+  const eligible = states.slice(-count).filter((day) => day.status !== "off" && day.status !== "skipped" && day.status !== "scheduled");
+  return eligible.length ? Math.round((eligible.filter((day) => day.status === "completed").length / eligible.length) * 100) : 0;
+}
+
+function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, itemCompletions, amountCompletions, todayKey, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; todayKey: string; loading: boolean }) {
+  const selected = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
+  const effectiveSelection = selected ? selected.id : "all";
+  const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey)])), [routines, completions, itemCompletions, amountCompletions, todayKey]);
+
+  return <div className="page history-page">
+    <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
+      <button className={effectiveSelection === "all" ? "active" : ""} onClick={() => onSelectRoutine("all")}>All routines</button>
+      {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
+    </ScrollablePicker>
+    {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><History aria-hidden="true" /><h2>No history yet</h2><p>Add a routine and your progress will appear here.</p></section> : selected ? (() => {
+      const states = historyByRoutine.get(selected.id) ?? [];
+      return <section className="history-detail-card" style={{ "--history-color": selected.color } as React.CSSProperties}>
+        <header><span className="history-emoji">{selected.emoji}</span><div><span>Completion history</span><h2>{selected.name}</h2><p>Your last 30 days at a glance.</p></div></header>
+        <div className="history-stats"><div><strong>{historyRate(states, 7)}%</strong><span>Last 7 days</span></div><div><strong>{historyRate(states, 30)}%</strong><span>Last 30 days</span></div></div>
+        <div className="history-grid">{states.map((day) => <div key={day.key} className={`history-day ${day.status}`} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>)}</div>
+        <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
+      </section>;
+    })() : <section className="history-overview">
+      <header><div><span>Last 30 days</span><h2>Your progress</h2></div><p>Select a routine for the full day-by-day view.</p></header>
+      <div className="history-overview-grid">{routines.map((routine) => {
+        const states = historyByRoutine.get(routine.id) ?? [];
+        return <button key={routine.id} className="history-overview-card" style={{ "--history-color": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}>
+          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>Last 30 days</small></span><b>{historyRate(states, 30)}%</b>
+          <span className="history-mini-days" aria-hidden="true">{states.slice(-14).map((day) => <i key={day.key} className={day.status} />)}</span>
+        </button>;
+      })}</div>
+    </section>}
+  </div>;
 }
 
 function SettingsPage({ preferences, onChange }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void }) {

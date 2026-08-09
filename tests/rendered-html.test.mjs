@@ -153,7 +153,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{[^}]*border:/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav \{[\s\S]*height: 64px;[\s\S]*border-radius: 20px/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button\.active::after \{ display: none/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routines-page \{ padding-bottom: 132px/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-page, \.routines-page, \.history-page \{ padding-bottom: 132px/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav::before, \.bottom-nav::after/);
   assert.doesNotMatch(page, /LiquidButton|liquid-glass/);
   assert.match(page, /premium-action/);
@@ -161,6 +161,8 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /--brand-spectrum/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /App-icon palette: one coordinated system/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(2\)\.active[^}]*color: var\(--sky\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /grid-template-columns: repeat\(4, 1fr\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(4\)\.active[^}]*color: var\(--mint\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.brand-e \{ color: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.brand-z \{ color: var\(--coral\)/);
@@ -211,6 +213,12 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Start from scratch/);
   assert.match(page, /ROUTINE_TEMPLATES/);
   assert.match(page, /function CompletionHistoryDialog/);
+  assert.match(page, /function HistoryPage/);
+  assert.match(page, /History routine filters/);
+  assert.match(page, /tab === "history"/);
+  assert.match(page, /label="History"/);
+  assert.match(page, /history-overview-grid/);
+  assert.match(page, /buildRoutineHistory/);
   assert.match(page, /Last 30 days/);
   assert.match(page, /Skip today/);
   assert.match(page, /Undo skip/);
