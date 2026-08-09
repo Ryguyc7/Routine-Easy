@@ -829,6 +829,13 @@ function DateTile({ date }: { date: Date }) {
 function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, onToggle, onToggleItem, onSetAmount, onSkip, timeFormat }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSkip: () => void; timeFormat: TimeFormat }) {
   const hasDetails = (usesChecklist(routine.trackingMode) && routine.items.length > 0) || (usesQuantity(routine.trackingMode) && routine.amounts.length > 0);
   const [expanded, setExpanded] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const dragXRef = useRef(0);
+  const pointerActiveRef = useRef(false);
+  const gestureAxisRef = useRef<"pending" | "horizontal" | "vertical">("pending");
+  const suppressClickRef = useRef(false);
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
   const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
   const progressParts = [
@@ -841,17 +848,63 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     ...(usesQuantity(routine.trackingMode) ? [routine.amounts.length === 1 ? `${amountCounts[routine.amounts[0].key] ?? 0}/${routine.amounts[0].targetCount} ${routine.amounts[0].name}` : `${routine.amounts.filter((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount).length}/${routine.amounts.length} amounts`] : []),
   ].join(" · ");
   const handleMainClick = () => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     if (hasDetails) setExpanded((value) => !value);
     else onToggle();
   };
-  return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties}>
-    <button className="routine-main" onClick={handleMainClick} aria-expanded={hasDetails ? expanded : undefined}>
-      <span className="routine-emoji">{routine.emoji}</span>
-      <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
-      {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
-    </button>
-    <button className="check-circle" onClick={onToggle} aria-label={completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>✓</button>
-    <button className="skip-today-button" onClick={onSkip} aria-label={skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}><SkipForward aria-hidden="true" />{skipped ? "Undo skip" : "Skip today"}</button>
+  const updateDrag = (value: number) => {
+    const bounded = Math.max(-104, Math.min(104, value));
+    dragXRef.current = bounded;
+    setDragX(bounded);
+  };
+  const beginSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (expanded || event.button !== 0 || (event.target instanceof Element && event.target.closest(".check-circle"))) return;
+    pointerActiveRef.current = true;
+    dragStartRef.current = { x: event.clientX, y: event.clientY };
+    gestureAxisRef.current = "pending";
+    setSwiping(false);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const moveSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!pointerActiveRef.current || expanded || gestureAxisRef.current === "vertical") return;
+    const deltaX = event.clientX - dragStartRef.current.x;
+    const deltaY = event.clientY - dragStartRef.current.y;
+    if (gestureAxisRef.current === "pending") {
+      if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) return;
+      gestureAxisRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+      if (gestureAxisRef.current === "vertical") return;
+      setSwiping(true);
+    }
+    if (gestureAxisRef.current === "horizontal") updateDrag(deltaX * .86);
+  };
+  const finishSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!pointerActiveRef.current) return;
+    pointerActiveRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (gestureAxisRef.current === "horizontal" && Math.abs(dragXRef.current) >= 70) {
+      suppressClickRef.current = true;
+      window.setTimeout(() => { suppressClickRef.current = false; }, 350);
+      onSkip();
+    }
+    gestureAxisRef.current = "pending";
+    setSwiping(false);
+    updateDrag(0);
+  };
+  const swipeDirection = dragX > 0 ? "swiping-right" : dragX < 0 ? "swiping-left" : "";
+  return <article className={`routine-row mode-${routine.trackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>
+    <div className="routine-swipe-underlay" aria-hidden="true"><span><SkipForward />{skipped ? "Undo skip" : "Skip today"}</span><span>{skipped ? "Undo skip" : "Skip today"}<SkipForward /></span></div>
+    <div className="routine-swipe-surface" style={{ transform: `translateX(${dragX}px)` }} onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={finishSwipe} onPointerCancel={finishSwipe}>
+      <button className="routine-main" onClick={handleMainClick} aria-expanded={hasDetails ? expanded : undefined} aria-description={skipped ? "Swipe left or right to undo skip" : "Swipe left or right to skip today"}>
+        <span className="routine-emoji">{routine.emoji}</span>
+        <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
+        {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
+      </button>
+      <button className="check-circle" onClick={onToggle} aria-label={skipped ? `Complete ${routine.name} instead` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}>{skipped ? <SkipForward aria-hidden="true" /> : "✓"}</button>
+      <button className="routine-skip-accessible" onClick={onSkip}>{skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}</button>
+    </div>
     {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
     {usesChecklist(routine.trackingMode) && routine.items.length > 0 && expanded && <div className="routine-checklist">{routine.lists.map((list) => <section className="routine-list-group" key={list.key}>
       <strong className="routine-list-name">{list.name}</strong>

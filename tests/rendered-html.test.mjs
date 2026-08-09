@@ -222,6 +222,14 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /Last 30 days/);
   assert.match(page, /Skip today/);
   assert.match(page, /Undo skip/);
+  assert.match(page, /routine-swipe-surface/);
+  assert.match(page, /setPointerCapture/);
+  assert.match(page, /Math\.abs\(dragXRef\.current\) >= 70/);
+  assert.match(page, /aria-description=\{skipped/);
+  assert.doesNotMatch(page, /className="skip-today-button"/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.skipped \.collapsed-progress span \{ width: 100% !important/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-swipe-underlay/);
+  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.skipped \{ border-style: dashed/);
   assert.match(page, /Duplicate/);
   assert.match(page, /setEditingRoutineId\(data\.routine\.id\)/);
   assert.match(completionRoute, /"completed" \| "skipped"/);
