@@ -840,6 +840,12 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
 
 function OnboardingSplash() {
   return <main className="onboarding-splash" aria-label="Loading RoutineEZ">
+    <div className="splash-blobs" aria-hidden="true">
+      <span className="splash-blob splash-blob-purple"><i /></span>
+      <span className="splash-blob splash-blob-coral"><i /></span>
+      <span className="splash-blob splash-blob-gold"><i /></span>
+      <span className="splash-blob splash-blob-sky"><i /></span>
+    </div>
     <div className="splash-brand">
       <img className="splash-logo" src="/routineez-checklist.png" alt="" />
       <div className="splash-wordmark" aria-hidden="true">

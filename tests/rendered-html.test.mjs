@@ -20,6 +20,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /routineez-onboarding-complete/);
   assert.match(page, /SPLASH_DURATION_MS = 2100/);
   assert.match(page, /splash-routine/);
+  assert.match(page, /splash-blobs/);
+  assert.match(page, /splash-blob-purple/);
+  assert.match(page, /splash-blob-coral/);
+  assert.match(page, /splash-blob-gold/);
+  assert.match(page, /splash-blob-sky/);
   assert.match(page, /splash-ez/);
   assert.match(page, /window\.clearTimeout\(splashTimer\)/);
   assert.match(page, /Edit routine/);
