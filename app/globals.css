@@ -302,15 +302,19 @@ button { color: inherit; }
 
 .add-card { margin: -8px 0 30px; padding: 23px; background: #fff; border: 1px solid #ded9ff; border-radius: 17px; box-shadow: 0 10px 30px rgba(58,48,125,.07); animation: enter .25s ease; }
 .add-modal-backdrop, .edit-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; overflow: hidden; background: rgba(26,24,35,.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: modal-fade .2s ease; }
+.edit-modal-backdrop { z-index: 120; }
 .add-modal-stack { width: min(680px, 100%); max-height: calc(100svh - 48px); display: flex; flex-direction: column; gap: 10px; }
 .add-form-shell, .edit-form-shell { position: relative; min-height: 0; }
 .add-form-shell { --wizard-accent: var(--sky); --wizard-soft: color-mix(in srgb, var(--wizard-accent) 11%, #fff); flex: 1 1 auto; max-height: none; display: flex; overflow: hidden; }
 .add-form-shell.step-tone-1 { --wizard-accent: var(--sky); }
 .add-form-shell.step-tone-2 { --wizard-accent: var(--coral); }
 .add-form-shell.step-tone-3 { --wizard-accent: var(--mint); }
-.edit-form-shell { width: min(680px, 100%); max-height: calc(100svh - 48px); }
+.edit-form-shell { --wizard-accent: var(--sky); --wizard-soft: color-mix(in srgb, var(--wizard-accent) 11%, #fff); width: min(680px, 100%); max-height: 100%; flex: 1 1 auto; display: flex; overflow: hidden; }
+.edit-form-shell.step-tone-1 { --wizard-accent: var(--sky); }
+.edit-form-shell.step-tone-2 { --wizard-accent: var(--coral); }
+.edit-form-shell.step-tone-3 { --wizard-accent: var(--mint); --picker-accent: var(--mint); }
 .add-modal-stack .add-routine-modal { width: 100%; height: auto; max-height: 100%; }
-.edit-form-shell .edit-routine-modal { width: 100%; }
+.edit-form-shell .edit-routine-modal { width: 100%; max-height: 100%; }
 .routine-live-preview { --preview: var(--purple); position: relative; width: calc(100% - 28px); min-height: 76px; flex: 0 0 auto; margin: 0 auto; padding: 0; display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: #fff; box-shadow: 0 9px 25px rgba(64,52,43,.07); animation: preview-arrive .28s ease; transition: border-color .2s ease; }
 .add-modal-stack > .routine-live-preview { max-height: min(240px, 32svh); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--preview) transparent; }
 .add-modal-stack > .routine-live-preview::-webkit-scrollbar { width: 4px; }
@@ -398,7 +402,7 @@ button { color: inherit; }
 .field input, .field textarea { width: 100%; border: 1px solid #dfdde2; padding: 11px 12px; border-radius: 9px; outline: none; color: var(--ink); background: #fff; }
 .field textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
 .field input:focus, .field textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--lavender); }
-.add-routine-modal .field input:focus, .add-routine-modal .field textarea:focus { border-color: var(--wizard-accent); box-shadow: 0 0 0 3px var(--wizard-soft); }
+.add-routine-modal .field input:focus, .add-routine-modal .field textarea:focus, .edit-routine-wizard .field input:focus, .edit-routine-wizard .field textarea:focus { border-color: var(--wizard-accent); box-shadow: 0 0 0 3px var(--wizard-soft); }
 .tracking-builder { width: 100%; min-width: 0; grid-column: 1 / -1; display: grid; gap: 10px; padding: 0; border: 0; }
 .tracking-builder > legend { margin-bottom: 1px; color: #5e5e68; font-size: 11px; font-weight: 750; }
 .tracking-add-wrap { justify-self: start; display: grid; gap: 6px; }
@@ -432,7 +436,7 @@ button { color: inherit; }
 .date-input-wrap { display: flex; align-items: center; gap: 7px; }
 .field .date-input-wrap input { min-width: 0; flex: 1; }
 .date-input-wrap button { flex: 0 0 auto; padding: 8px 9px; border: 0; border-radius: 8px; color: var(--purple); background: var(--lavender); font-size: 9px; font-weight: 800; cursor: pointer; }
-.add-routine-modal .date-input-wrap button:not(:disabled) { color: var(--wizard-accent); background: var(--wizard-soft); }
+.add-routine-modal .date-input-wrap button:not(:disabled), .edit-routine-wizard .date-input-wrap button:not(:disabled) { color: var(--wizard-accent); background: var(--wizard-soft); }
 .date-input-wrap button:disabled { color: #aaa8b2; background: #eeecf0; cursor: default; }
 .day-plan-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
 .day-plan-toggle { display: flex; align-items: center; gap: 11px; cursor: pointer; }
@@ -787,7 +791,7 @@ button { color: inherit; }
   .wizard-step { grid-template-columns: 1fr; }
   .add-modal-backdrop, .edit-modal-backdrop { align-items: center; padding: 14px; }
   .add-modal-stack { width: 100%; max-height: calc(100svh - 28px); gap: 8px; }
-  .edit-form-shell { width: 100%; max-height: calc(100svh - 28px); }
+  .edit-form-shell { width: 100%; max-height: 100%; }
   .add-form-shell { max-height: none; }
   .add-modal-stack .add-routine-modal { height: auto; max-height: 100%; }
   .routine-live-preview { width: calc(100% - 18px); min-height: 110px; border-color: rgba(232,226,216,.94); border-radius: 18px; background: rgba(255,255,255,.96); box-shadow: 0 9px 25px rgba(64,52,43,.065); }
@@ -948,7 +952,7 @@ button { color: inherit; }
 .setting-card:nth-child(3n + 1) { --setting-accent: var(--purple); }
 .setting-card:nth-child(3n + 2) { --setting-accent: var(--sky); }
 .setting-card:nth-child(3n) { --setting-accent: var(--coral); }
-.add-form-shell .premium-action {
+.add-form-shell .premium-action, .edit-form-shell .premium-action {
   background: var(--wizard-accent);
   box-shadow: 0 10px 22px color-mix(in srgb, var(--wizard-accent) 25%, transparent), inset 0 1px 0 rgba(255,255,255,.42);
 }

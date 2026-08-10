@@ -58,6 +58,11 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /dayVariant-/);
   assert.doesNotMatch(page, /Your rhythm at a glance/);
   assert.match(page, /edit-modal-backdrop/);
+  assert.match(page, /aria-label="Edit routine progress"/);
+  assert.match(page, /className="add-modal-stack edit-modal-stack"/);
+  assert.match(page, /edit-routine-wizard/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.edit-modal-backdrop \{ z-index: 120/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.edit-form-shell \{ --wizard-accent:[^}]*max-height: 100%;[^}]*overflow: hidden/);
   assert.match(page, /function DeleteRoutineDialog/);
   assert.match(page, /role="alertdialog"/);
   assert.match(page, /Delete routine/);
