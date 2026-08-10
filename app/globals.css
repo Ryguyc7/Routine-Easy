@@ -553,9 +553,12 @@ button { color: inherit; }
 .history-overview { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .history-detail-card > header { display: grid; justify-items: center; gap: 5px; margin-bottom: 18px; text-align: center; }
 .history-detail-card > header > div { min-width: 0; text-align: center; }
-.history-detail-card > header > div > span, .history-overview > header span { color: var(--coral); font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+.history-detail-card > header > .history-section-label, .history-overview > header span { color: var(--coral); font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
 .history-detail-card > header h2, .history-overview > header h2 { margin: 3px 0 4px; font-size: 21px; font-weight: 600; letter-spacing: -.5px; }
 .history-detail-card > header p, .history-overview > header p { margin: 0; color: #8d8b95; font-size: 11px; }
+.history-title-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.history-title-row .history-emoji { width: 40px; height: 40px; border-radius: 12px; font-size: 19px; }
+.history-title-row h2 { margin: 0; }
 .history-overview > header { display: grid; justify-items: center; gap: 4px; margin-bottom: 18px; text-align: center; }
 .history-overview > header p { padding: 0; text-align: center; }
 .history-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

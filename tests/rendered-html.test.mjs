@@ -235,6 +235,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /tab === "history"/);
   assert.match(page, /label="History"/);
   assert.match(page, /history-overview-grid/);
+  assert.match(page, /history-title-row/);
   assert.match(page, /buildRoutineHistory/);
   assert.match(page, /Last 30 days/);
   assert.match(page, /Skip today/);

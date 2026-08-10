@@ -754,7 +754,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
     {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><History aria-hidden="true" /><h2>No history yet</h2><p>Add a routine and your progress will appear here.</p></section> : selected ? (() => {
       const states = historyByRoutine.get(selected.id) ?? [];
       return <section className="history-detail-card" style={{ "--history-color": selected.color } as React.CSSProperties}>
-        <header><span className="history-emoji">{selected.emoji}</span><div><span>Completion history</span><h2>{selected.name}</h2><p>Your last 30 days at a glance.</p></div></header>
+        <header><span className="history-section-label">Completion history</span><div className="history-title-row"><span className="history-emoji">{selected.emoji}</span><h2>{selected.name}</h2></div><p>Your last 30 days at a glance.</p></header>
         <div className="history-stats"><div><strong>{historyRate(states, 7)}%</strong><span>Last 7 days</span></div><div><strong>{historyRate(states, 30)}%</strong><span>Last 30 days</span></div></div>
         <div className="history-grid">{states.map((day) => <div key={day.key} className={`history-day ${day.status}`} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>)}</div>
         <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
