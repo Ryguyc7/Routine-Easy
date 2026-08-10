@@ -181,6 +181,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-a \{ color: var\(--coral\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-s \{ color: var\(--gold\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-y \{ color: var\(--sky\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-detail-card \{ padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; \}/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-detail-card > header \{ display: grid; justify-items: center;/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Calm typography shared by Settings/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.section-title h2, \.calendar-toolbar h2[^}]*font-weight: 600/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.primary-button, \.secondary-button[^}]*font-weight: 650/);

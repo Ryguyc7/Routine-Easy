@@ -549,10 +549,10 @@ button { color: inherit; }
 .history-filter-picker { margin-bottom: 16px; }
 .history-filter-picker .filter-pills { margin: 0; padding-bottom: 7px; }
 .history-filter-picker .picker-scrollbar { margin-top: -1px; }
-.history-detail-card { padding: 22px; border: 1px solid var(--line); border-radius: 20px; background: rgba(255,255,255,.94); box-shadow: 0 10px 30px rgba(48,40,70,.055); }
+.history-detail-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .history-overview { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-.history-detail-card > header { display: flex; align-items: center; gap: 12px; margin-bottom: 17px; }
-.history-detail-card > header > div { min-width: 0; }
+.history-detail-card > header { display: grid; justify-items: center; gap: 5px; margin-bottom: 18px; text-align: center; }
+.history-detail-card > header > div { min-width: 0; text-align: center; }
 .history-detail-card > header > div > span, .history-overview > header span { color: var(--coral); font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
 .history-detail-card > header h2, .history-overview > header h2 { margin: 3px 0 4px; font-size: 21px; font-weight: 600; letter-spacing: -.5px; }
 .history-detail-card > header p, .history-overview > header p { margin: 0; color: #8d8b95; font-size: 11px; }
@@ -691,7 +691,7 @@ button { color: inherit; }
   .template-dialog, .history-dialog { max-height: calc(100svh - 24px); padding: 18px; border-radius: 20px; }
   .template-grid { grid-template-columns: 1fr; }
   .history-grid { grid-template-columns: repeat(6, 1fr); }
-  .history-detail-card { padding: 17px 14px; border-radius: 18px; }
+  .history-detail-card { padding: 0; border-radius: 0; }
   .history-overview { padding: 0; }
   .history-overview > header { align-items: center; gap: 4px; text-align: center; }
   .history-overview > header p { padding: 0; text-align: center; }
