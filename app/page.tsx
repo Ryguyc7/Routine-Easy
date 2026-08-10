@@ -893,8 +893,8 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     onSkip(nextSkipped);
   };
   const activateRoutine = () => {
-    if (hasDetails) setExpanded((value) => !value);
-    else if (skippedRef.current) toggleSkip();
+    if (skippedRef.current) toggleSkip();
+    else if (hasDetails) setExpanded((value) => !value);
     else onToggle();
   };
   const updateDrag = (value: number) => {
@@ -953,7 +953,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
           event.preventDefault();
           activateRoutine();
         }
-      }} aria-label={hasDetails ? `${expanded ? "Collapse" : "Expand"} ${routine.name}` : skipped ? `Undo skip for ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`} aria-expanded={hasDetails ? expanded : undefined} aria-description={skipped ? "Swipe left or right to undo skip" : "Swipe left or right to skip today"}>
+      }} aria-label={skipped ? `Undo skip for ${routine.name}` : hasDetails ? `${expanded ? "Collapse" : "Expand"} ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`} aria-expanded={hasDetails ? expanded : undefined} aria-description={skipped ? "Tap anywhere or swipe left or right to undo skip" : "Swipe left or right to skip today"}>
         <span className="routine-emoji">{routine.emoji}</span>
         <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
         {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
