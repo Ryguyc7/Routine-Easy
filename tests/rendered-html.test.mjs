@@ -22,7 +22,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /splash-routine/);
   assert.match(page, /splash-blobs/);
   assert.match(page, /app-background-blobs/);
-  assert.equal((page.match(/app-background-blob app-blob-/g) ?? []).length, 4);
+  assert.match(page, /function BlobCorners/);
+  assert.match(page, /splashOverlay/);
+  assert.match(page, /SPLASH_FADE_MS = 650/);
   assert.match(page, /splash-blob-purple/);
   assert.match(page, /splash-blob-coral/);
   assert.match(page, /splash-blob-gold/);
@@ -158,8 +160,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /🧩/);
   assert.match(page, /👨‍👩‍👧‍👦/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routines-page \{ scrollbar-width: none/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.app-background-blob \{[^}]*opacity: \.2/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.app-background-blob \{ width: min\(64vw, 250px\); opacity: \.25/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.app-background-blobs \.splash-blob \{ animation-name: app-blob-pop/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.splash-overlay\.leaving \{ visibility: hidden; opacity: 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.completed \{ opacity: 1/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /today-page \.routine-list \{[^}]*grid-auto-rows: max-content;[^}]*overflow-y: auto/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row:not\(\.expanded\) \{ height: 110px/);

@@ -54,6 +54,7 @@ type RoutineTemplate = {
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
 const SPLASH_DURATION_MS = 2100;
+const SPLASH_FADE_MS = 650;
 
 const COLORS = [
   "#6C5CE7", "#845EF7", "#8338EC", "#9C36B5", "#CC5DE8", "#8E7DBE", "#5F3DC4", "#6741D9",
@@ -171,6 +172,8 @@ function useAnimatedNumber(target: number, duration = 600) {
 
 export default function Home() {
   const [onboardingState, setOnboardingState] = useState<OnboardingState>("checking");
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [splashLeaving, setSplashLeaving] = useState(false);
   const [tab, setTab] = useState<Tab>("today");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
@@ -261,12 +264,16 @@ export default function Home() {
     } catch {
       setPreferences(DEFAULT_PREFERENCES);
     }
+    let splashExitTimer = 0;
     const splashTimer = window.setTimeout(() => {
       setOnboardingState(forceOnboarding || !completed ? "show" : "done");
+      setSplashLeaving(true);
+      splashExitTimer = window.setTimeout(() => setSplashVisible(false), SPLASH_FADE_MS);
     }, SPLASH_DURATION_MS);
     loadData();
     return () => {
       window.clearTimeout(splashTimer);
+      window.clearTimeout(splashExitTimer);
       if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
     };
   }, []);
@@ -564,11 +571,11 @@ export default function Home() {
   const viewingCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
   const calendarDayNames = preferences.weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
 
-  if (onboardingState === "checking") return <OnboardingSplash />;
-  if (onboardingState === "show") return <OnboardingPage onComplete={completeOnboarding} />;
+  const splashOverlay = splashVisible ? <OnboardingSplash leaving={splashLeaving} /> : null;
+  if (onboardingState === "show") return <><OnboardingPage onComplete={completeOnboarding} />{splashOverlay}</>;
 
   return (
-    <main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
+    <><main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="Routine EASY home">
           <img className="brand-logo" src="/routineez-checklist.png" alt="" />
@@ -589,12 +596,7 @@ export default function Home() {
       </aside>
 
       <section className="content">
-        <div className="app-background-blobs" aria-hidden="true">
-          <i className="app-background-blob app-blob-purple" />
-          <i className="app-background-blob app-blob-coral" />
-          <i className="app-background-blob app-blob-gold" />
-          <i className="app-background-blob app-blob-sky" />
-        </div>
+        <BlobCorners className="app-background-blobs" />
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="Routine EASY">
@@ -716,7 +718,7 @@ export default function Home() {
         <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
         <NavButton active={tab === "history"} onClick={() => setTab("history")} icon={History} label="History" />
       </nav>
-    </main>
+    </main>{splashOverlay}</>
   );
 }
 
@@ -856,14 +858,18 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
   </main>;
 }
 
-function OnboardingSplash() {
-  return <main className="onboarding-splash" aria-label="Loading Routine EASY">
-    <div className="splash-blobs" aria-hidden="true">
+function BlobCorners({ className = "" }: { className?: string }) {
+  return <div className={`splash-blobs${className ? ` ${className}` : ""}`} aria-hidden="true">
       <span className="splash-blob splash-blob-purple"><i /></span>
       <span className="splash-blob splash-blob-coral"><i /></span>
       <span className="splash-blob splash-blob-gold"><i /></span>
       <span className="splash-blob splash-blob-sky"><i /></span>
-    </div>
+    </div>;
+}
+
+function OnboardingSplash({ leaving = false }: { leaving?: boolean }) {
+  return <main className={`onboarding-splash splash-overlay${leaving ? " leaving" : ""}`} aria-label="Loading Routine EASY">
+    <BlobCorners />
     <div className="splash-brand">
       <img className="splash-logo" src="/routineez-checklist.png" alt="" />
       <div className="splash-wordmark" aria-hidden="true">

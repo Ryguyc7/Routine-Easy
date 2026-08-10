@@ -63,6 +63,8 @@ button { color: inherit; }
 .onboarding-mini-card strong { font-size: 11px; }
 .onboarding-mini-card small { color: #9897a0; font-size: 9px; }
 .onboarding-splash { position: relative; isolation: isolate; min-height: 100vh; display: grid; place-items: center; overflow: hidden; background: var(--cream); }
+.splash-overlay { position: fixed; inset: 0; z-index: 100; opacity: 1; transition: opacity .65s cubic-bezier(.4,0,.2,1), visibility .65s; }
+.splash-overlay.leaving { visibility: hidden; opacity: 0; pointer-events: none; }
 .splash-blobs { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .splash-blob { --blob-color: var(--purple); position: absolute; display: block; width: min(54vw, 220px); aspect-ratio: 1; opacity: 0; transform-origin: center; animation: splash-blob-pop .78s cubic-bezier(.15,.84,.26,1.16) both; }
 .splash-blob > i { position: absolute; inset: 7%; display: block; background: var(--blob-color); border-radius: 64% 36% 48% 52% / 41% 58% 42% 59%; box-shadow: 0 20px 50px color-mix(in srgb, var(--blob-color) 18%, transparent); animation: splash-blob-flow 4.8s ease-in-out 1s infinite alternate; }
@@ -105,6 +107,11 @@ button { color: inherit; }
   66% { opacity: .9; scale: 1.07; filter: blur(0); }
   100% { opacity: .86; scale: 1; filter: blur(0); }
 }
+@keyframes app-blob-pop {
+  0% { opacity: 0; scale: .06; filter: blur(9px); }
+  66% { opacity: .46; scale: 1.07; filter: blur(0); }
+  100% { opacity: .42; scale: 1; filter: blur(0); }
+}
 @keyframes splash-blob-flow {
   0% { border-radius: 64% 36% 48% 52% / 41% 58% 42% 59%; transform: translate3d(-2px, 1px, 0) rotate(-2deg); }
   48% { border-radius: 42% 58% 66% 34% / 58% 39% 61% 42%; transform: translate3d(3px, -4px, 0) rotate(3deg); }
@@ -124,16 +131,7 @@ button { color: inherit; }
 
 .content { position: relative; isolation: isolate; grid-column: 2; min-width: 0; overflow: hidden; background: linear-gradient(180deg, #fffdfa, #fbf8f2 72%); }
 .app-background-blobs { position: fixed; inset: 0 0 0 240px; z-index: 0; overflow: hidden; pointer-events: none; }
-.app-background-blob { --app-blob: var(--purple); position: absolute; display: block; width: clamp(190px, 25vw, 340px); aspect-ratio: 1; border-radius: 64% 36% 48% 52% / 41% 58% 42% 59%; background: var(--app-blob); opacity: .2; filter: saturate(.9); }
-.app-background-blob::after { content: ""; position: absolute; width: 30%; height: 30%; border-radius: 58% 42% 63% 37%; background: rgba(255,255,255,.42); }
-.app-blob-purple { --app-blob: #8e7dde; top: -145px; left: -105px; rotate: -14deg; }
-.app-blob-purple::after { right: 18%; bottom: 18%; rotate: -18deg; }
-.app-blob-coral { --app-blob: #ff8d78; top: -155px; right: -115px; rotate: 17deg; }
-.app-blob-coral::after { left: 18%; bottom: 17%; rotate: 24deg; }
-.app-blob-gold { --app-blob: #f4c45d; left: -120px; bottom: -155px; rotate: 12deg; }
-.app-blob-gold::after { right: 18%; top: 19%; rotate: 15deg; }
-.app-blob-sky { --app-blob: #72afea; right: -135px; bottom: -165px; rotate: -18deg; }
-.app-blob-sky::after { left: 17%; top: 19%; rotate: -20deg; }
+.app-background-blobs .splash-blob { animation-name: app-blob-pop; }
 .page { position: relative; z-index: 1; width: min(940px, calc(100% - 72px)); margin: 0 auto; padding: 68px 0 80px; animation: enter .28s ease; }
 @keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 .page-heading { margin-bottom: 34px; }
@@ -634,11 +632,6 @@ button { color: inherit; }
   .sidebar { display: none; }
   .content { height: 100svh; min-height: 0; padding-top: 68px; overflow: hidden; background: linear-gradient(180deg, #fffdfa, #fbf8f2 72%); }
   .app-background-blobs { inset: 0; }
-  .app-background-blob { width: min(64vw, 250px); opacity: .25; }
-  .app-blob-purple { top: -76px; left: -78px; }
-  .app-blob-coral { top: -84px; right: -82px; }
-  .app-blob-gold { left: -84px; bottom: -92px; }
-  .app-blob-sky { right: -90px; bottom: -100px; }
   .page { width: calc(100% - 40px); height: calc(100svh - 68px); padding: 8px 0 0; overflow-y: auto; }
   .mobile-header { position: fixed; inset: 0 0 auto; height: 68px; padding: 8px 22px; background: linear-gradient(180deg, rgba(255,253,249,.98), rgba(255,253,249,.93)); border: 0; z-index: 30; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 1px 0 rgba(229,221,209,.42); }
   .mobile-profile { justify-self: start; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid #e5e0ed; border-radius: 50%; color: #797783; background: rgba(255,255,255,.92); box-shadow: 0 6px 15px rgba(48,40,70,.08), inset 0 1px 0 #fff; cursor: pointer; transition: color .18s ease, border-color .18s ease, background .18s ease, transform .18s ease; }
