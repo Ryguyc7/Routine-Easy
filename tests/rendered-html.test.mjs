@@ -313,6 +313,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(completionRoute, /"completed" \| "skipped"/);
   assert.match(completionRoute, /ON CONFLICT\(owner_key, routine_id, date\) DO UPDATE SET status/);
   assert.match(routinesRoute, /routine_id AS routineId, date, status FROM completions/);
+  assert.doesNotMatch(routinesRoute, /const defaults =|Morning vitamins|Warm up.*Main workout.*Cool down/s);
   assert.match(storage, /status TEXT NOT NULL DEFAULT 'completed'/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);

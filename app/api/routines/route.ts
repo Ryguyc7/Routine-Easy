@@ -138,29 +138,8 @@ async function getRoutine(owner: string, id: number) {
 export async function GET(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
-  let routines = await env.DB.prepare(`SELECT ${ROUTINE_SELECT} FROM routines WHERE owner_key = ? ORDER BY id`)
+  const routines = await env.DB.prepare(`SELECT ${ROUTINE_SELECT} FROM routines WHERE owner_key = ? ORDER BY id`)
     .bind(owner).all<RoutineRow>();
-
-  if (!routines.results.length) {
-    const defaults = [
-      ["Morning vitamins", "💊", "#6C5CE7", "08:00", "[0,1,2,3,4,5,6]"],
-      ["Workout", "🏋️", "#4D96FF", "07:30", "[1,3,5]"],
-      ["Breakfast", "🥣", "#F4B942", "08:30", "[0,1,2,3,4,5,6]"],
-      ["Lunch", "🥗", "#FF8A65", "12:30", "[0,1,2,3,4,5,6]"],
-      ["Dinner", "🍲", "#49A078", "18:30", "[0,1,2,3,4,5,6]"],
-    ];
-    await env.DB.batch(defaults.map((item) => env.DB.prepare("INSERT INTO routines (owner_key, name, emoji, color, time, days) VALUES (?, ?, ?, ?, ?, ?)").bind(owner, ...item)));
-    routines = await env.DB.prepare(`SELECT ${ROUTINE_SELECT} FROM routines WHERE owner_key = ? ORDER BY id`).bind(owner).all<RoutineRow>();
-    const workout = routines.results.find((routine) => routine.name === "Workout");
-    if (workout) {
-      await env.DB.prepare("UPDATE routines SET tracking_mode = 'checklist' WHERE owner_key = ? AND id = ?").bind(owner, workout.id).run();
-      workout.trackingMode = "checklist";
-      await env.DB.batch(["Warm up", "Main workout", "Cool down"].map((title, position) =>
-        env.DB.prepare("INSERT INTO routine_items (owner_key, routine_id, title, list_key, position) VALUES (?, ?, ?, ?, ?)").bind(owner, workout.id, title, "list-1", position),
-      ));
-      await env.DB.prepare("UPDATE routines SET list_config = ? WHERE owner_key = ? AND id = ?").bind(JSON.stringify([{ key: "list-1", name: "Workout" }]), owner, workout.id).run();
-    }
-  }
 
   const [items, completions, itemCompletions, amountCompletions] = await Promise.all([
     getItems(owner),
