@@ -662,7 +662,6 @@ export default function Home() {
                 <button className="calendar-month-nav calendar-prev" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft aria-hidden="true" /></button>
                 <h2>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2>
                 <button className="calendar-month-nav calendar-next" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
-                {!viewingCurrentMonth && <button className="calendar-today-button" onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>Today</button>}
               </div>
               <div className="weekday-row">{calendarDayNames.map((day) => <span key={day}>{day}</span>)}</div>
               <div className="calendar-grid">
@@ -678,6 +677,7 @@ export default function Home() {
                   </div>;
                 })}
               </div>
+              {!viewingCurrentMonth && <div className="calendar-today-row"><button className="calendar-today-button" onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>Today</button></div>}
             </section>
             <div className="calendar-legend">Colored bars show the routines scheduled for each day.</div>
           </div>

@@ -119,7 +119,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /calendar-today-button/);
   assert.match(page, /calendar-month-nav calendar-prev/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-toolbar \{ display: grid; grid-template-columns: 34px minmax\(0, 1fr\) 34px/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-today-button \{ grid-column: 2; grid-row: 2; justify-self: center/);
+  assert.match(page, /calendar-today-row/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-today-button \{[^}]*background: var\(--sky\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes calendar-today-arrive/);
   assert.match(page, /setMonth\(new Date\(today\.getFullYear\(\), today\.getMonth\(\), 1\)\)/);
   assert.match(page, /calendar-filter-picker/);
   assert.match(page, /scrollClassName="filter-pills"/);

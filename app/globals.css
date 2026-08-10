@@ -233,13 +233,17 @@ button { color: inherit; }
 .calendar-filter-picker .filter-pills { margin: 0; padding-bottom: 7px; }
 .calendar-filter-picker .picker-scrollbar { margin-top: -1px; }
 .calendar-card { padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 9px 28px rgba(35,30,77,.05); }
-.calendar-toolbar { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; row-gap: 9px; margin-bottom: 19px; }
+.calendar-toolbar { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; margin-bottom: 19px; }
 .calendar-toolbar h2 { grid-column: 2; margin: 0; font-size: 18px; text-align: center; }
 .calendar-toolbar .calendar-prev { grid-column: 1; grid-row: 1; }
 .calendar-toolbar .calendar-next { grid-column: 3; grid-row: 1; }
 .calendar-toolbar button { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); background: #fff; border-radius: 9px; cursor: pointer; color: #777; line-height: 1; }
 .calendar-toolbar button svg { display: block; width: 17px; height: 17px; stroke-width: 2; }
-.calendar-toolbar button.calendar-today-button { grid-column: 2; grid-row: 2; justify-self: center; width: auto; height: 27px; padding: 0 12px; border-color: #ddd7ff; border-radius: 999px; color: var(--purple); background: var(--lavender); font-size: 10px; font-weight: 800; }
+.calendar-today-row { display: grid; place-items: center; min-height: 48px; padding: 13px 0 1px; overflow: visible; }
+.calendar-today-button { display: grid; place-items: center; min-width: 74px; height: 31px; padding: 0 16px; border: 1px solid color-mix(in srgb, var(--sky) 76%, #fff); border-radius: 999px; color: #fff; background: var(--sky); box-shadow: 0 8px 18px rgba(77,150,255,.25), inset 0 1px 0 rgba(255,255,255,.34); font-size: 10px; font-weight: 800; cursor: pointer; transform-origin: center; animation: calendar-today-arrive .58s cubic-bezier(.2,.9,.24,1.25) both; }
+.calendar-today-button:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(77,150,255,.3), inset 0 1px 0 rgba(255,255,255,.4); }
+.calendar-today-button:active { transform: scale(.95); }
+@keyframes calendar-today-arrive { 0% { opacity: 0; transform: translateY(-5px) scale(.62); } 62% { opacity: 1; transform: translateY(1px) scale(1.09); } 82% { transform: translateY(0) scale(.97); } 100% { opacity: 1; transform: none; } }
 .weekday-row, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
 .weekday-row span { padding-bottom: 12px; color: #9a9aa2; font-size: 10px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: .6px; }
 .day-cell { position: relative; min-height: 78px; padding: 10px; overflow: hidden; border-top: 1px solid #eeece8; border-right: 1px solid #f2f0ed; }
@@ -872,7 +876,6 @@ button { color: inherit; }
 .calendar-grid .is-today .day-number { color: #fff; background: var(--sky); box-shadow: 0 5px 11px rgba(77,150,255,.22); }
 .calendar-toolbar > .calendar-prev { color: var(--coral); background: color-mix(in srgb, var(--coral) 6%, #fff); }
 .calendar-toolbar > .calendar-next { color: var(--sky); background: color-mix(in srgb, var(--sky) 6%, #fff); }
-.calendar-toolbar button.calendar-today-button { color: #a96c00; border-color: color-mix(in srgb, var(--gold) 34%, #e4dfd5); background: color-mix(in srgb, var(--gold) 13%, #fff); }
 .day-picker label:nth-of-type(4n + 1) input:checked + span { background: var(--purple); border-color: var(--purple); }
 .day-picker label:nth-of-type(4n + 2) input:checked + span { background: var(--sky); border-color: var(--sky); }
 .day-picker label:nth-of-type(4n + 3) input:checked + span { color: #5b4300; background: var(--gold); border-color: var(--gold); }
@@ -917,5 +920,5 @@ button, input, textarea, select { font-family: inherit; }
 .day-plan-toggle strong { font-weight: 600; }
 .weekday-row span, .day-number { font-weight: 600; }
 .progress-number, .quantity-caption strong, .today-variant { font-weight: 700; }
-.date-tile span, .date-tile small, .calendar-toolbar button.calendar-today-button { font-weight: 700; }
+.date-tile span, .date-tile small, .calendar-today-button { font-weight: 700; }
 .onboarding-copy h1 { font-weight: 700; }
