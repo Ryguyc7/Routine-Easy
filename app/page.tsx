@@ -699,7 +699,7 @@ export default function Home() {
           </div>
         )}
 
-        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} todayKey={todayKey} loading={loading} />}
+        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
 
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} />}
       </section>
@@ -716,11 +716,11 @@ export default function Home() {
 
 type HistoryDayState = { date: Date; key: string; status: "completed" | "partial" | "skipped" | "missed" | "scheduled" | "off" };
 
-function buildRoutineHistory(routine: Routine, completions: Completion[], itemCompletions: ItemCompletion[], amountCompletions: AmountCompletion[], todayKey: string): HistoryDayState[] {
+function buildRoutineHistory(routine: Routine, completions: Completion[], itemCompletions: ItemCompletion[], amountCompletions: AmountCompletion[], todayKey: string, month: Date): HistoryDayState[] {
   const itemIds = new Set(routine.items.map((item) => item.id));
-  return Array.from({ length: 30 }, (_, index) => {
-    const date = new Date(`${todayKey}T12:00:00`);
-    date.setDate(date.getDate() - (29 - index));
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const date = new Date(month.getFullYear(), month.getMonth(), index + 1, 12);
     const key = localDateKey(date);
     const saved = completions.find((item) => item.routineId === routine.id && item.date === key)?.status;
     if (saved === "skipped") return { date, key, status: "skipped" };
@@ -742,30 +742,41 @@ function historyRate(states: HistoryDayState[], count: number) {
   return eligible.length ? Math.round((eligible.filter((day) => day.status === "completed").length / eligible.length) * 100) : 0;
 }
 
-function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, itemCompletions, amountCompletions, todayKey, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; todayKey: string; loading: boolean }) {
+function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, itemCompletions, amountCompletions, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
   const selected = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
   const effectiveSelection = selected ? selected.id : "all";
-  const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey)])), [routines, completions, itemCompletions, amountCompletions, todayKey]);
+  const todayDate = new Date(`${todayKey}T12:00:00`);
+  const [historyMonth, setHistoryMonth] = useState(() => new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
+  const currentMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+  const viewingCurrentMonth = historyMonth.getFullYear() === currentMonth.getFullYear() && historyMonth.getMonth() === currentMonth.getMonth();
+  const historyMonthLabel = historyMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const historyDayNames = weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
+  const firstWeekday = (historyMonth.getDay() - (weekStartsOn === "monday" ? 1 : 0) + 7) % 7;
+  const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey, historyMonth)])), [routines, completions, itemCompletions, amountCompletions, todayKey, historyMonth]);
 
   return <div className="page history-page">
     <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
-      <button className={effectiveSelection === "all" ? "active" : ""} onClick={() => onSelectRoutine("all")}>All routines</button>
+      <button className={effectiveSelection === "all" ? "active" : ""} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
       {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
     </ScrollablePicker>
     {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><History aria-hidden="true" /><h2>No history yet</h2><p>Add a routine and your progress will appear here.</p></section> : selected ? (() => {
       const states = historyByRoutine.get(selected.id) ?? [];
+      const eligibleStates = states.filter((day) => day.status !== "off" && day.status !== "skipped" && day.status !== "scheduled");
+      const completedDays = eligibleStates.filter((day) => day.status === "completed").length;
       return <section className="history-detail-card" style={{ "--history-color": selected.color } as React.CSSProperties}>
-        <header><span className="history-section-label">Completion history</span><div className="history-title-row"><span className="history-emoji">{selected.emoji}</span><h2>{selected.name}</h2></div><p>Your last 30 days at a glance.</p></header>
-        <div className="history-stats"><div><strong>{historyRate(states, 7)}%</strong><span>Last 7 days</span></div><div><strong>{historyRate(states, 30)}%</strong><span>Last 30 days</span></div></div>
-        <div className="history-grid">{states.map((day) => <div key={day.key} className={`history-day ${day.status}`} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>)}</div>
+        <header><span className="history-section-label">Completion history</span><div className="history-title-row"><span className="history-emoji">{selected.emoji}</span><h2>{selected.name}</h2></div><p>{historyMonthLabel} at a glance.</p></header>
+        <div className="history-month-toolbar"><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() - 1, 1))} aria-label="Previous history month"><ChevronLeft aria-hidden="true" /></button><h3>{historyMonthLabel}</h3><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() + 1, 1))} aria-label="Next history month" disabled={viewingCurrentMonth}><ChevronRight aria-hidden="true" /></button></div>
+        <div className="history-stats"><div><strong>{historyRate(states, states.length)}%</strong><span>Monthly completion</span></div><div><strong>{completedDays}/{eligibleStates.length}</strong><span>Days completed</span></div></div>
+        <div className="history-month-calendar"><div className="history-weekday-row">{historyDayNames.map((day) => <span key={day}>{day}</span>)}</div><div className="history-grid">{Array.from({ length: firstWeekday }, (_, index) => <i className="history-day-spacer" key={`spacer-${index}`} />)}{states.map((day) => <div key={day.key} className={`history-day ${day.status}`} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>)}</div></div>
+        {!viewingCurrentMonth && <button className="history-current-month-button" onClick={() => setHistoryMonth(currentMonth)}>This month</button>}
         <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
       </section>;
     })() : <section className="history-overview">
-      <header><div><span>Last 30 days</span><h2>Your progress</h2></div><p>Select a routine for the full day-by-day view.</p></header>
+      <header><div><span>This month</span><h2>Your progress</h2></div><p>Select a routine for the full monthly view.</p></header>
       <div className="history-overview-grid">{routines.map((routine) => {
         const states = historyByRoutine.get(routine.id) ?? [];
         return <button key={routine.id} className="history-overview-card" style={{ "--history-color": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}>
-          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>Last 30 days</small></span><b>{historyRate(states, 30)}%</b>
+          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>This month</small></span><b>{historyRate(states, states.length)}%</b>
           <span className="history-mini-days" aria-hidden="true">{states.slice(-14).map((day) => <i key={day.key} className={day.status} />)}</span>
         </button>;
       })}</div>

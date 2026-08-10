@@ -244,7 +244,10 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-overview-grid/);
   assert.match(page, /history-title-row/);
   assert.match(page, /buildRoutineHistory/);
-  assert.match(page, /Last 30 days/);
+  assert.match(page, /Monthly completion/);
+  assert.match(page, /history-month-toolbar/);
+  assert.match(page, /history-current-month-button/);
+  assert.match(page, /This month/);
   assert.match(page, /Skip today/);
   assert.match(page, /Undo skip/);
   assert.match(page, /routine-swipe-surface/);
