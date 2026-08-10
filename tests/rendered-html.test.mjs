@@ -190,6 +190,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-y \{ color: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-detail-card \{ padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; \}/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-detail-card > header \{ display: grid; justify-items: center;/);
+  assert.match(page, /history-page-detail/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-page-detail \{ display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-page-detail \.history-day-spacer, \.history-page-detail \.history-day \{ height: clamp\(34px, 5svh, 44px\); aspect-ratio: auto/);
   const monthlyHistory = page.slice(page.indexOf('return <section className="history-detail-card"'), page.indexOf('})() : <section className="history-overview"'));
   assert.doesNotMatch(monthlyHistory, /Completion history|at a glance/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Calm typography shared by Settings/);

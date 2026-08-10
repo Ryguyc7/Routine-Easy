@@ -754,7 +754,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
   const firstWeekday = (historyMonth.getDay() - (weekStartsOn === "monday" ? 1 : 0) + 7) % 7;
   const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey, historyMonth)])), [routines, completions, itemCompletions, amountCompletions, todayKey, historyMonth]);
 
-  return <div className="page history-page">
+  return <div className={`page history-page${selected ? " history-page-detail" : ""}`}>
     <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
       <button className={effectiveSelection === "all" ? "active" : ""} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
       {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}

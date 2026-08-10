@@ -712,6 +712,21 @@ button { color: inherit; }
   .history-grid { grid-template-columns: repeat(7, 1fr); gap: 5px; }
   .history-weekday-row { gap: 5px; }
   .history-detail-card { padding: 0; border-radius: 0; }
+  .history-page-detail { display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden; scroll-padding-bottom: 0; }
+  .history-page-detail .history-filter-picker { flex: 0 0 auto; margin-bottom: 10px; }
+  .history-page-detail .history-detail-card { min-height: 0; flex: 1; }
+  .history-page-detail .history-detail-card > header { margin-bottom: 10px; }
+  .history-page-detail .history-title-row { gap: 8px; }
+  .history-page-detail .history-title-row .history-emoji { width: 36px; height: 36px; border-radius: 11px; font-size: 18px; }
+  .history-page-detail .history-title-row h2 { font-size: 20px; }
+  .history-page-detail .history-month-toolbar { margin-bottom: 9px; }
+  .history-page-detail .history-stats { gap: 8px; margin-bottom: 10px; }
+  .history-page-detail .history-stats > div { padding: 9px 11px; }
+  .history-page-detail .history-stats strong { font-size: 20px; }
+  .history-page-detail .history-weekday-row { margin-bottom: 4px; }
+  .history-page-detail .history-day-spacer, .history-page-detail .history-day { height: clamp(34px, 5svh, 44px); aspect-ratio: auto; }
+  .history-page-detail .history-current-month-button { min-height: 28px; margin-top: 8px; }
+  .history-page-detail .history-legend { gap: 9px; margin: 9px 0 0; }
   .history-overview { padding: 0; }
   .history-overview > header { align-items: center; gap: 4px; text-align: center; }
   .history-overview > header p { padding: 0; text-align: center; }
