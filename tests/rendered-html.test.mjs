@@ -158,7 +158,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /🧩/);
   assert.match(page, /👨‍👩‍👧‍👦/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routines-page \{ scrollbar-width: none/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.app-background-blob \{[^}]*opacity: \.11/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.app-background-blob \{[^}]*opacity: \.2/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.completed \{ opacity: 1/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /today-page \.routine-list \{[^}]*grid-auto-rows: max-content;[^}]*overflow-y: auto/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row:not\(\.expanded\) \{ height: 110px/);

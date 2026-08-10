@@ -124,7 +124,7 @@ button { color: inherit; }
 
 .content { position: relative; isolation: isolate; grid-column: 2; min-width: 0; overflow: hidden; background: linear-gradient(180deg, #fffdfa, #fbf8f2 72%); }
 .app-background-blobs { position: fixed; inset: 0 0 0 240px; z-index: 0; overflow: hidden; pointer-events: none; }
-.app-background-blob { --app-blob: var(--purple); position: absolute; display: block; width: clamp(190px, 25vw, 340px); aspect-ratio: 1; border-radius: 64% 36% 48% 52% / 41% 58% 42% 59%; background: var(--app-blob); opacity: .11; filter: saturate(.84); }
+.app-background-blob { --app-blob: var(--purple); position: absolute; display: block; width: clamp(190px, 25vw, 340px); aspect-ratio: 1; border-radius: 64% 36% 48% 52% / 41% 58% 42% 59%; background: var(--app-blob); opacity: .2; filter: saturate(.9); }
 .app-background-blob::after { content: ""; position: absolute; width: 30%; height: 30%; border-radius: 58% 42% 63% 37%; background: rgba(255,255,255,.42); }
 .app-blob-purple { --app-blob: #8e7dde; top: -145px; left: -105px; rotate: -14deg; }
 .app-blob-purple::after { right: 18%; bottom: 18%; rotate: -18deg; }
@@ -634,7 +634,7 @@ button { color: inherit; }
   .sidebar { display: none; }
   .content { height: 100svh; min-height: 0; padding-top: 68px; overflow: hidden; background: linear-gradient(180deg, #fffdfa, #fbf8f2 72%); }
   .app-background-blobs { inset: 0; }
-  .app-background-blob { width: min(56vw, 220px); opacity: .105; }
+  .app-background-blob { width: min(56vw, 220px); opacity: .22; }
   .app-blob-purple { top: -104px; left: -92px; }
   .app-blob-coral { top: -112px; right: -98px; }
   .app-blob-gold { left: -102px; bottom: -112px; }
