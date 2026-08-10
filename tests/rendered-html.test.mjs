@@ -243,6 +243,11 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /event\.key === "Enter" \|\| event\.key === " "/);
   assert.match(page, /function undoRoutineSkip/);
   assert.match(page, /className="routine-check-zone"/);
+  assert.match(page, /const checkPointerRef = useRef/);
+  assert.match(page, /onPointerDown=\{beginCheckPointer\}/);
+  assert.match(page, /onPointerUp=\{finishCheckPointer\}/);
+  assert.match(page, /distance < 22/);
+  assert.doesNotMatch(page, /className="routine-check-zone" onClick=/);
   assert.match(page, /if \(skippedRef\.current\) toggleSkip\(\)/);
   assert.match(page, /else if \(hasDetails\) setExpanded/);
   assert.match(page, /Tap anywhere or swipe left or right to undo skip/);

@@ -148,7 +148,7 @@ button { color: inherit; }
 .expand-chevron { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 auto; margin-left: auto; color: #aaa8b2; transition: transform .2s ease, color .2s ease; transform-origin: 50% 50%; }
 .expand-chevron::before { content: ""; display: block; width: 7px; height: 7px; border-right: 1.7px solid currentColor; border-bottom: 1.7px solid currentColor; transform: rotate(45deg) translate(-1px, -1px); transform-origin: 50% 50%; }
 .routine-row.expanded .expand-chevron { transform: rotate(180deg); }
-.routine-check-zone { align-self: stretch; display: grid; place-items: center; flex: 0 0 58px; min-height: 74px; padding: 0 6px 0 0; border: 0; background: transparent; cursor: pointer; }
+.routine-check-zone { align-self: stretch; display: grid; place-items: center; flex: 0 0 64px; min-height: 74px; padding: 0 6px 0 0; border: 0; background: transparent; cursor: pointer; touch-action: manipulation; }
 .routine-check-zone:focus-visible { outline: 2px solid color-mix(in srgb, var(--routine) 74%, #fff); outline-offset: -4px; border-radius: 12px; }
 .check-circle { display: grid; place-items: center; width: 28px; height: 28px; border: 1.5px solid #d8d6dd; background: #fff; border-radius: 50%; color: transparent; pointer-events: none; transition: .2s ease; }
 .check-circle svg { width: 14px; height: 14px; stroke-width: 2.2; }

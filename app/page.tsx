@@ -874,6 +874,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   const dragXRef = useRef(0);
   const pointerActiveRef = useRef(false);
   const gestureAxisRef = useRef<"pending" | "horizontal" | "vertical">("pending");
+  const checkPointerRef = useRef({ active: false, pointerId: -1, x: 0, y: 0 });
   const skippedRef = useRef(skipped);
   if (skippedRef.current !== skipped) skippedRef.current = skipped;
   const completedCount = routine.items.filter((item) => completedItemIds.has(item.id)).length;
@@ -896,6 +897,27 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     if (skippedRef.current) toggleSkip();
     else if (hasDetails) setExpanded((value) => !value);
     else onToggle();
+  };
+  const activateCheckZone = () => skippedRef.current ? toggleSkip() : onToggle();
+  const beginCheckPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    checkPointerRef.current = { active: true, pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const finishCheckPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    const pointer = checkPointerRef.current;
+    const distance = Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y);
+    const shouldActivate = pointer.active && pointer.pointerId === event.pointerId && distance < 22;
+    checkPointerRef.current.active = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (shouldActivate) activateCheckZone();
+  };
+  const cancelCheckPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    checkPointerRef.current.active = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
   const updateDrag = (value: number) => {
     const bounded = Math.max(-104, Math.min(104, value));
@@ -958,7 +980,12 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
         <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
         {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
       </div>
-      <button className="routine-check-zone" onClick={() => skippedRef.current ? toggleSkip() : onToggle()} aria-label={skipped ? `Undo skip and reset ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}><span className="check-circle" aria-hidden="true">{skipped ? <SkipForward /> : "✓"}</span></button>
+      <button type="button" className="routine-check-zone" onPointerDown={beginCheckPointer} onPointerUp={finishCheckPointer} onPointerCancel={cancelCheckPointer} onLostPointerCapture={() => { checkPointerRef.current.active = false; }} onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          activateCheckZone();
+        }
+      }} aria-label={skipped ? `Undo skip and reset ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}><span className="check-circle" aria-hidden="true">{skipped ? <SkipForward /> : "✓"}</span></button>
       <button className="routine-skip-accessible" onClick={toggleSkip}>{skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}</button>
     </div>
     {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
