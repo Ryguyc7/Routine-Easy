@@ -570,7 +570,7 @@ export default function Home() {
   return (
     <main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
       <aside className="sidebar">
-        <div className="brand" aria-label="Routine Easy home">
+        <div className="brand" aria-label="Routine EASY home">
           <img className="brand-logo" src="/routineez-checklist.png" alt="" />
           <span>Routine<EasyWord className="brand-easy" /></span>
         </div>
@@ -591,7 +591,7 @@ export default function Home() {
       <section className="content">
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
-          <div className="mobile-wordmark" aria-label="Routine Easy">
+          <div className="mobile-wordmark" aria-label="Routine EASY">
             <img src="/routineez-checklist.png" alt="" />
             <span className="mobile-wordmark-name">Routine<EasyWord className="mobile-wordmark-easy" /></span>
           </div>
@@ -599,7 +599,7 @@ export default function Home() {
         </header>
 
         {showProfile && <div className="profile-popover-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowProfile(false); }}>
-          <section className="profile-card" role="dialog" aria-label="Your Routine Easy profile">
+          <section className="profile-card" role="dialog" aria-label="Your Routine EASY profile">
             <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile">×</button>
             <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
             <div className="profile-copy"><small>Your profile</small><h2>My Routine<EasyWord className="brand-easy" /></h2><p>Small routines. Easier days.</p></div>
@@ -774,7 +774,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
 
 function SettingsPage({ preferences, onChange }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void }) {
   return <div className="page settings-page">
-    <header className="settings-heading"><span>Make it yours</span><h1>Settings</h1><p>Choose how Routine Easy looks and feels. Changes save automatically on this device.</p></header>
+    <header className="settings-heading"><span>Make it yours</span><h1>Settings</h1><p>Choose how Routine EASY looks and feels. Changes save automatically on this device.</p></header>
     <div className="settings-list">
       <section className="setting-card">
         <div className="setting-icon"><Clock3 aria-hidden="true" /></div>
@@ -811,7 +811,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
     <div className="onboarding-glow glow-two" aria-hidden="true" />
     <section className="onboarding-card" aria-labelledby="onboarding-title">
       <header className="onboarding-top">
-        <div className="brand" aria-label="Routine Easy"><img className="brand-logo" src="/routineez-checklist.png" alt="" /><span>Routine<EasyWord className="brand-easy" /></span></div>
+        <div className="brand" aria-label="Routine EASY"><img className="brand-logo" src="/routineez-checklist.png" alt="" /><span>Routine<EasyWord className="brand-easy" /></span></div>
         <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
       </header>
       <div className="onboarding-layout">
@@ -819,7 +819,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
           <p className="eyebrow">Welcome to your new rhythm</p>
           <h1 id="onboarding-title">Small routines.<br /><span>Easier days.</span></h1>
           <p className="onboarding-lead">Plan the little things that keep your day moving—from workouts and vitamins to breakfast, lunch, and dinner.</p>
-          <div className="onboarding-benefits" aria-label="Routine Easy features">
+          <div className="onboarding-benefits" aria-label="Routine EASY features">
             <div><span className="benefit-icon purple">✓</span><p><strong>Simple check-offs</strong><small>See today and keep moving.</small></p></div>
             <div><span className="benefit-icon coral">●</span><p><strong>Color-coded plans</strong><small>Your routines at a glance.</small></p></div>
             <div><span className="benefit-icon green">↗</span><p><strong>Gentle progress</strong><small>Small wins that add up.</small></p></div>
@@ -829,7 +829,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
         </div>
         <div className="onboarding-visual">
           <div className="onboarding-image-wrap">
-            <img src="/og.png" alt="Routine Easy color-coded routine checklist preview" />
+            <img src="/og.png" alt="Routine EASY color-coded routine checklist preview" />
           </div>
           <div className="onboarding-mini-card"><span>✦</span><div><strong>A calmer day starts small.</strong><small>One routine is enough.</small></div></div>
         </div>
@@ -839,7 +839,7 @@ function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => 
 }
 
 function OnboardingSplash() {
-  return <main className="onboarding-splash" aria-label="Loading Routine Easy">
+  return <main className="onboarding-splash" aria-label="Loading Routine EASY">
     <div className="splash-blobs" aria-hidden="true">
       <span className="splash-blob splash-blob-purple"><i /></span>
       <span className="splash-blob splash-blob-coral"><i /></span>
@@ -856,7 +856,7 @@ function OnboardingSplash() {
 }
 
 function EasyWord({ className }: { className: string }) {
-  return <span className={className} aria-hidden="true"><span className="easy-e">E</span><span className="easy-a">a</span><span className="easy-s">s</span><span className="easy-y">y</span></span>;
+  return <span className={className} aria-hidden="true"><span className="easy-e">E</span><span className="easy-a">A</span><span className="easy-s">S</span><span className="easy-y">Y</span></span>;
 }
 
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {

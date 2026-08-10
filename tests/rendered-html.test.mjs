@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("ships the Routine Easy product instead of starter content", async () => {
+test("ships the Routine EASY product instead of starter content", async () => {
   const [page, layout, packageJson, routinesRoute, quantityRoute, completionRoute, storage] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -31,6 +31,9 @@ test("ships the Routine Easy product instead of starter content", async () => {
   assert.match(page, /easy-a/);
   assert.match(page, /easy-s/);
   assert.match(page, /easy-y/);
+  assert.match(page, /<span className="easy-a">A<\/span>/);
+  assert.match(page, /<span className="easy-s">S<\/span>/);
+  assert.match(page, /<span className="easy-y">Y<\/span>/);
   assert.match(page, /window\.clearTimeout\(splashTimer\)/);
   assert.match(page, /Edit routine/);
   assert.match(page, />Edit<\/button>/);
@@ -277,7 +280,7 @@ test("ships the Routine Easy product instead of starter content", async () => {
   assert.match(storage, /status TEXT NOT NULL DEFAULT 'completed'/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);
-  assert.match(layout, /Routine Easy — Simple Routine Tracker/);
+  assert.match(layout, /Routine EASY — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
