@@ -176,7 +176,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(1\)\.active[^}]*color: var\(--purple\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(2\)\.active[^}]*color: var\(--coral\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /grid-template-columns: repeat\(4, 1fr\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(3\) \{ --nav-accent: var\(--gold\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(3\)\.active[^}]*color: #b97a08/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(4\)\.active[^}]*color: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-e \{ color: var\(--purple\)/);

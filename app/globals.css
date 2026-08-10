@@ -895,16 +895,11 @@ button { color: inherit; }
 }
 
 @media (max-width: 760px) {
-  .bottom-nav button:nth-child(1) { --nav-accent: var(--purple); color: color-mix(in srgb, var(--purple) 72%, #77757f); }
-  .bottom-nav button:nth-child(2) { --nav-accent: var(--coral); color: color-mix(in srgb, var(--coral) 72%, #77757f); }
-  .bottom-nav button:nth-child(3) { --nav-accent: var(--gold); color: #b97a08; }
-  .bottom-nav button:nth-child(4) { --nav-accent: var(--sky); color: color-mix(in srgb, var(--sky) 72%, #77757f); }
-  .bottom-nav button .nav-icon { color: var(--nav-accent); }
   .bottom-nav button:nth-child(1).active, .bottom-nav button:nth-child(1).active .nav-icon { color: var(--purple); }
   .bottom-nav button:nth-child(2).active, .bottom-nav button:nth-child(2).active .nav-icon { color: var(--coral); }
   .bottom-nav button:nth-child(3).active, .bottom-nav button:nth-child(3).active .nav-icon { color: #b97a08; }
   .bottom-nav button:nth-child(4).active, .bottom-nav button:nth-child(4).active .nav-icon { color: var(--sky); }
-  .bottom-nav button:nth-child(2) .date-nav-icon i { background: var(--coral); }
+  .bottom-nav button:nth-child(2).calendar-nav-button.active .date-nav-icon i { background: var(--coral); }
 }
 
 /* Calm typography shared by Settings and the rest of the product. */
