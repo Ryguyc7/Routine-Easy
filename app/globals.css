@@ -554,7 +554,7 @@ button { color: inherit; }
 .history-day.off { opacity: .42; }
 .history-month-calendar .history-day small { display: none; }
 .history-current-month-button { display: block; min-width: 92px; min-height: 31px; margin: 14px auto 0; padding: 0 15px; border: 0; border-radius: 999px; color: #fff; background: var(--history-color); box-shadow: 0 7px 16px color-mix(in srgb, var(--history-color) 24%, transparent); font-size: 10px; font-weight: 750; cursor: pointer; }
-.history-legend { display: flex; flex-wrap: wrap; gap: 11px; margin: 14px 0; color: #777580; font-size: 9px; }
+.history-legend { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 11px; margin: 14px 0; color: #777580; font-size: 9px; }
 .history-legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 3px; vertical-align: -1px; }
 .history-legend .completed::before { background: var(--history-color); }
 .history-legend .partial::before { background: color-mix(in srgb, var(--history-color) 28%, #fff); border: 1px solid var(--history-color); }

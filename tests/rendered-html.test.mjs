@@ -193,6 +193,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-page-detail/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-page-detail \{ display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-page-detail \.history-day-spacer, \.history-page-detail \.history-day \{ height: clamp\(34px, 5svh, 44px\); aspect-ratio: auto/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-legend \{ display: flex; align-items: center; justify-content: center/);
   const monthlyHistory = page.slice(page.indexOf('return <section className="history-detail-card"'), page.indexOf('})() : <section className="history-overview"'));
   assert.doesNotMatch(monthlyHistory, /Completion history|at a glance/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Calm typography shared by Settings/);
