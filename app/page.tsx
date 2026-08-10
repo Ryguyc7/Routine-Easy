@@ -570,6 +570,13 @@ export default function Home() {
   }, [month, preferences.weekStartsOn]);
   const viewingCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
   const calendarDayNames = preferences.weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
+  const selectedCalendarRoutine = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
+  const calendarEntries = monthDays.map((date) => date ? {
+    date,
+    matches: routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, localDateKey(date)) && (selectedRoutine === "all" || selectedRoutine === routine.id)),
+  } : null);
+  const calendarScheduledDays = calendarEntries.filter((entry) => entry && entry.matches.length > 0).length;
+  const calendarRoutineCount = new Set(calendarEntries.flatMap((entry) => entry?.matches.map((routine) => routine.id) ?? [])).size;
 
   const splashOverlay = splashVisible ? <OnboardingSplash leaving={splashLeaving} /> : null;
   if (onboardingState === "show") return <><OnboardingPage onComplete={completeOnboarding} />{splashOverlay}</>;
@@ -660,34 +667,37 @@ export default function Home() {
         )}
 
         {tab === "calendar" && (
-          <div className="page calendar-page">
+          <div className="page calendar-page calendar-page-matched">
             <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills">
               <button className={selectedRoutine === "all" ? "active" : ""} onClick={() => setSelectedRoutine("all")}>All routines</button>
               {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
             </ScrollablePicker>
-            <section className="calendar-card">
-              <div className="calendar-toolbar">
-                <button className="calendar-month-nav calendar-prev" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft aria-hidden="true" /></button>
-                <h2>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2>
-                <button className="calendar-month-nav calendar-next" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
+            <section className="calendar-detail-card" style={{ "--history-color": selectedCalendarRoutine?.color ?? "var(--sky)" } as React.CSSProperties}>
+              <header className="calendar-detail-heading"><div className="history-title-row"><span className="history-emoji calendar-heading-icon">{selectedCalendarRoutine ? selectedCalendarRoutine.emoji : <CalendarDays aria-hidden="true" />}</span><h2>{selectedCalendarRoutine?.name ?? "All routines"}</h2></div></header>
+              <div className="history-month-toolbar calendar-detail-toolbar">
+                <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft aria-hidden="true" /></button>
+                <h3>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3>
+                <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
               </div>
-              <div className="weekday-row">{calendarDayNames.map((day) => <span key={day}>{day}</span>)}</div>
-              <div className="calendar-grid">
-                {monthDays.map((date, index) => {
-                  if (!date) return <div className="day-cell empty" key={`blank-${index}`} />;
+              <div className="history-stats calendar-summary-stats"><div><strong>{calendarScheduledDays}</strong><span>Days scheduled</span></div><div><strong>{calendarRoutineCount}</strong><span>Routines shown</span></div></div>
+              <div className="history-month-calendar calendar-month-view">
+                <div className="history-weekday-row">{calendarDayNames.map((day) => <span key={day}>{day}</span>)}</div>
+                <div className="history-grid calendar-grid">
+                {calendarEntries.map((entry, index) => {
+                  if (!entry) return <i className="history-day-spacer" key={`blank-${index}`} />;
+                  const { date, matches } = entry;
                   const key = localDateKey(date);
-                  const matches = routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, key) && (selectedRoutine === "all" || selectedRoutine === routine.id));
                   const isToday = key === todayKey;
-                  const isSelectedRoutineDay = selectedRoutine !== "all" && matches.length > 0;
-                  return <div className={`day-cell ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""} ${isSelectedRoutineDay ? "selected-routine-day" : ""}`} style={isSelectedRoutineDay ? { "--selected-day": matches[0].color } as React.CSSProperties : undefined} key={key} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
+                  return <div className={`history-day calendar-day ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""}`} style={matches.length ? { "--calendar-day-accent": matches[0].color } as React.CSSProperties : undefined} key={key} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
                     {matches.length > 0 && <div className="day-fill" style={{ gridTemplateColumns: `repeat(${matches.length}, minmax(0, 1fr))` }} aria-hidden="true">{matches.map((routine) => <span key={routine.id} style={{ background: routine.color }} />)}</div>}
                     <span className="day-number">{date.getDate()}</span>
                   </div>;
                 })}
+                </div>
               </div>
               {!viewingCurrentMonth && <div className="calendar-today-row"><button className="calendar-today-button" onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>Today</button></div>}
+              <div className="calendar-legend">Colored bars show the routines scheduled for each day.</div>
             </section>
-            <div className="calendar-legend">Colored bars show the routines scheduled for each day.</div>
           </div>
         )}
 

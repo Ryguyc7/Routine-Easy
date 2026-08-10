@@ -121,8 +121,11 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /Calendar routine filters/);
   assert.match(page, /viewingCurrentMonth/);
   assert.match(page, /calendar-today-button/);
-  assert.match(page, /calendar-month-nav calendar-prev/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-toolbar \{ display: grid; grid-template-columns: 34px minmax\(0, 1fr\) 34px/);
+  assert.match(page, /calendar-detail-toolbar/);
+  assert.match(page, /calendar-detail-card/);
+  assert.match(page, /Days scheduled/);
+  assert.match(page, /Routines shown/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.calendar-page-matched \{ display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden/);
   assert.match(page, /calendar-today-row/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-today-button \{[^}]*background: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes calendar-today-arrive/);
@@ -208,7 +211,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /CalendarPlus2/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
-  assert.match(page, /selected-routine-day/);
+  assert.match(page, /calendar-day \$\{isToday/);
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
