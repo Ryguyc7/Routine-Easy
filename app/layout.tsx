@@ -7,13 +7,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
-  const title = "RoutineEZ — Simple Routine Tracker";
+  const title = "Routine Easy — Simple Routine Tracker";
   const description = "Small routines. Easier days. A calm, colorful way to keep your day moving.";
   return {
     title,
     description,
     icons: { icon: "/routineez-logo.png", shortcut: "/routineez-logo.png", apple: "/routineez-logo.png" },
-    openGraph: { title, description, type: "website", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "RoutineEZ routine tracker" }] },
+    openGraph: { title, description, type: "website", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Routine Easy routine tracker" }] },
     twitter: { card: "summary_large_image", title, description, images: [`${origin}/og.png`] },
   };
 }

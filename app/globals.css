@@ -84,7 +84,7 @@ button { color: inherit; }
 .splash-logo { display: block; width: 94px; height: 94px; object-fit: contain; filter: drop-shadow(0 13px 20px rgba(79,57,193,.24)); animation: splash-icon-in .62s cubic-bezier(.2,.9,.28,1.22) both; }
 .splash-wordmark { display: flex; align-items: baseline; color: #1d1f29; font-size: 25px; font-weight: 850; letter-spacing: -.85px; line-height: 1; }
 .splash-routine { animation: splash-routine-in .56s cubic-bezier(.2,.9,.25,1.2) .5s both; }
-.splash-ez { margin-left: 1px; font-size: .82em; font-weight: 800; letter-spacing: -.4px; animation: splash-ez-in .48s cubic-bezier(.2,.9,.25,1.18) 1.02s both; }
+.splash-easy { margin-left: 3px; font-size: .78em; font-weight: 800; letter-spacing: -.5px; animation: splash-easy-in .48s cubic-bezier(.2,.9,.25,1.18) 1.02s both; }
 @keyframes splash-icon-in {
   from { opacity: 0; transform: translateY(8px) scale(.72) rotate(-8deg); }
   70% { opacity: 1; transform: translateY(-2px) scale(1.05) rotate(1deg); }
@@ -95,7 +95,7 @@ button { color: inherit; }
   72% { opacity: 1; transform: translateY(2px) scale(1.01); }
   to { opacity: 1; transform: none; }
 }
-@keyframes splash-ez-in {
+@keyframes splash-easy-in {
   from { opacity: 0; transform: translateX(-8px) scale(.78); }
   72% { opacity: 1; transform: translateX(1px) scale(1.05); }
   to { opacity: 1; transform: none; }
@@ -611,7 +611,7 @@ button { color: inherit; }
   .mobile-wordmark { justify-self: center; display: flex; align-items: center; gap: 7px; color: #191b25; font-size: 19px; font-weight: 900; letter-spacing: -.85px; }
   .mobile-wordmark img { width: 38px; height: 38px; object-fit: contain; transform: translateY(2px); filter: drop-shadow(0 0 13px rgba(32,34,44,.3)) drop-shadow(0 0 5px rgba(73,75,84,.34)); }
   .mobile-wordmark-name { display: inline-flex; align-items: baseline; color: #191b25; line-height: 1; }
-  .mobile-wordmark .mobile-wordmark-ez { margin-left: 1px; font-size: .82em; font-weight: 800; letter-spacing: -.45px; }
+  .mobile-wordmark .mobile-wordmark-easy { margin-left: 3px; font-size: .74em; font-weight: 800; letter-spacing: -.55px; }
   .mobile-add { justify-self: end; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid rgba(255,255,255,.82); border-radius: 50%; background: linear-gradient(145deg, #735ff1, #593fdf); color: #fff; box-shadow: 0 10px 24px rgba(82,66,194,.3), inset 0 1px 0 rgba(255,255,255,.35); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
   .mobile-add > span { display: grid; place-items: center; width: 100%; height: 100%; padding-bottom: 2px; font-family: Arial, sans-serif; font-size: 25px; font-weight: 400; line-height: 1; transition: transform .38s cubic-bezier(.2,.9,.25,1.3); }
   .mobile-add:active { transform: scale(.94); box-shadow: 0 5px 14px rgba(82,66,194,.25); }
@@ -840,12 +840,20 @@ button { color: inherit; }
 @keyframes nav-pop { 0% { transform: translateY(2px) scale(.78); } 70% { transform: translateY(-2px) scale(1.1); } 100% { transform: translateY(-1px) scale(1); } }
 
 /* App-icon palette: one coordinated system instead of a purple-only UI. */
-.brand-ez, .mobile-wordmark-ez, .splash-ez {
+.brand-easy, .mobile-wordmark-easy, .splash-easy {
+  display: inline-flex;
+  align-items: baseline;
+  margin-left: 3px;
+  font-size: .78em;
+  font-weight: 800;
+  letter-spacing: -.55px;
   background: none;
   -webkit-text-fill-color: currentColor;
 }
-.brand-e { color: var(--sky); -webkit-text-fill-color: var(--sky); }
-.brand-z { color: var(--coral); -webkit-text-fill-color: var(--coral); }
+.easy-e { color: var(--purple); -webkit-text-fill-color: var(--purple); }
+.easy-a { color: var(--coral); -webkit-text-fill-color: var(--coral); }
+.easy-s { color: var(--gold); -webkit-text-fill-color: var(--gold); }
+.easy-y { color: var(--sky); -webkit-text-fill-color: var(--sky); }
 .premium-action {
   background: var(--sky);
   box-shadow: 0 10px 22px rgba(77,150,255,.24), inset 0 1px 0 rgba(255,255,255,.42);

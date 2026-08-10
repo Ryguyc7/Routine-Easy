@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("ships the RoutineEZ product instead of starter content", async () => {
+test("ships the Routine Easy product instead of starter content", async () => {
   const [page, layout, packageJson, routinesRoute, quantityRoute, completionRoute, storage] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -25,7 +25,12 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(page, /splash-blob-coral/);
   assert.match(page, /splash-blob-gold/);
   assert.match(page, /splash-blob-sky/);
-  assert.match(page, /splash-ez/);
+  assert.match(page, /splash-easy/);
+  assert.match(page, /function EasyWord/);
+  assert.match(page, /easy-e/);
+  assert.match(page, /easy-a/);
+  assert.match(page, /easy-s/);
+  assert.match(page, /easy-y/);
   assert.match(page, /window\.clearTimeout\(splashTimer\)/);
   assert.match(page, /Edit routine/);
   assert.match(page, />Edit<\/button>/);
@@ -169,8 +174,10 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /grid-template-columns: repeat\(4, 1fr\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-child\(4\)\.active[^}]*color: var\(--mint\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.brand-e \{ color: var\(--sky\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.brand-z \{ color: var\(--coral\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-e \{ color: var\(--purple\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-a \{ color: var\(--coral\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-s \{ color: var\(--gold\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-y \{ color: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Calm typography shared by Settings/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.section-title h2, \.calendar-toolbar h2[^}]*font-weight: 600/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.primary-button, \.secondary-button[^}]*font-weight: 650/);
@@ -270,7 +277,7 @@ test("ships the RoutineEZ product instead of starter content", async () => {
   assert.match(storage, /status TEXT NOT NULL DEFAULT 'completed'/);
   assert.doesNotMatch(page, /today-date-copy|date-balance/);
   assert.match(page, /item-completions/);
-  assert.match(layout, /RoutineEZ — Simple Routine Tracker/);
+  assert.match(layout, /Routine Easy — Simple Routine Tracker/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
