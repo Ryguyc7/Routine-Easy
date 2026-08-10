@@ -275,7 +275,11 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-swipe-underlay/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.skipped \{ border-style: dashed/);
   assert.match(page, /Duplicate/);
-  assert.match(page, /setEditingRoutineId\(data\.routine\.id\)/);
+  const duplicateRoutineSource = page.slice(page.indexOf("function duplicateRoutine"), page.indexOf("async function deleteRoutine"));
+  assert.match(duplicateRoutineSource, /setSelectedTemplate\(\{/);
+  assert.match(duplicateRoutineSource, /setShowAdd\(true\)/);
+  assert.doesNotMatch(duplicateRoutineSource, /fetch\(/);
+  assert.match(page, /Save duplicate/);
   assert.match(completionRoute, /"completed" \| "skipped"/);
   assert.match(completionRoute, /ON CONFLICT\(owner_key, routine_id, date\) DO UPDATE SET status/);
   assert.match(routinesRoute, /routine_id AS routineId, date, status FROM completions/);

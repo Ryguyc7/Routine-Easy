@@ -47,6 +47,9 @@ type RoutineTemplate = {
   days: number[];
   lists?: RoutineListDraft[];
   amounts?: RoutineAmount[];
+  dayVariants?: Partial<Record<number, string>>;
+  startDate?: string;
+  endDate?: string;
 };
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
@@ -180,7 +183,6 @@ export default function Home() {
   const [showAdd, setShowAdd] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
-  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
   const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
@@ -467,29 +469,27 @@ export default function Home() {
     setSaving(false);
   }
 
-  async function duplicateRoutine(routine: Routine) {
-    setDuplicatingId(routine.id);
-    try {
-      const response = await fetch("/api/routines", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `${routine.name} copy`, emoji: routine.emoji, color: routine.color, time: routine.time, days: routine.days,
-          trackingMode: routine.trackingMode, amounts: routine.amounts,
-          lists: routine.lists.map((list) => ({ ...list, items: routine.items.filter((item) => item.listKey === list.key).map((item) => item.title) })),
-          dayVariants: routine.dayVariants, startDate: routine.startDate, endDate: routine.endDate,
-        }),
-      });
-      if (!response.ok) throw new Error("Duplicate failed");
-      const data = await response.json();
-      setRoutines((items) => [...items, data.routine]);
-      setEditingRoutineId(data.routine.id);
-      setError("");
-    } catch {
-      setError("That routine could not be duplicated. Please try again.");
-    } finally {
-      setDuplicatingId(null);
-    }
+  function duplicateRoutine(routine: Routine) {
+    setEditingRoutineId(null);
+    setSelectedTemplate({
+      id: `duplicate-${routine.id}`,
+      name: `${routine.name} copy`,
+      description: `A copy of ${routine.name}`,
+      emoji: routine.emoji,
+      color: routine.color,
+      time: routine.time,
+      days: [...routine.days],
+      amounts: routine.amounts.map((amount) => ({ ...amount })),
+      lists: routine.lists.map((list) => ({
+        ...list,
+        items: routine.items.filter((item) => item.listKey === list.key).map((item) => item.title).join("\n"),
+      })),
+      dayVariants: { ...routine.dayVariants },
+      startDate: routine.startDate,
+      endDate: routine.endDate,
+    });
+    setShowTemplatePicker(false);
+    setShowAdd(true);
   }
 
   async function deleteRoutine(id: number) {
@@ -692,7 +692,7 @@ export default function Home() {
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} duplicating={duplicatingId === routine.id} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />)}
               </div>
             </section>
           </div>
@@ -1029,7 +1029,7 @@ function QuantityTracker({ routineName, amount, count, onChange }: { routineName
   </div>;
 }
 
-function RoutineCard({ routine, timeFormat, duplicating, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; duplicating: boolean; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
+function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const trackingLabel = routine.trackingMode === "simple" ? "Single check" : [
     ...(usesChecklist(routine.trackingMode) ? [`${routine.lists.length} ${routine.lists.length === 1 ? "list" : "lists"}`] : []),
@@ -1040,7 +1040,7 @@ function RoutineCard({ routine, timeFormat, duplicating, onEditOptions, onDuplic
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
     <div className="routine-card-actions">
       <button onClick={onEditOptions} aria-label={`Edit ${routine.name}`}>Edit</button>
-      <button onClick={onDuplicate} disabled={duplicating} aria-label={`Duplicate ${routine.name}`}><Copy aria-hidden="true" />{duplicating ? "Copying…" : "Duplicate"}</button>
+      <button onClick={onDuplicate} aria-label={`Duplicate ${routine.name}`}><Copy aria-hidden="true" />Duplicate</button>
       <button onClick={onHistory} aria-label={`View history for ${routine.name}`}><History aria-hidden="true" />History</button>
     </div>
     <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}><Trash2 aria-hidden="true" /></button>
@@ -1307,7 +1307,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
       <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
         <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
         <TimeField defaultValue={template?.time ?? ""} />
-        <DateRangeSettings />
+        <DateRangeSettings startDate={template?.startDate} endDate={template?.endDate} />
       </section>
       <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">
         <TrackingBuilder lists={previewLists} amounts={previewAmounts} onListsChange={setPreviewLists} onAmountsChange={setPreviewAmounts} />
@@ -1317,12 +1317,12 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
         <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color">{availableColors.map((color) => <label key={color}><input type="radio" name="color" value={color} checked={previewColor.toLowerCase() === color.toLowerCase()} onChange={(event) => { setPreviewColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
         <UniqueChoiceToggles hideUsedEmojis={hideUsedEmojis} hideUsedColors={hideUsedColors} onEmojisChange={toggleUsedEmojis} onColorsChange={toggleUsedColors} />
         <fieldset className="day-picker"><legend>Repeat on</legend>{DAY_NAMES.map((day, i) => <label key={day}><input type="checkbox" name={`day-${i}`} checked={selectedDays.includes(i)} onChange={() => setSelectedDays((days) => days.includes(i) ? days.filter((item) => item !== i) : [...days, i].sort())} /><span>{day.slice(0, 1)}</span></label>)}</fieldset>
-        <DayPlanSettings scheduledDays={selectedDays} />
+        <DayPlanSettings scheduledDays={selectedDays} variants={template?.dayVariants} />
       </section>
     </div>
     <div className="form-actions wizard-actions">
       <button type="button" className="secondary-button" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)}>{step === 0 ? "Cancel" : "Back"}</button>
-      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving || stepSettling}>{saving ? "Adding…" : "Add routine"}</button>}
+      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving || stepSettling}>{saving ? "Saving…" : template?.id.startsWith("duplicate-") ? "Save duplicate" : "Add routine"}</button>}
     </div>
   </form>
   <VerticalScrollIndicator scrollerRef={formRef} label="Add routine form" />
