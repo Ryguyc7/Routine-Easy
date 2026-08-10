@@ -589,6 +589,12 @@ export default function Home() {
       </aside>
 
       <section className="content">
+        <div className="app-background-blobs" aria-hidden="true">
+          <i className="app-background-blob app-blob-purple" />
+          <i className="app-background-blob app-blob-coral" />
+          <i className="app-background-blob app-blob-gold" />
+          <i className="app-background-blob app-blob-sky" />
+        </div>
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="Routine EASY">
