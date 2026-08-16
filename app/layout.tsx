@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    icons: { icon: "/routineez-logo.png", shortcut: "/routineez-logo.png", apple: "/routineez-logo.png" },
+    icons: { icon: "/routineez-mark.png", shortcut: "/routineez-mark.png", apple: "/routineez-mark.png" },
     openGraph: { title, description, type: "website", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Routine EASY routine tracker" }] },
     twitter: { card: "summary_large_image", title, description, images: [`${origin}/og.png`] },
   };

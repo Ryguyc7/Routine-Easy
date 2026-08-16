@@ -688,7 +688,7 @@ export default function Home() {
                   const { date, matches } = entry;
                   const key = localDateKey(date);
                   const isToday = key === todayKey;
-                  return <div className={`history-day calendar-day ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""}`} style={matches.length ? { "--calendar-day-accent": matches[0].color } as React.CSSProperties : undefined} key={key} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
+                  return <div className={`history-day calendar-day ${isToday ? "is-today" : ""} ${matches.length ? "has-routines" : ""}`} style={matches.length ? { "--calendar-day-accent": matches[0].color } as React.CSSProperties : undefined} key={key} aria-current={isToday ? "date" : undefined} aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${matches.length ? `: ${matches.map((routine) => routine.name).join(", ")}` : ""}`}>
                     {matches.length > 0 && <div className="day-fill" style={{ gridTemplateColumns: `repeat(${matches.length}, minmax(0, 1fr))` }} aria-hidden="true">{matches.map((routine) => <span key={routine.id} style={{ background: routine.color }} />)}</div>}
                     <span className="day-number">{date.getDate()}</span>
                   </div>;
@@ -785,7 +785,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
         <header><div className="history-title-row"><span className="history-emoji">{selected.emoji}</span><h2>{selected.name}</h2></div></header>
         <div className="history-month-toolbar"><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() - 1, 1))} aria-label="Previous history month"><ChevronLeft aria-hidden="true" /></button><h3>{historyMonthLabel}</h3><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() + 1, 1))} aria-label="Next history month" disabled={viewingCurrentMonth}><ChevronRight aria-hidden="true" /></button></div>
         <div className="history-stats"><div><strong>{historyRate(states, states.length)}%</strong><span>Monthly completion</span></div><div><strong>{completedDays}/{eligibleStates.length}</strong><span>Days completed</span></div></div>
-        <div className="history-month-calendar"><div className="history-weekday-row">{historyDayNames.map((day) => <span key={day}>{day}</span>)}</div><div className="history-grid">{Array.from({ length: firstWeekday }, (_, index) => <i className="history-day-spacer" key={`spacer-${index}`} />)}{states.map((day) => <div key={day.key} className={`history-day ${day.status}`} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>)}</div></div>
+        <div className="history-month-calendar"><div className="history-weekday-row">{historyDayNames.map((day) => <span key={day}>{day}</span>)}</div><div className="history-grid">{Array.from({ length: firstWeekday }, (_, index) => <i className="history-day-spacer" key={`spacer-${index}`} />)}{states.map((day) => { const isToday = day.key === todayKey; return <div key={day.key} className={`history-day ${day.status}${isToday ? " is-today" : ""}`} aria-current={isToday ? "date" : undefined} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>; })}</div></div>
         {!viewingCurrentMonth && <button className="history-current-month-button" onClick={() => setHistoryMonth(currentMonth)}>This month</button>}
         <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
       </section>;
@@ -1507,11 +1507,13 @@ function ScrollablePicker({ label, children, className = "", scrollClassName = "
   const dragOffsetRef = useRef(0);
   const [thumb, setThumb] = useState({ left: 0, width: 100 });
   const [dragging, setDragging] = useState(false);
+  const [scrollable, setScrollable] = useState(false);
 
   const updateIndicator = () => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
     const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    setScrollable(maxScroll > 1);
     const boundedScroll = Math.min(maxScroll, Math.max(0, scroller.scrollLeft));
     const width = Math.max(22, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100));
     const left = maxScroll ? (boundedScroll / maxScroll) * (100 - width) : 0;
@@ -1562,7 +1564,7 @@ function ScrollablePicker({ label, children, className = "", scrollClassName = "
     const observer = new ResizeObserver(updateIndicator);
     const mutationObserver = new MutationObserver(() => window.requestAnimationFrame(updateIndicator));
     observer.observe(scroller);
-    mutationObserver.observe(scroller, { childList: true });
+    mutationObserver.observe(scroller, { childList: true, subtree: true, characterData: true, attributes: true });
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
@@ -1572,9 +1574,9 @@ function ScrollablePicker({ label, children, className = "", scrollClassName = "
 
   return <div className={`picker-shell${className ? ` ${className}` : ""}`}>
     <div ref={scrollerRef} className={`picker-scroll${scrollClassName ? ` ${scrollClassName}` : ""}`} onScroll={updateIndicator} tabIndex={0} role="group" aria-label={`${label} choices. Scroll horizontally for more.`}>{children}</div>
-    <div ref={trackRef} className="picker-scrollbar">
+    {scrollable && <div ref={trackRef} className="picker-scrollbar">
       <button ref={thumbRef} type="button" className={`picker-thumb${dragging ? " dragging" : ""}`} style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} aria-label={`Scroll ${label} choices`} onPointerDown={beginThumbDrag} onPointerMove={moveThumb} onPointerUp={endThumbDrag} onPointerCancel={endThumbDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={moveThumbWithKeyboard} />
-    </div>
+    </div>}
   </div>;
 }
 
