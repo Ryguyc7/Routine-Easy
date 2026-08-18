@@ -58,3 +58,14 @@ export const amountCompletions = sqliteTable("amount_completions", {
   date: text("date").notNull(),
   count: integer("count").notNull().default(0),
 }, (table) => [uniqueIndex("idx_amount_completions_owner_routine_amount_date").on(table.ownerKey, table.routineId, table.amountKey, table.date)]);
+
+export const trackerEntries = sqliteTable("tracker_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerKey: text("owner_key").notNull(),
+  routineId: integer("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
+  trackerKey: text("tracker_key").notNull(),
+  date: text("date").notNull(),
+  valueText: text("value_text").notNull().default(""),
+  fileKey: text("file_key").notNull().default(""),
+  contentType: text("content_type").notNull().default(""),
+}, (table) => [uniqueIndex("idx_tracker_entries_owner_routine_tracker_date").on(table.ownerKey, table.routineId, table.trackerKey, table.date)]);

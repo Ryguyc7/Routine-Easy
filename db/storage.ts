@@ -72,6 +72,16 @@ export async function ensureDatabase() {
     date TEXT NOT NULL,
     count INTEGER NOT NULL DEFAULT 0
   )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS tracker_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_key TEXT NOT NULL,
+    routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+    tracker_key TEXT NOT NULL,
+    date TEXT NOT NULL,
+    value_text TEXT NOT NULL DEFAULT '',
+    file_key TEXT NOT NULL DEFAULT '',
+    content_type TEXT NOT NULL DEFAULT ''
+  )`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_completions_owner_routine_date
     ON completions(owner_key, routine_id, date)`).run();
   await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_routine_items_owner_routine_position
@@ -82,6 +92,8 @@ export async function ensureDatabase() {
     ON quantity_completions(owner_key, routine_id, date)`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_amount_completions_owner_routine_amount_date
     ON amount_completions(owner_key, routine_id, amount_key, date)`).run();
+  await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_tracker_entries_owner_routine_tracker_date
+    ON tracker_entries(owner_key, routine_id, tracker_key, date)`).run();
   const legacyAmounts = await env.DB.prepare(`SELECT id, owner_key AS ownerKey, target_count AS targetCount, unit
     FROM routines WHERE tracking_mode IN ('quantity', 'hybrid') AND amount_config = '[]'`).all<{ id: number; ownerKey: string; targetCount: number; unit: string }>();
   for (const routine of legacyAmounts.results) {

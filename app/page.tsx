@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, History, ListChecks, SkipForward, Settings2, Sparkles, Trash2, X, type LucideIcon } from "lucide-react";
+import { FormEvent, startTransition, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
-type RoutineAmount = { key: string; name: string; targetCount: number };
+type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
+type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string };
 type RoutineList = { key: string; name: string };
 type RoutineListDraft = RoutineList & { items: string };
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
@@ -31,12 +33,16 @@ type Routine = {
 type Completion = { routineId: number; date: string; status: "completed" | "skipped" };
 type ItemCompletion = { itemId: number; date: string };
 type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
+type TrackerEntry = { routineId: number; trackerKey: string; date: string; value: string; hasFile: boolean };
 type Tab = "today" | "calendar" | "routines" | "history" | "settings";
 type OnboardingState = "checking" | "show" | "done";
 type TimeFormat = "12-hour" | "24-hour";
 type WeekStart = "sunday" | "monday";
 type MotionPreference = "full" | "reduced";
-type AppPreferences = { timeFormat: TimeFormat; weekStartsOn: WeekStart; motion: MotionPreference };
+type ThemePreference = "light" | "dark" | "system";
+type TogglePreference = "on" | "off";
+type CompletedVisibility = "show" | "hide";
+type AppPreferences = { timeFormat: TimeFormat; weekStartsOn: WeekStart; motion: MotionPreference; theme: ThemePreference; completedVisibility: CompletedVisibility; feedback: TogglePreference; reminders: TogglePreference };
 type RoutineTemplate = {
   id: string;
   name: string;
@@ -52,9 +58,22 @@ type RoutineTemplate = {
   endDate?: string;
 };
 
-const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full" };
+const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full", theme: "system", completedVisibility: "show", feedback: "on", reminders: "off" };
 const SPLASH_DURATION_MS = 2100;
 const SPLASH_FADE_MS = 650;
+
+function cleanPreferences(value: unknown): AppPreferences {
+  const saved = value && typeof value === "object" ? value as Partial<AppPreferences> : {};
+  return {
+    timeFormat: saved.timeFormat === "24-hour" ? "24-hour" : "12-hour",
+    weekStartsOn: saved.weekStartsOn === "monday" ? "monday" : "sunday",
+    motion: saved.motion === "reduced" ? "reduced" : "full",
+    theme: saved.theme === "light" || saved.theme === "dark" ? saved.theme : "system",
+    completedVisibility: saved.completedVisibility === "hide" ? "hide" : "show",
+    feedback: saved.feedback === "off" ? "off" : "on",
+    reminders: saved.reminders === "on" ? "on" : "off",
+  };
+}
 
 const COLORS = [
   "#6C5CE7", "#845EF7", "#8338EC", "#9C36B5", "#CC5DE8", "#8E7DBE", "#5F3DC4", "#6741D9",
@@ -102,6 +121,64 @@ function readDayVariants(form: FormData) {
 
 function trackingModeFor(lists: RoutineListDraft[], amounts: RoutineAmount[]): TrackingMode {
   return lists.length && amounts.length ? "hybrid" : lists.length ? "checklist" : amounts.length ? "quantity" : "simple";
+}
+
+function trackerKind(tracker: RoutineAmount): TrackerKind {
+  return tracker.kind ?? "amount";
+}
+
+function trackerIsComplete(tracker: RoutineAmount, count: number) {
+  const kind = trackerKind(tracker);
+  if (kind === "rating" || kind === "number" || kind === "note" || kind === "photo" || kind === "avoidance") return count > 0;
+  if (kind === "timer") return count >= tracker.targetCount * 60;
+  return count >= tracker.targetCount;
+}
+
+function trackerProgress(tracker: RoutineAmount, count: number) {
+  if (trackerKind(tracker) === "rating" || trackerKind(tracker) === "number" || trackerKind(tracker) === "note" || trackerKind(tracker) === "photo" || trackerKind(tracker) === "avoidance") return count > 0 ? 100 : 0;
+  if (trackerKind(tracker) === "timer") return Math.min(100, Math.round((count / Math.max(60, tracker.targetCount * 60)) * 100));
+  return Math.min(100, Math.round((count / Math.max(1, tracker.targetCount)) * 100));
+}
+
+function trackerCompletionValue(tracker: RoutineAmount) {
+  const kind = trackerKind(tracker);
+  if (kind === "timer") return tracker.targetCount * 60;
+  if (kind === "rating" || kind === "number" || kind === "avoidance") return 1;
+  return tracker.targetCount;
+}
+
+function trackerMaximumValue(tracker: RoutineAmount) {
+  const kind = trackerKind(tracker);
+  if (kind === "rating") return 5;
+  if (kind === "avoidance") return 1;
+  if (kind === "timer") return 86_400;
+  if (kind === "number") return 1_000_000_000;
+  return tracker.targetCount;
+}
+
+function formatTimerSeconds(seconds: number) {
+  const safeSeconds = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainder = safeSeconds % 60;
+  return hours ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}` : `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function trackerSummary(tracker: RoutineAmount, count: number) {
+  const kind = trackerKind(tracker);
+  if (kind === "rating") return count ? `${count}/5 ${tracker.name}` : `Rate ${tracker.name}`;
+  if (kind === "note") return count ? `${tracker.name} added` : `Add ${tracker.name}`;
+  if (kind === "photo") return count ? `${tracker.name} added` : `Add ${tracker.name}`;
+  if (kind === "avoidance") return count ? `${tracker.name}: on track` : tracker.name;
+  if (kind === "number") return count ? `${count}${tracker.unit ? ` ${tracker.unit}` : ""} ${tracker.name}` : `Enter ${tracker.name}`;
+  if (kind === "timer") return `${formatTimerSeconds(count)} / ${tracker.targetCount}:00 ${tracker.name}`;
+  const unit = tracker.unit || (kind === "duration" || kind === "timer" ? "min" : "");
+  return `${count}/${tracker.targetCount}${unit ? ` ${unit}` : ""} ${tracker.name}`;
+}
+
+function trackerKindLabel(tracker: RoutineAmount) {
+  const labels: Record<TrackerKind, string> = { amount: "Daily amount", duration: "Duration", timer: "Timer", rating: "Rating", number: "Number", note: "Note", photo: "Photo", avoidance: "Avoided habit" };
+  return labels[trackerKind(tracker)];
 }
 
 function readTrackingLists(form: FormData) {
@@ -179,6 +256,7 @@ export default function Home() {
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [itemCompletions, setItemCompletions] = useState<ItemCompletion[]>([]);
   const [amountCompletions, setAmountCompletions] = useState<AmountCompletion[]>([]);
+  const [trackerEntries, setTrackerEntries] = useState<TrackerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRoutine, setSelectedRoutine] = useState<number | "all">("all");
   const [selectedHistoryRoutine, setSelectedHistoryRoutine] = useState<number | "all">("all");
@@ -188,16 +266,18 @@ export default function Home() {
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [systemDark, setSystemDark] = useState(false);
   const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingList, setSavingList] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const addTimerRef = useRef<number | null>(null);
   const completionsRef = useRef<Completion[]>([]);
   const itemCompletionsRef = useRef<ItemCompletion[]>([]);
   const amountCompletionsRef = useRef<AmountCompletion[]>([]);
+  const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const today = useMemo(() => new Date(), []);
   const todayKey = localDateKey(today);
@@ -218,6 +298,12 @@ export default function Home() {
     const next = updater(amountCompletionsRef.current);
     amountCompletionsRef.current = next;
     setAmountCompletions(next);
+  }
+
+  function updateTrackerEntries(updater: (items: TrackerEntry[]) => TrackerEntry[]) {
+    const next = updater(trackerEntriesRef.current);
+    trackerEntriesRef.current = next;
+    setTrackerEntries(next);
   }
 
   function queueRoutineMutation(routineId: number, request: () => Promise<Response>) {
@@ -244,9 +330,11 @@ export default function Home() {
       completionsRef.current = data.completions;
       itemCompletionsRef.current = data.itemCompletions ?? [];
       amountCompletionsRef.current = data.amountCompletions ?? [];
+      trackerEntriesRef.current = data.trackerEntries ?? [];
       setCompletions(completionsRef.current);
       setItemCompletions(itemCompletionsRef.current);
       setAmountCompletions(amountCompletionsRef.current);
+      setTrackerEntries(trackerEntriesRef.current);
       setError("");
     } catch {
       setError("Your routines could not be loaded. Please refresh and try again.");
@@ -260,10 +348,11 @@ export default function Home() {
     const completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
     try {
       const savedPreferences = JSON.parse(window.localStorage.getItem("routineez-preferences") ?? "{}");
-      setPreferences({ ...DEFAULT_PREFERENCES, ...savedPreferences });
+      setPreferences(cleanPreferences(savedPreferences));
     } catch {
       setPreferences(DEFAULT_PREFERENCES);
     }
+    setPreferencesLoaded(true);
     let splashExitTimer = 0;
     const splashTimer = window.setTimeout(() => {
       setOnboardingState(forceOnboarding || !completed ? "show" : "done");
@@ -274,23 +363,31 @@ export default function Home() {
     return () => {
       window.clearTimeout(splashTimer);
       window.clearTimeout(splashExitTimer);
-      if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
     };
   }, []);
 
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemDark(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  const darkTheme = preferences.theme === "dark" || (preferences.theme === "system" && systemDark);
+
+  useEffect(() => {
+    if (!preferencesLoaded) return;
+    const resolvedDarkTheme = preferences.theme === "dark" || (preferences.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.dataset.theme = resolvedDarkTheme ? "dark" : "light";
+    document.documentElement.style.colorScheme = resolvedDarkTheme ? "dark" : "light";
+  }, [preferences.theme, preferencesLoaded, systemDark]);
+
   function openAddFromHeader() {
-    if (addTimerRef.current !== null) window.clearTimeout(addTimerRef.current);
     setEditingRoutineId(null);
-    if (tab === "routines") {
-      setShowTemplatePicker(true);
-      return;
-    }
     setShowAdd(false);
-    setTab("routines");
-    addTimerRef.current = window.setTimeout(() => {
-      setShowTemplatePicker(true);
-      addTimerRef.current = null;
-    }, 200);
+    setShowTemplatePicker(true);
+    if (tab !== "routines") startTransition(() => setTab("routines"));
   }
 
   function openSettings() {
@@ -304,6 +401,12 @@ export default function Home() {
       window.localStorage.setItem("routineez-preferences", JSON.stringify(updated));
       return updated;
     });
+  }
+
+  function replacePreferences(next: unknown) {
+    const updated = cleanPreferences(next);
+    setPreferences(updated);
+    window.localStorage.setItem("routineez-preferences", JSON.stringify(updated));
   }
 
   function completeOnboarding(addRoutine = false) {
@@ -328,14 +431,58 @@ export default function Home() {
   );
   const amountCount = (routineId: number, amountKey: string, date = todayKey) => amountCompletions.find((item) => item.routineId === routineId && item.amountKey === amountKey && item.date === date)?.count ?? 0;
   const isRoutineDone = (routine: Routine) => {
+    if (completedToday.has(routine.id)) return true;
     const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => completedItemsToday.has(item.id)));
-    const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => amountCount(routine.id, amount.key) >= amount.targetCount));
+    const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => trackerIsComplete(amount, amountCount(routine.id, amount.key))));
     return routine.trackingMode === "simple" ? completedToday.has(routine.id) : checklistDone && quantityDone;
   };
+  const visibleTodayRoutines = preferences.completedVisibility === "hide" ? todayRoutines.filter((routine) => skippedToday.has(routine.id) || !isRoutineDone(routine)) : todayRoutines;
   const eligibleTodayRoutines = todayRoutines.filter((routine) => !skippedToday.has(routine.id));
   const doneCount = eligibleTodayRoutines.filter(isRoutineDone).length;
   const progress = eligibleTodayRoutines.length ? Math.round((doneCount / eligibleTodayRoutines.length) * 100) : 0;
   const animatedProgress = useAnimatedNumber(progress, preferences.motion === "reduced" ? 0 : 600);
+
+  useEffect(() => {
+    if (preferences.reminders !== "on" || !("Notification" in window) || Notification.permission !== "granted") return;
+    const checkReminders = () => {
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const storageKey = `routineez-reminders-${todayKey}`;
+      let notified: string[] = [];
+      try { notified = JSON.parse(window.localStorage.getItem(storageKey) ?? "[]"); } catch { notified = []; }
+      const notifiedIds = new Set(notified);
+      for (const routine of todayRoutines) {
+        const key = String(routine.id);
+        if (!routine.time || routine.time > currentTime || notifiedIds.has(key) || skippedToday.has(routine.id) || isRoutineDone(routine)) continue;
+        new Notification(`Time for ${routine.name}`, { body: `${routine.emoji} Open Routine EASY to check it off.`, icon: "/routineez-checklist.png", tag: `routine-${routine.id}-${todayKey}` });
+        notifiedIds.add(key);
+      }
+      window.localStorage.setItem(storageKey, JSON.stringify([...notifiedIds]));
+    };
+    checkReminders();
+    const timer = window.setInterval(checkReminders, 30_000);
+    return () => window.clearInterval(timer);
+  }, [preferences.reminders, routines, completions, itemCompletions, amountCompletions, todayKey]);
+
+  function playCompletionFeedback() {
+    if (preferences.feedback !== "on") return;
+    navigator.vibrate?.(14);
+    try {
+      const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const context = new AudioContextClass();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.setValueAtTime(620, context.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(820, context.currentTime + .08);
+      gain.gain.setValueAtTime(.035, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .11);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + .11);
+      oscillator.addEventListener("ended", () => void context.close(), { once: true });
+    } catch { /* Feedback is optional when a browser blocks audio. */ }
+  }
 
   useEffect(() => {
     if (!showProfile) return;
@@ -349,18 +496,31 @@ export default function Home() {
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
     const wasSkipped = completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped");
+    const manuallyCompleted = completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "completed");
     if (wasSkipped) void setRoutineSkip(routineId, false, date);
     if (routine && routine.trackingMode !== "simple") {
       const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && routine.items.every((item) => itemCompletionsRef.current.some((completion) => completion.itemId === item.id && completion.date === date)));
-      const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => (amountCompletionsRef.current.find((item) => item.routineId === routineId && item.amountKey === amount.key && item.date === date)?.count ?? 0) >= amount.targetCount));
+      const quantityDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => trackerIsComplete(amount, amountCompletionsRef.current.find((item) => item.routineId === routineId && item.amountKey === amount.key && item.date === date)?.count ?? 0)));
+      if (routine.amounts.some((amount) => trackerKind(amount) === "note" || trackerKind(amount) === "photo")) {
+        if (manuallyCompleted || (checklistDone && quantityDone)) {
+          await setRoutineCompletionStatus(routineId, null, date);
+          await clearRoutineTracking(routine, date);
+        } else {
+          if (date === todayKey) playCompletionFeedback();
+          await setRoutineCompletionStatus(routineId, "completed", date);
+        }
+        return;
+      }
       const completeEverything = wasSkipped || !(checklistDone && quantityDone);
+      if (completeEverything && date === todayKey) playCompletionFeedback();
       await Promise.all([
         usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, completeEverything, date) : Promise.resolve(),
-        ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routineId, amount, completeEverything ? amount.targetCount : 0, date)) : []),
+        ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routineId, amount, completeEverything ? trackerCompletionValue(amount) : 0, date, true, false)) : []),
       ]);
       return;
     }
     const currentlyDone = completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "completed");
+    if (!currentlyDone && date === todayKey) playCompletionFeedback();
     updateCompletions((items) =>
       currentlyDone
         ? items.filter((item) => !(item.routineId === routineId && item.date === date))
@@ -374,14 +534,18 @@ export default function Home() {
   }
 
   async function setRoutineSkip(routineId: number, skipped: boolean, date = todayKey) {
-    updateCompletions((items) => skipped
-      ? [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, status: "skipped" }]
-      : items.filter((item) => !(item.routineId === routineId && item.date === date && item.status === "skipped")),
+    await setRoutineCompletionStatus(routineId, skipped ? "skipped" : null, date);
+  }
+
+  async function setRoutineCompletionStatus(routineId: number, status: Completion["status"] | null, date: string) {
+    updateCompletions((items) => status
+      ? [...items.filter((item) => !(item.routineId === routineId && item.date === date)), { routineId, date, status }]
+      : items.filter((item) => !(item.routineId === routineId && item.date === date)),
     );
     await queueRoutineMutation(routineId, () => fetch("/api/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ routineId, date, status: skipped ? "skipped" : null }),
+      body: JSON.stringify({ routineId, date, status }),
     }));
   }
 
@@ -398,11 +562,16 @@ export default function Home() {
     }));
   }
 
-  async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey, clearSkipped = true) {
+  async function setAmount(routineId: number, amount: RoutineAmount, count: number, date = todayKey, clearSkipped = true, giveFeedback = true) {
     const routine = routines.find((item) => item.id === routineId);
     if (!routine || !usesQuantity(routine.trackingMode)) return;
     if (clearSkipped && completionsRef.current.some((item) => item.routineId === routineId && item.date === date && item.status === "skipped")) void setRoutineSkip(routineId, false, date);
-    const safeCount = Math.min(amount.targetCount, Math.max(0, Math.round(count)));
+    const kind = trackerKind(amount);
+    if (kind === "note" || kind === "photo") return;
+    const maximum = trackerMaximumValue(amount);
+    const safeCount = Math.min(maximum, Math.max(0, Math.round(count)));
+    const previousCount = amountCompletionsRef.current.find((item) => item.routineId === routineId && item.amountKey === amount.key && item.date === date)?.count ?? 0;
+    if (giveFeedback && safeCount > previousCount && date === todayKey && (kind === "amount" || kind === "rating" || kind === "avoidance")) playCompletionFeedback();
     updateAmountCompletions((items) => safeCount === 0
       ? items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date))
       : [...items.filter((item) => !(item.routineId === routineId && item.amountKey === amount.key && item.date === date)), { routineId, amountKey: amount.key, date, count: safeCount }],
@@ -414,18 +583,106 @@ export default function Home() {
     }));
   }
 
-  async function undoRoutineSkip(routine: Routine, date = todayKey) {
+  async function setNoteEntry(routineId: number, tracker: RoutineAmount, value: string, date = todayKey) {
+    const rawValue = value.slice(0, 2000);
+    const cleanValue = rawValue.trim() ? rawValue : "";
+    updateTrackerEntries((items) => cleanValue
+      ? [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: cleanValue, hasFile: false }]
+      : items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)),
+    );
+    updateAmountCompletions((items) => cleanValue
+      ? [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]
+      : items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)),
+    );
+    await queueRoutineMutation(routineId, () => fetch("/api/tracker-entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ routineId, trackerKey: tracker.key, date, value: cleanValue }),
+    }));
+  }
+
+  async function uploadTrackerPhoto(routineId: number, tracker: RoutineAmount, file: File, date = todayKey) {
+    const version = String(Date.now());
+    updateTrackerEntries((items) => [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: version, hasFile: true }]);
+    updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
+    const form = new FormData();
+    form.set("routineId", String(routineId));
+    form.set("trackerKey", tracker.key);
+    form.set("date", date);
+    form.set("photo", file);
+    await queueRoutineMutation(routineId, () => fetch("/api/tracker-photo", { method: "POST", body: form }));
+  }
+
+  async function removeTrackerPhoto(routineId: number, tracker: RoutineAmount, date = todayKey) {
+    updateTrackerEntries((items) => items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)));
+    updateAmountCompletions((items) => items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)));
+    const query = new URLSearchParams({ routineId: String(routineId), trackerKey: tracker.key, date });
+    await queueRoutineMutation(routineId, () => fetch(`/api/tracker-photo?${query}`, { method: "DELETE" }));
+  }
+
+  async function clearRoutineTracking(routine: Routine, date: string) {
     await Promise.all([
-      setRoutineSkip(routine.id, false, date),
       usesChecklist(routine.trackingMode) && routine.items.length ? setChecklistCompletion(routine, false, date) : Promise.resolve(),
-      ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => setAmount(routine.id, amount, 0, date, false)) : []),
+      ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => trackerKind(amount) === "note"
+        ? setNoteEntry(routine.id, amount, "", date)
+        : trackerKind(amount) === "photo"
+          ? removeTrackerPhoto(routine.id, amount, date)
+          : setAmount(routine.id, amount, 0, date, false)) : []),
     ]);
+  }
+
+  async function undoRoutineSkip(routine: Routine, date = todayKey) {
+    await setRoutineSkip(routine.id, false, date);
+    await clearRoutineTracking(routine, date);
+  }
+
+  async function setHistoryDayStatus(routine: Routine, date: string, status: EditableHistoryStatus) {
+    if (status === "completed" || routine.trackingMode === "simple") {
+      await setRoutineCompletionStatus(routine.id, status === "missed" ? null : status, date);
+      return;
+    }
+
+    await setRoutineCompletionStatus(routine.id, null, date);
+    await clearRoutineTracking(routine, date);
+    if (status === "skipped") await setRoutineCompletionStatus(routine.id, "skipped", date);
+  }
+
+  function prepareHistoryDetailEdit(routineId: number, date: string) {
+    if (completionsRef.current.some((item) => item.routineId === routineId && item.date === date)) {
+      void setRoutineCompletionStatus(routineId, null, date);
+    }
+  }
+
+  async function editHistoryItem(routine: Routine, itemId: number, date: string) {
+    prepareHistoryDetailEdit(routine.id, date);
+    await toggleItem(itemId, date);
+  }
+
+  async function editHistoryAmount(routine: Routine, tracker: RoutineAmount, count: number, date: string) {
+    prepareHistoryDetailEdit(routine.id, date);
+    await setAmount(routine.id, tracker, count, date, false);
+  }
+
+  async function editHistoryNote(routine: Routine, tracker: RoutineAmount, value: string, date: string) {
+    prepareHistoryDetailEdit(routine.id, date);
+    await setNoteEntry(routine.id, tracker, value, date);
+  }
+
+  async function editHistoryPhoto(routine: Routine, tracker: RoutineAmount, file: File, date: string) {
+    prepareHistoryDetailEdit(routine.id, date);
+    await uploadTrackerPhoto(routine.id, tracker, file, date);
+  }
+
+  async function removeHistoryPhoto(routine: Routine, tracker: RoutineAmount, date: string) {
+    prepareHistoryDetailEdit(routine.id, date);
+    await removeTrackerPhoto(routine.id, tracker, date);
   }
 
   async function toggleItem(itemId: number, date = todayKey) {
     const routine = routines.find((candidate) => candidate.items.some((item) => item.id === itemId));
     if (routine && completionsRef.current.some((item) => item.routineId === routine.id && item.date === date && item.status === "skipped")) void setRoutineSkip(routine.id, false, date);
     const currentlyDone = itemCompletionsRef.current.some((item) => item.itemId === itemId && item.date === date);
+    if (!currentlyDone && date === todayKey) playCompletionFeedback();
     updateItemCompletions((items) => currentlyDone
       ? items.filter((item) => !(item.itemId === itemId && item.date === date))
       : [...items, { itemId, date }],
@@ -506,6 +763,7 @@ export default function Home() {
     updateCompletions((items) => items.filter((item) => item.routineId !== id));
     updateItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
     updateAmountCompletions((items) => items.filter((item) => item.routineId !== id));
+    updateTrackerEntries((items) => items.filter((item) => item.routineId !== id));
     try {
       const response = await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Delete failed");
@@ -582,7 +840,7 @@ export default function Home() {
   if (onboardingState === "show") return <><OnboardingPage onComplete={completeOnboarding} />{splashOverlay}</>;
 
   return (
-    <><main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}`}>
+    <><main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}${darkTheme ? " theme-dark" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="Routine EASY home">
           <img className="brand-logo" src="/routineez-checklist.png" alt="" />
@@ -646,7 +904,7 @@ export default function Home() {
 
             <section className="routine-section">
               <div className="routine-list">
-                {loading ? <LoadingRows /> : todayRoutines.length ? todayRoutines.map((routine) => (
+                {loading ? <LoadingRows /> : visibleTodayRoutines.length ? visibleTodayRoutines.map((routine) => (
                   <RoutineRow
                     key={routine.id}
                     routine={routine}
@@ -654,13 +912,17 @@ export default function Home() {
                     skipped={skippedToday.has(routine.id)}
                     completedItemIds={completedItemsToday}
                     amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
+                    trackerEntries={Object.fromEntries(trackerEntries.filter((entry) => entry.routineId === routine.id && entry.date === todayKey).map((entry) => [entry.trackerKey, entry]))}
                     onToggle={() => toggleRoutine(routine.id)}
                     onToggleItem={toggleItem}
                     onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
+                    onSetNote={(tracker, value) => setNoteEntry(routine.id, tracker, value)}
+                    onUploadPhoto={(tracker, file) => uploadTrackerPhoto(routine.id, tracker, file)}
+                    onRemovePhoto={(tracker) => removeTrackerPhoto(routine.id, tracker)}
                     onSkip={(nextSkipped) => nextSkipped ? setRoutineSkip(routine.id, true) : undoRoutineSkip(routine)}
                     timeFormat={preferences.timeFormat}
                   />
-                )) : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
+                )) : todayRoutines.length ? <div className="completed-hidden-state"><CircleCheckBig aria-hidden="true" /><strong>Everything completed is hidden</strong><p>You can bring finished routines back whenever you want.</p><button type="button" onClick={() => updatePreferences({ completedVisibility: "show" })}>Show completed routines</button></div> : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
               </div>
             </section>
           </div>
@@ -669,8 +931,8 @@ export default function Home() {
         {tab === "calendar" && (
           <div className="page calendar-page calendar-page-matched">
             <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills">
-              <button className={selectedRoutine === "all" ? "active" : ""} onClick={() => setSelectedRoutine("all")}>All routines</button>
-              {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
+              <button className={selectedRoutine === "all" ? "active" : ""} aria-pressed={selectedRoutine === "all"} onClick={() => setSelectedRoutine("all")}>All routines</button>
+              {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} aria-pressed={selectedRoutine === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
             </ScrollablePicker>
             <section className="calendar-detail-card" style={{ "--history-color": selectedCalendarRoutine?.color ?? "var(--sky)" } as React.CSSProperties}>
               <header className="calendar-detail-heading"><div className="history-title-row"><span className="history-emoji calendar-heading-icon">{selectedCalendarRoutine ? selectedCalendarRoutine.emoji : <CalendarDays aria-hidden="true" />}</span><h2>{selectedCalendarRoutine?.name ?? "All routines"}</h2></div></header>
@@ -717,9 +979,9 @@ export default function Home() {
           </div>
         )}
 
-        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
+        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} onSetDayStatus={setHistoryDayStatus} onToggleItem={editHistoryItem} onSetAmount={editHistoryAmount} onSetNote={editHistoryNote} onUploadPhoto={editHistoryPhoto} onRemovePhoto={removeHistoryPhoto} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
 
-        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} />}
+        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} />}
       </section>
 
       <nav className="bottom-nav" aria-label="Main navigation">
@@ -733,6 +995,7 @@ export default function Home() {
 }
 
 type HistoryDayState = { date: Date; key: string; status: "completed" | "partial" | "skipped" | "missed" | "scheduled" | "off" };
+type EditableHistoryStatus = "completed" | "skipped" | "missed";
 
 function buildRoutineHistory(routine: Routine, completions: Completion[], itemCompletions: ItemCompletion[], amountCompletions: AmountCompletion[], todayKey: string, month: Date): HistoryDayState[] {
   const itemIds = new Set(routine.items.map((item) => item.id));
@@ -744,10 +1007,11 @@ function buildRoutineHistory(routine: Routine, completions: Completion[], itemCo
     if (saved === "skipped") return { date, key, status: "skipped" };
     const scheduled = routine.days.includes(date.getDay()) && routineActiveOnDate(routine, key);
     if (!scheduled) return { date, key, status: "off" };
+    if (saved === "completed") return { date, key, status: "completed" };
     const checkedItems = itemCompletions.filter((item) => item.date === key && itemIds.has(item.itemId)).length;
     const amounts = amountCompletions.filter((item) => item.routineId === routine.id && item.date === key);
     const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && checkedItems === routine.items.length);
-    const amountDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => (amounts.find((item) => item.amountKey === amount.key)?.count ?? 0) >= amount.targetCount));
+    const amountDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => trackerIsComplete(amount, amounts.find((item) => item.amountKey === amount.key)?.count ?? 0)));
     const completed = routine.trackingMode === "simple" ? saved === "completed" : checklistDone && amountDone;
     if (completed) return { date, key, status: "completed" };
     if (checkedItems > 0 || amounts.some((item) => item.count > 0)) return { date, key, status: "partial" };
@@ -760,9 +1024,10 @@ function historyRate(states: HistoryDayState[], count: number) {
   return eligible.length ? Math.round((eligible.filter((day) => day.status === "completed").length / eligible.length) * 100) : 0;
 }
 
-function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, itemCompletions, amountCompletions, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
+function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatus, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, completions, itemCompletions, amountCompletions, trackerEntries, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; onSetDayStatus: (routine: Routine, date: string, status: EditableHistoryStatus) => Promise<void>; onToggleItem: (routine: Routine, itemId: number, date: string) => Promise<void>; onSetAmount: (routine: Routine, tracker: RoutineAmount, count: number, date: string) => Promise<void>; onSetNote: (routine: Routine, tracker: RoutineAmount, value: string, date: string) => Promise<void>; onUploadPhoto: (routine: Routine, tracker: RoutineAmount, file: File, date: string) => Promise<void>; onRemovePhoto: (routine: Routine, tracker: RoutineAmount, date: string) => Promise<void>; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; trackerEntries: TrackerEntry[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
   const selected = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
   const effectiveSelection = selected ? selected.id : "all";
+  const [editingDay, setEditingDay] = useState<HistoryDayState | null>(null);
   const todayDate = new Date(`${todayKey}T12:00:00`);
   const [historyMonth, setHistoryMonth] = useState(() => new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
   const currentMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
@@ -771,11 +1036,12 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
   const historyDayNames = weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
   const firstWeekday = (historyMonth.getDay() - (weekStartsOn === "monday" ? 1 : 0) + 7) % 7;
   const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey, historyMonth)])), [routines, completions, itemCompletions, amountCompletions, todayKey, historyMonth]);
+  const activeEditingDay = editingDay && selected ? historyByRoutine.get(selected.id)?.find((day) => day.key === editingDay.key) ?? editingDay : null;
 
   return <div className={`page history-page${selected ? " history-page-detail" : ""}`}>
     <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
-      <button className={effectiveSelection === "all" ? "active" : ""} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
-      {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
+      <button className={effectiveSelection === "all" ? "active" : ""} aria-pressed={effectiveSelection === "all"} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
+      {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} aria-pressed={effectiveSelection === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
     </ScrollablePicker>
     {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><History aria-hidden="true" /><h2>No history yet</h2><p>Add a routine and your progress will appear here.</p></section> : selected ? (() => {
       const states = historyByRoutine.get(selected.id) ?? [];
@@ -785,9 +1051,18 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
         <header><div className="history-title-row"><span className="history-emoji">{selected.emoji}</span><h2>{selected.name}</h2></div></header>
         <div className="history-month-toolbar"><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() - 1, 1))} aria-label="Previous history month"><ChevronLeft aria-hidden="true" /></button><h3>{historyMonthLabel}</h3><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() + 1, 1))} aria-label="Next history month" disabled={viewingCurrentMonth}><ChevronRight aria-hidden="true" /></button></div>
         <div className="history-stats"><div><strong>{historyRate(states, states.length)}%</strong><span>Monthly completion</span></div><div><strong>{completedDays}/{eligibleStates.length}</strong><span>Days completed</span></div></div>
-        <div className="history-month-calendar"><div className="history-weekday-row">{historyDayNames.map((day) => <span key={day}>{day}</span>)}</div><div className="history-grid">{Array.from({ length: firstWeekday }, (_, index) => <i className="history-day-spacer" key={`spacer-${index}`} />)}{states.map((day) => { const isToday = day.key === todayKey; return <div key={day.key} className={`history-day ${day.status}${isToday ? " is-today" : ""}`} aria-current={isToday ? "date" : undefined} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></div>; })}</div></div>
+        <div className="history-month-calendar"><div className="history-weekday-row">{historyDayNames.map((day) => <span key={day}>{day}</span>)}</div><div className="history-grid">{Array.from({ length: firstWeekday }, (_, index) => <i className="history-day-spacer" key={`spacer-${index}`} />)}{states.map((day) => {
+          const isToday = day.key === todayKey;
+          const editable = day.key < todayKey && day.status !== "off";
+          const className = `history-day ${day.status}${isToday ? " is-today" : ""}${editable ? " history-day-editable" : ""}`;
+          const contents = <><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></>;
+          return editable
+            ? <button type="button" key={day.key} className={className} aria-current={isToday ? "date" : undefined} aria-label={`View details for ${day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, currently ${day.status}`} onClick={() => setEditingDay(day)}>{contents}</button>
+            : <div key={day.key} className={className} aria-current={isToday ? "date" : undefined} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}>{contents}</div>;
+        })}</div></div>
         {!viewingCurrentMonth && <button className="history-current-month-button" onClick={() => setHistoryMonth(currentMonth)}>This month</button>}
         <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
+        <p className="history-edit-hint">Tap a past day to see what you recorded or correct it.</p>
       </section>;
     })() : <section className="history-overview">
       <header><div><span>This month</span><h2>Your progress</h2></div><p>Select a routine for the full monthly view.</p></header>
@@ -799,13 +1074,104 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, completions, 
         </button>;
       })}</div>
     </section>}
+    {activeEditingDay && selected && <HistoryDayEditor routine={selected} day={activeEditingDay} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} onClose={() => setEditingDay(null)} onSave={(status) => onSetDayStatus(selected, activeEditingDay.key, status)} onToggleItem={(itemId) => onToggleItem(selected, itemId, activeEditingDay.key)} onSetAmount={(tracker, count) => onSetAmount(selected, tracker, count, activeEditingDay.key)} onSetNote={(tracker, value) => onSetNote(selected, tracker, value, activeEditingDay.key)} onUploadPhoto={(tracker, file) => onUploadPhoto(selected, tracker, file, activeEditingDay.key)} onRemovePhoto={(tracker) => onRemovePhoto(selected, tracker, activeEditingDay.key)} />}
   </div>;
 }
 
-function SettingsPage({ preferences, onChange }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void }) {
+function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, trackerEntries, onClose, onSave, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto }: { routine: Routine; day: HistoryDayState; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; trackerEntries: TrackerEntry[]; onClose: () => void; onSave: (status: EditableHistoryStatus) => Promise<void>; onToggleItem: (itemId: number) => Promise<void>; onSetAmount: (tracker: RoutineAmount, count: number) => Promise<void>; onSetNote: (tracker: RoutineAmount, value: string) => Promise<void>; onUploadPhoto: (tracker: RoutineAmount, file: File) => Promise<void>; onRemovePhoto: (tracker: RoutineAmount) => Promise<void> }) {
+  const [savingStatus, setSavingStatus] = useState<EditableHistoryStatus | null>(null);
+  const [showCorrection, setShowCorrection] = useState(false);
+  const dateLabel = day.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const completedItemIds = new Set(itemCompletions.filter((item) => item.date === day.key).map((item) => item.itemId));
+  const amountByKey = new Map(amountCompletions.filter((item) => item.routineId === routine.id && item.date === day.key).map((item) => [item.amountKey, item.count]));
+  const entryByKey = new Map(trackerEntries.filter((item) => item.routineId === routine.id && item.date === day.key).map((item) => [item.trackerKey, item]));
+  const statusLabels: Record<HistoryDayState["status"], string> = { completed: "Completed", partial: "Partially completed", skipped: "Skipped", missed: "Missed", scheduled: "Scheduled", off: "Not scheduled" };
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape" && !savingStatus) onClose(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose, savingStatus]);
+
+  const save = async (status: EditableHistoryStatus) => {
+    setSavingStatus(status);
+    await onSave(status);
+    setSavingStatus(null);
+    onClose();
+  };
+
+  const toggleSimple = async () => {
+    const status: EditableHistoryStatus = day.status === "completed" ? "missed" : "completed";
+    setSavingStatus(status);
+    await onSave(status);
+    setSavingStatus(null);
+  };
+
+  return createPortal(<div className="feature-dialog-backdrop">
+    <section className="history-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="history-edit-title" style={{ "--history-color": routine.color, "--routine": routine.color } as React.CSSProperties}>
+      <div className="history-edit-sticky">
+        <header><span className="history-emoji" aria-hidden="true">{routine.emoji}</span><div><span>Day details</span><h2 id="history-edit-title">{dateLabel}</h2><p>Edit what was recorded for {routine.name}.</p></div><button type="button" onClick={onClose} aria-label="Close history details" disabled={Boolean(savingStatus)}><X /></button></header>
+        <div className={`history-day-summary ${day.status}`}><span aria-hidden="true">{day.status === "completed" ? "✓" : day.status === "partial" ? "◐" : day.status === "skipped" ? "↷" : "×"}</span><div><strong>{statusLabels[day.status]}</strong><small>{day.status === "completed" ? "Everything required was completed or the day was marked complete." : day.status === "partial" ? "Some tracking was recorded, but the routine was not finished." : day.status === "skipped" ? "This day does not count toward your completion rate." : "No completed record was saved for this day."}</small></div><button type="button" className="history-summary-fix" onClick={() => setShowCorrection((show) => !show)} aria-expanded={showCorrection} disabled={Boolean(savingStatus)}>{showCorrection ? "Cancel" : "Fix"}</button></div>
+        {showCorrection && <div className="history-edit-options history-edit-options-compact" role="group" aria-label={`Correct status for ${dateLabel}`}>
+          <button type="button" className={`completed${day.status === "completed" ? " active" : ""}`} onClick={() => save("completed")} disabled={Boolean(savingStatus)}><span aria-hidden="true">✓</span><strong>{savingStatus === "completed" ? "Saving…" : "Completed"}</strong></button>
+          <button type="button" className={`skipped${day.status === "skipped" ? " active" : ""}`} onClick={() => save("skipped")} disabled={Boolean(savingStatus)}><span aria-hidden="true">↷</span><strong>{savingStatus === "skipped" ? "Saving…" : "Skipped"}</strong></button>
+          <button type="button" className={`missed${day.status === "missed" ? " active" : ""}`} onClick={() => save("missed")} disabled={Boolean(savingStatus)}><span aria-hidden="true">×</span><strong>{savingStatus === "missed" ? "Saving…" : "Missed"}</strong></button>
+        </div>}
+      </div>
+      <div className="history-records">
+        {usesChecklist(routine.trackingMode) && <section className="history-record-section"><div className="history-record-heading"><h3>Checklist</h3><span>Tap to edit · auto-saves</span></div>{routine.lists.map((list) => <div className="history-record-list" key={list.key}><strong>{list.name}</strong>{routine.items.filter((item) => item.listKey === list.key).map((item) => { const checked = completedItemIds.has(item.id); return <button type="button" className={`history-record-row history-record-edit${checked ? " recorded" : ""}`} key={item.id} onClick={() => void onToggleItem(item.id)} aria-pressed={checked}><span aria-hidden="true">{checked ? "✓" : "×"}</span><div><strong>{item.title}</strong><small>{checked ? "Done" : "Not done"}</small></div></button>; })}</div>)}</section>}
+        {usesQuantity(routine.trackingMode) && <section className="history-record-section"><div className="history-record-heading"><h3>Tracking</h3><span>Edit here · auto-saves</span></div>{routine.amounts.map((tracker) => {
+          const count = amountByKey.get(tracker.key) ?? 0;
+          const entry = entryByKey.get(tracker.key);
+          return <div className="history-tracker-editor" key={tracker.key}><TrackerControl routine={routine} tracker={tracker} count={count} entry={entry} date={day.key} onChange={(value) => void onSetAmount(tracker, value)} onSetNote={(value) => void onSetNote(tracker, value)} onUploadPhoto={(file) => void onUploadPhoto(tracker, file)} onRemovePhoto={() => void onRemovePhoto(tracker)} /></div>;
+        })}</section>}
+        {routine.trackingMode === "simple" && <button type="button" className={`history-simple-record history-simple-edit${day.status === "completed" ? " recorded" : ""}`} onClick={() => void toggleSimple()} disabled={Boolean(savingStatus)} aria-pressed={day.status === "completed"}><span aria-hidden="true">{day.status === "completed" ? "✓" : "×"}</span><div><strong>Routine check</strong><small>{savingStatus ? "Saving…" : day.status === "completed" ? "Marked done · tap to undo" : "Not marked done · tap to complete"}</small></div></button>}
+      </div>
+    </section>
+  </div>, document.body);
+}
+
+function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshData }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void> }) {
+  const [showDataPrivacy, setShowDataPrivacy] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState("");
+
+  const setReminders = async (enabled: boolean) => {
+    if (!enabled) {
+      onChange({ reminders: "off" });
+      setReminderMessage("");
+      return;
+    }
+    if (!("Notification" in window)) {
+      setReminderMessage("Notifications aren’t supported in this browser.");
+      return;
+    }
+    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if (permission === "granted") {
+      onChange({ reminders: "on" });
+      setReminderMessage("Reminders are ready while Routine EASY is open.");
+    } else {
+      onChange({ reminders: "off" });
+      setReminderMessage("Allow notifications in your browser to turn reminders on.");
+    }
+  };
+
   return <div className="page settings-page">
     <header className="settings-heading"><span>Make it yours</span><h1>Settings</h1><p>Choose how Routine EASY looks and feels. Changes save automatically on this device.</p></header>
-    <div className="settings-list">
+    <div className="settings-list" role="group" aria-label="Preferences">
+      <section className="setting-card">
+        <div className="setting-icon"><Monitor aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Theme</h2><p>Use a light look, dark look, or match this device.</p></div>
+        <div className="setting-options setting-options-three" role="group" aria-label="Theme">
+          <button className={preferences.theme === "light" ? "active" : ""} onClick={() => onChange({ theme: "light" })}><Sun aria-hidden="true" /><strong>Light</strong></button>
+          <button className={preferences.theme === "dark" ? "active" : ""} onClick={() => onChange({ theme: "dark" })}><Moon aria-hidden="true" /><strong>Dark</strong></button>
+          <button className={preferences.theme === "system" ? "active" : ""} onClick={() => onChange({ theme: "system" })}><Monitor aria-hidden="true" /><strong>System</strong></button>
+        </div>
+      </section>
       <section className="setting-card">
         <div className="setting-icon"><Clock3 aria-hidden="true" /></div>
         <div className="setting-copy"><h2>Time format</h2><p>Choose how routine times appear throughout the app.</p></div>
@@ -830,9 +1196,127 @@ function SettingsPage({ preferences, onChange }: { preferences: AppPreferences; 
           <button className={preferences.motion === "reduced" ? "active" : ""} onClick={() => onChange({ motion: "reduced" })}><strong>Reduced</strong><span>Less movement</span></button>
         </div>
       </section>
+      <section className="setting-card">
+        <div className="setting-icon"><EyeOff aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Completed routines</h2><p>Choose whether finished routines remain in Today.</p></div>
+        <div className="setting-options" role="group" aria-label="Completed routine visibility">
+          <button className={preferences.completedVisibility === "show" ? "active" : ""} onClick={() => onChange({ completedVisibility: "show" })}><strong>Keep visible</strong><span>See your wins</span></button>
+          <button className={preferences.completedVisibility === "hide" ? "active" : ""} onClick={() => onChange({ completedVisibility: "hide" })}><strong>Hide</strong><span>Clear the list</span></button>
+        </div>
+      </section>
+      <section className="setting-card">
+        <div className="setting-icon"><Volume2 aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Sounds and haptics</h2><p>Give check-offs a small sound and vibration when supported.</p></div>
+        <div className="setting-options" role="group" aria-label="Sounds and haptics">
+          <button className={preferences.feedback === "on" ? "active" : ""} onClick={() => onChange({ feedback: "on" })}><strong>On</strong><span>Gentle feedback</span></button>
+          <button className={preferences.feedback === "off" ? "active" : ""} onClick={() => onChange({ feedback: "off" })}><strong>Off</strong><span>Stay silent</span></button>
+        </div>
+      </section>
+      <section className="setting-card">
+        <div className="setting-icon"><Bell aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Reminders</h2><p>Get alerts at routine times while Routine EASY is open.{reminderMessage && <small className="setting-message">{reminderMessage}</small>}</p></div>
+        <div className="setting-options" role="group" aria-label="Routine reminders">
+          <button className={preferences.reminders === "on" ? "active" : ""} onClick={() => void setReminders(true)}><strong>On</strong><span>Use routine times</span></button>
+          <button className={preferences.reminders === "off" ? "active" : ""} onClick={() => void setReminders(false)}><strong>Off</strong><span>No alerts</span></button>
+        </div>
+      </section>
+      <section className="setting-card">
+        <div className="setting-icon"><Database aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Data and privacy</h2><p>Download a backup, restore one, or erase your saved data.</p></div>
+        <button type="button" className="setting-open-button" onClick={() => setShowDataPrivacy(true)}><ShieldCheck aria-hidden="true" />Manage data</button>
+      </section>
     </div>
     <p className="settings-saved"><CircleCheckBig aria-hidden="true" />Preferences save automatically</p>
+    {showDataPrivacy && <DataPrivacyDialog preferences={preferences} onClose={() => setShowDataPrivacy(false)} onReplacePreferences={onReplacePreferences} onRefreshData={onRefreshData} />}
   </div>;
+}
+
+function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefreshData }: { preferences: AppPreferences; onClose: () => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void> }) {
+  const [busy, setBusy] = useState<"export" | "import" | "erase" | null>(null);
+  const [message, setMessage] = useState("");
+  const [confirmErase, setConfirmErase] = useState(false);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) onClose(); };
+    window.addEventListener("keydown", close);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", close);
+    };
+  }, [busy, onClose]);
+
+  const exportBackup = async () => {
+    setBusy("export");
+    setMessage("");
+    try {
+      const response = await fetch("/api/data", { cache: "no-store" });
+      if (!response.ok) throw new Error("Export failed");
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify({ ...data, preferences }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `routine-easy-backup-${localDateKey()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage("Backup downloaded.");
+    } catch {
+      setMessage("Your backup could not be downloaded. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const importBackup = async (file: File) => {
+    setBusy("import");
+    setMessage("");
+    try {
+      const backup = JSON.parse(await file.text());
+      const response = await fetch("/api/data", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ backup }) });
+      if (!response.ok) throw new Error("Import failed");
+      if (backup.preferences) onReplacePreferences(backup.preferences);
+      await onRefreshData();
+      setMessage("Backup restored successfully.");
+    } catch {
+      setMessage("That backup could not be restored. Choose a Routine EASY backup file.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const eraseData = async () => {
+    setBusy("erase");
+    setMessage("");
+    try {
+      const response = await fetch("/api/data", { method: "DELETE" });
+      if (!response.ok) throw new Error("Erase failed");
+      onReplacePreferences(DEFAULT_PREFERENCES);
+      await onRefreshData();
+      onClose();
+    } catch {
+      setMessage("Your data could not be erased. Please try again.");
+      setBusy(null);
+    }
+  };
+
+  return createPortal(<div className="feature-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+    <section className="data-dialog" role="dialog" aria-modal="true" aria-labelledby="data-dialog-title">
+      <header><div className="data-dialog-icon"><ShieldCheck aria-hidden="true" /></div><div><span>Data and privacy</span><h2 id="data-dialog-title">Your Routine EASY data</h2><p>Keep a personal backup or permanently clear your account data.</p></div><button type="button" onClick={onClose} disabled={Boolean(busy)} aria-label="Close data and privacy"><X /></button></header>
+      <div className="data-action-list">
+        <button type="button" onClick={() => void exportBackup()} disabled={Boolean(busy)}><Download aria-hidden="true" /><span><strong>{busy === "export" ? "Preparing backup…" : "Download backup"}</strong><small>Routines, progress, notes, and preferences</small></span></button>
+        <label className={busy ? "disabled" : ""}><Upload aria-hidden="true" /><span><strong>{busy === "import" ? "Restoring backup…" : "Restore from backup"}</strong><small>Replaces current routines and progress</small></span><input type="file" accept="application/json,.json" disabled={Boolean(busy)} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.currentTarget.value = ""; }} /></label>
+      </div>
+      <p className="data-photo-note">Photo files are not included in JSON backups. Erasing data permanently removes stored photos.</p>
+      <div className="data-danger-zone">
+        <div><strong>Erase everything</strong><small>Delete every routine, history record, note, and photo.</small></div>
+        {!confirmErase ? <button type="button" onClick={() => setConfirmErase(true)} disabled={Boolean(busy)}>Erase data</button> : <button type="button" className="confirm" onClick={() => void eraseData()} disabled={Boolean(busy)}>{busy === "erase" ? "Erasing…" : "Confirm erase"}</button>}
+      </div>
+      {confirmErase && !busy && <button type="button" className="data-cancel-erase" onClick={() => setConfirmErase(false)}>Cancel erase</button>}
+      {message && <p className="data-dialog-message" role="status">{message}</p>}
+    </section>
+  </div>, document.body);
 }
 
 function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => void }) {
@@ -909,7 +1393,7 @@ function DateTile({ date }: { date: Date }) {
   </div>;
 }
 
-function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, onToggle, onToggleItem, onSetAmount, onSkip, timeFormat }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat }) {
+function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat }) {
   const hasDetails = (usesChecklist(routine.trackingMode) && routine.items.length > 0) || (usesQuantity(routine.trackingMode) && routine.amounts.length > 0);
   const [expanded, setExpanded] = useState(false);
   const [dragX, setDragX] = useState(0);
@@ -925,12 +1409,12 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   const todayVariant = routine.dayVariants?.[new Date().getDay()] ?? "";
   const progressParts = [
     ...(usesChecklist(routine.trackingMode) && routine.items.length ? [Math.round((completedCount / routine.items.length) * 100)] : []),
-    ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => Math.min(100, Math.round(((amountCounts[amount.key] ?? 0) / amount.targetCount) * 100))) : []),
+    ...(usesQuantity(routine.trackingMode) ? routine.amounts.map((amount) => trackerProgress(amount, amountCounts[amount.key] ?? 0)) : []),
   ];
-  const progressValue = progressParts.length ? Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length) : completed ? 100 : 0;
+  const progressValue = completed ? 100 : progressParts.length ? Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length) : 0;
   const detail = [
     ...(usesChecklist(routine.trackingMode) ? [`${completedCount}/${routine.items.length} items`] : []),
-    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.length === 1 ? `${amountCounts[routine.amounts[0].key] ?? 0}/${routine.amounts[0].targetCount} ${routine.amounts[0].name}` : `${routine.amounts.filter((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount).length}/${routine.amounts.length} amounts`] : []),
+    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.length === 1 ? trackerSummary(routine.amounts[0], amountCounts[routine.amounts[0].key] ?? 0) : `${routine.amounts.filter((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)).length}/${routine.amounts.length} trackers`] : []),
   ].join(" · ");
   const toggleSkip = () => {
     const nextSkipped = !skippedRef.current;
@@ -1032,7 +1516,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
       }} aria-label={skipped ? `Undo skip and reset ${routine.name}` : completed ? `Mark ${routine.name} incomplete` : `Complete ${routine.name}`}><span className="check-circle" aria-hidden="true">{skipped ? <SkipForward /> : "✓"}</span></button>
       <button className="routine-skip-accessible" onClick={toggleSkip}>{skipped ? `Undo skip for ${routine.name}` : `Skip ${routine.name} today`}</button>
     </div>
-    {usesQuantity(routine.trackingMode) && expanded && <div className="quantity-trackers">{routine.amounts.map((amount) => <QuantityTracker key={amount.key} routineName={routine.name} amount={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => onSetAmount(amount, count)} />)}</div>}
+    {usesQuantity(routine.trackingMode) && <div className={`quantity-trackers${expanded ? "" : " tracker-controls-collapsed"}`} aria-hidden={!expanded}>{routine.amounts.map((amount) => <TrackerControl key={amount.key} routine={routine} tracker={amount} count={amountCounts[amount.key] ?? 0} entry={trackerEntries[amount.key]} date={localDateKey()} onChange={(count) => onSetAmount(amount, count)} onSetNote={(value) => onSetNote(amount, value)} onUploadPhoto={(file) => onUploadPhoto(amount, file)} onRemovePhoto={() => onRemovePhoto(amount)} />)}</div>}
     {usesChecklist(routine.trackingMode) && routine.items.length > 0 && expanded && <div className="routine-checklist">{routine.lists.map((list) => <section className="routine-list-group" key={list.key}>
       <strong className="routine-list-name">{list.name}</strong>
       {routine.items.filter((item) => item.listKey === list.key).map((item) => {
@@ -1048,26 +1532,71 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   </article>;
 }
 
-function QuantityTracker({ routineName, amount, count, onChange }: { routineName: string; amount: RoutineAmount; count: number; onChange: (count: number) => void }) {
-  return <div className="quantity-tracker">
-    <strong className="quantity-name">{amount.name}</strong>
-    <div className="quantity-pill" style={{ "--segments": amount.targetCount } as React.CSSProperties} role="group" aria-label={`${routineName}: ${count} of ${amount.targetCount} ${amount.name}`}>
-      {Array.from({ length: amount.targetCount }, (_, index) => {
+function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetNote, onUploadPhoto, onRemovePhoto }: { routine: Routine; tracker: RoutineAmount; count: number; entry?: TrackerEntry; date: string; onChange: (count: number) => void; onSetNote: (value: string) => void; onUploadPhoto: (file: File) => void; onRemovePhoto: () => void }) {
+  const kind = trackerKind(tracker);
+  const [draft, setDraft] = useState(entry?.value ?? "");
+  const [numberDraft, setNumberDraft] = useState(count ? String(count) : "");
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => setDraft(entry?.value ?? ""), [entry?.value]);
+  useEffect(() => setNumberDraft(count ? String(count) : ""), [count]);
+  useEffect(() => {
+    if (startedAt === null) return;
+    const timer = window.setInterval(() => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000))), 1000);
+    return () => window.clearInterval(timer);
+  }, [startedAt]);
+
+  if (kind === "amount") return <div className="quantity-tracker">
+    <strong className="quantity-name">{tracker.name}</strong>
+    <div className="quantity-pill" style={{ "--segments": tracker.targetCount } as React.CSSProperties} role="group" aria-label={`${routine.name}: ${count} of ${tracker.targetCount} ${tracker.name}`}>
+      {Array.from({ length: tracker.targetCount }, (_, index) => {
         const value = index + 1;
         const filled = value <= count;
-        return <button key={value} type="button" className={filled ? "filled" : ""} onClick={() => onChange(filled ? value - 1 : value)} aria-label={`${filled ? "Remove" : "Record"} ${amount.name} ${value}`} aria-pressed={filled}>
+        return <button key={value} type="button" className={filled ? "filled" : ""} onClick={() => onChange(filled ? value - 1 : value)} aria-label={`${filled ? "Remove" : "Record"} ${tracker.name} ${value}`} aria-pressed={filled}>
           <span>{filled ? "✓" : value}</span>
         </button>;
       })}
     </div>
   </div>;
+
+  if (kind === "duration") return <div className="quantity-tracker tracker-control-row">
+    <strong className="quantity-name">{tracker.name}</strong>
+    <div className="tracker-stepper" role="group" aria-label={`${tracker.name}: ${count} of ${tracker.targetCount} minutes`}><button type="button" onClick={() => onChange(Math.max(0, count - 5))}>−5</button><span><b>{count}</b> / {tracker.targetCount} min</span><button type="button" onClick={() => onChange(count + 5)}>+5</button></div>
+  </div>;
+
+  if (kind === "timer") {
+    const stopTimer = () => {
+      const sessionSeconds = startedAt === null ? 0 : Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+      onChange(count + sessionSeconds);
+      setStartedAt(null);
+      setElapsedSeconds(0);
+    };
+    const displayedSeconds = count + (startedAt === null ? 0 : elapsedSeconds);
+    return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><div className="tracker-timer"><span><b>{formatTimerSeconds(displayedSeconds)}</b> / {tracker.targetCount}:00</span><button type="button" className={startedAt !== null ? "running" : ""} onClick={() => startedAt === null ? setStartedAt(Date.now()) : stopTimer()}>{startedAt === null ? (count ? "Resume" : "Start") : "Pause"}</button></div></div>;
+  }
+
+  if (kind === "rating") return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><div className="tracker-rating" role="group" aria-label={`Rate ${tracker.name}`}>
+    {Array.from({ length: 5 }, (_, index) => { const value = index + 1; return <button type="button" key={value} className={value <= count ? "filled" : ""} onClick={() => onChange(count === value ? 0 : value)} aria-label={`${value} stars`} aria-pressed={count === value}>★</button>; })}
+  </div></div>;
+
+  if (kind === "number") return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><div className="tracker-number"><input type="number" min="0" step="1" value={numberDraft} onChange={(event) => { const value = event.target.value; setNumberDraft(value); onChange(value === "" ? 0 : Number(value) || 0); }} placeholder="How much?" aria-label={`How much ${tracker.name}`} /><span>{tracker.unit || ""}</span></div></div>;
+
+  if (kind === "note") return <div className="tracker-wide-control tracker-note"><div className="tracker-note-heading"><strong>{tracker.name}</strong><small>{draft.length}/2000</small></div><textarea value={draft} onChange={(event) => { const value = event.target.value; setDraft(value); onSetNote(value); }} placeholder="Write a short note…" maxLength={2000} /></div>;
+
+  if (kind === "photo") {
+    const photoUrl = `/api/tracker-photo?${new URLSearchParams({ routineId: String(routine.id), trackerKey: tracker.key, date, v: entry?.value ?? "" })}`;
+    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>{entry?.hasFile ? "Replace" : "Choose photo"}</span></label><label><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>Take photo</span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <img src={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
+  }
+
+  return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;
 }
 
 function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const trackingLabel = routine.trackingMode === "simple" ? "Single check" : [
     ...(usesChecklist(routine.trackingMode) ? [`${routine.lists.length} ${routine.lists.length === 1 ? "list" : "lists"}`] : []),
-    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.map((amount) => `${amount.targetCount} ${amount.name}`).join(" + ")] : []),
+    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.map((amount) => trackerKindLabel(amount)).join(" + ")] : []),
   ].join(" + ");
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
@@ -1144,10 +1673,11 @@ function CompletionHistoryDialog({ routine, completions, itemCompletions, amount
     if (saved === "skipped") return "skipped" as const;
     const scheduled = routine.days.includes(new Date(`${date}T12:00:00`).getDay()) && routineActiveOnDate(routine, date);
     if (!scheduled) return "off" as const;
+    if (saved === "completed") return "completed" as const;
     const checkedItems = itemCompletions.filter((item) => item.date === date && itemIds.has(item.itemId)).length;
     const amounts = amountCompletions.filter((item) => item.routineId === routine.id && item.date === date);
     const checklistDone = !usesChecklist(routine.trackingMode) || (routine.items.length > 0 && checkedItems === routine.items.length);
-    const amountDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => (amounts.find((item) => item.amountKey === amount.key)?.count ?? 0) >= amount.targetCount));
+    const amountDone = !usesQuantity(routine.trackingMode) || (routine.amounts.length > 0 && routine.amounts.every((amount) => trackerIsComplete(amount, amounts.find((item) => item.amountKey === amount.key)?.count ?? 0)));
     const completed = routine.trackingMode === "simple" ? saved === "completed" : checklistDone && amountDone;
     if (completed) return "completed" as const;
     if (checkedItems > 0 || amounts.some((item) => item.count > 0)) return "partial" as const;
@@ -1178,15 +1708,15 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
   const [amountCounts, setAmountCounts] = useState<Record<string, number>>({});
   const hasDetails = usesChecklist(trackingMode) || usesQuantity(trackingMode);
   const checklistDone = !usesChecklist(trackingMode) || (items.length > 0 && checkedItems.length === items.length);
-  const quantityDone = !usesQuantity(trackingMode) || (amounts.length > 0 && amounts.every((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount));
+  const quantityDone = !usesQuantity(trackingMode) || (amounts.length > 0 && amounts.every((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)));
   const completed = trackingMode === "simple" ? simpleDone : checklistDone && quantityDone;
   const detail = trackingMode === "simple" ? "Single check" : [
     ...(usesChecklist(trackingMode) ? [items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"] : []),
-    ...(usesQuantity(trackingMode) ? [amounts.length === 1 ? `${amountCounts[amounts[0].key] ?? 0}/${amounts[0].targetCount} ${amounts[0].name}` : `${amounts.filter((amount) => (amountCounts[amount.key] ?? 0) >= amount.targetCount).length}/${amounts.length} amounts`] : []),
+    ...(usesQuantity(trackingMode) ? [amounts.length === 1 ? trackerSummary(amounts[0], amountCounts[amounts[0].key] ?? 0) : `${amounts.filter((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)).length}/${amounts.length} trackers`] : []),
   ].join(" · ");
   const progressParts = [
     ...(usesChecklist(trackingMode) ? [items.length ? Math.round((checkedItems.length / items.length) * 100) : 0] : []),
-    ...(usesQuantity(trackingMode) ? amounts.map((amount) => Math.round(((amountCounts[amount.key] ?? 0) / amount.targetCount) * 100)) : []),
+    ...(usesQuantity(trackingMode) ? amounts.map((amount) => trackerProgress(amount, amountCounts[amount.key] ?? 0)) : []),
   ];
   const progressValue = trackingMode === "simple" ? simpleDone ? 100 : 0 : Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);
 
@@ -1202,14 +1732,14 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
   }, [items.length]);
 
   useEffect(() => {
-    setAmountCounts((counts) => Object.fromEntries(amounts.map((amount) => [amount.key, Math.min(counts[amount.key] ?? 0, amount.targetCount)])));
+    setAmountCounts((counts) => Object.fromEntries(amounts.map((amount) => [amount.key, Math.min(counts[amount.key] ?? 0, trackerMaximumValue(amount))])));
   }, [amounts]);
 
   const toggleAll = () => {
     if (trackingMode === "simple") setSimpleDone((done) => !done);
     else {
       if (usesChecklist(trackingMode)) setCheckedItems(completed ? [] : items.map((_, index) => index));
-      if (usesQuantity(trackingMode)) setAmountCounts(Object.fromEntries(amounts.map((amount) => [amount.key, completed ? 0 : amount.targetCount])));
+      if (usesQuantity(trackingMode)) setAmountCounts(Object.fromEntries(amounts.map((amount) => [amount.key, completed ? 0 : trackerCompletionValue(amount)])));
     }
   };
 
@@ -1222,16 +1752,7 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
     </div>
-    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">{amounts.map((amount) => <div className="preview-amount-row" key={amount.key}>
-      <strong>{amount.name}</strong>
-      <div className="preview-quantity" style={{ "--preview-segments": amount.targetCount } as React.CSSProperties}>
-        {Array.from({ length: amount.targetCount }, (_, index) => {
-          const value = index + 1;
-          const filled = value <= (amountCounts[amount.key] ?? 0);
-          return <button type="button" key={value} className={filled ? "filled" : ""} onClick={() => setAmountCounts((counts) => ({ ...counts, [amount.key]: filled ? value - 1 : value }))} aria-label={`${filled ? "Remove" : "Record"} ${amount.name} ${value}`}>{filled ? "✓" : value}</button>;
-        })}
-      </div>
-    </div>)}</div>}
+    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">{amounts.map((amount) => <PreviewTracker key={amount.key} tracker={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => setAmountCounts((counts) => ({ ...counts, [amount.key]: count }))} />)}</div>}
     {expanded && usesChecklist(trackingMode) && <div className="preview-details preview-list">
       {items.length ? lists.map((list) => <section className="preview-list-group" key={list.key}><strong>{list.name || "New list"}</strong>{items.map((item, index) => ({ item, index })).filter(({ item }) => item.listKey === list.key).map(({ item, index }) => {
         const checked = checkedItems.includes(index);
@@ -1240,6 +1761,19 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
     </div>}
     {!expanded && <div className="preview-progress" role="progressbar" aria-label="Preview progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span style={{ width: `${progressValue}%` }} /></div>}
   </section>;
+}
+
+function PreviewTracker({ tracker, count, onChange }: { tracker: RoutineAmount; count: number; onChange: (count: number) => void }) {
+  const kind = trackerKind(tracker);
+  if (kind === "amount") return <div className="preview-amount-row"><strong>{tracker.name}</strong><div className="preview-quantity" style={{ "--preview-segments": tracker.targetCount } as React.CSSProperties}>
+    {Array.from({ length: tracker.targetCount }, (_, index) => { const value = index + 1; const filled = value <= count; return <button type="button" key={value} className={filled ? "filled" : ""} onClick={() => onChange(filled ? value - 1 : value)}>{filled ? "✓" : value}</button>; })}
+  </div></div>;
+  if (kind === "rating") return <div className="preview-amount-row"><strong>{tracker.name}</strong><div className="preview-rating">{Array.from({ length: 5 }, (_, index) => <button type="button" key={index} className={index < count ? "filled" : ""} onClick={() => onChange(index + 1)}>★</button>)}</div></div>;
+  if (kind === "avoidance") return <div className="preview-amount-row"><strong>{tracker.name}</strong><button type="button" className={`preview-generic-tracker${count ? " filled" : ""}`} onClick={() => onChange(count ? 0 : 1)}>{count ? "✓ I avoided this today" : "I avoided this today"}</button></div>;
+  if (kind === "note" || kind === "photo") return <div className="preview-amount-row"><strong>{tracker.name}</strong><button type="button" className={`preview-generic-tracker${count ? " filled" : ""}`} onClick={() => onChange(count ? 0 : 1)}>{count ? `✓ ${kind === "note" ? "Note added" : "Photo added"}` : `Add ${kind}`}</button></div>;
+  if (kind === "number") return <div className="preview-amount-row"><strong>{tracker.name}</strong><label className="preview-number-entry"><input type="number" min="0" step="1" value={count || ""} onChange={(event) => onChange(Math.max(0, Math.round(Number(event.target.value) || 0)))} placeholder="Amount" /><span>{tracker.unit || ""}</span></label></div>;
+  if (kind === "timer") return <div className="preview-amount-row"><strong>{tracker.name}</strong><div className="preview-stepper"><button type="button" onClick={() => onChange(Math.max(0, count - 60))}>−</button><span>{formatTimerSeconds(count)} / {tracker.targetCount}:00</span><button type="button" onClick={() => onChange(Math.min(tracker.targetCount * 60, count + 60))}>+</button></div></div>;
+  return <div className="preview-amount-row"><strong>{tracker.name}</strong><div className="preview-stepper"><button type="button" onClick={() => onChange(Math.max(0, count - 5))}>−</button><span>{count}/{tracker.targetCount} {tracker.unit}</span><button type="button" onClick={() => onChange(Math.min(tracker.targetCount, count + 5))}>+</button></div></div>;
 }
 
 function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, usedColors }: { template: RoutineTemplate | null; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; saving: boolean; usedEmojis: string[]; usedColors: string[] }) {
@@ -1327,7 +1861,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
     onSubmit(event);
   };
 
-  return <div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+  return createPortal(<div className="add-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack">
   <div className={`add-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
@@ -1362,7 +1896,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
   <VerticalScrollIndicator scrollerRef={formRef} label="Add routine form" />
   </div>
   </div>
-  </div>;
+  </div>, document.body);
 }
 
 function UniqueChoiceToggles({ hideUsedEmojis, hideUsedColors, onEmojisChange, onColorsChange }: { hideUsedEmojis: boolean; hideUsedColors: boolean; onEmojisChange: (checked: boolean) => void; onColorsChange: (checked: boolean) => void }) {
@@ -1430,7 +1964,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
 
   const steps = [
     { title: "The basics", note: "Update its name and when it happens." },
-    { title: "How to track it", note: "Adjust its lists and daily amounts." },
+    { title: "How to track it", note: "Adjust its tracking styles." },
     { title: "Make it yours", note: "Change its look and weekly schedule." },
   ];
 
@@ -1467,7 +2001,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
     onSubmit(event);
   };
 
-  return <div className="edit-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+  return createPortal(<div className="edit-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
   <div className="add-modal-stack edit-modal-stack">
   <div className={`edit-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card checklist-editor edit-routine-modal edit-routine-wizard" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
@@ -1497,7 +2031,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
   <VerticalScrollIndicator scrollerRef={formRef} label="Edit routine form" />
   </div>
   </div>
-  </div>;
+  </div>, document.body);
 }
 
 function ScrollablePicker({ label, children, className = "", scrollClassName = "" }: { label: string; children: ReactNode; className?: string; scrollClassName?: string }) {
@@ -1663,17 +2197,28 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
 function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { lists: RoutineListDraft[]; amounts: RoutineAmount[]; onListsChange: (lists: RoutineListDraft[]) => void; onAmountsChange: (amounts: RoutineAmount[]) => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const trackingMode = trackingModeFor(lists, amounts);
-  const makeKey = (type: "list" | "amount", count: number) => `${type}-${Date.now().toString(36)}-${count + 1}`;
+  const makeKey = (type: string, count: number) => `${type}-${Date.now().toString(36)}-${count + 1}`;
   const addList = () => {
     if (lists.length >= 6) return;
     onListsChange([...lists, { key: makeKey("list", lists.length), name: "", items: "" }]);
     setMenuOpen(false);
   };
-  const addAmount = () => {
-    if (amounts.length >= 6) return;
-    onAmountsChange([...amounts, { key: makeKey("amount", amounts.length), name: "", targetCount: 4 }]);
+  const addTracker = (kind: TrackerKind) => {
+    if (amounts.length >= 10) return;
+    const targetCount = kind === "amount" ? 4 : kind === "duration" || kind === "timer" ? 30 : 1;
+    const unit = kind === "duration" || kind === "timer" ? "min" : kind === "rating" ? "stars" : "";
+    onAmountsChange([...amounts, { key: makeKey(kind, amounts.length), name: "", targetCount, kind, unit }]);
     setMenuOpen(false);
   };
+  const options: Array<{ kind: TrackerKind; symbol: string; label: string; note: string }> = [
+    { kind: "amount", symbol: "▥", label: "Daily amount", note: "Count pills, glasses, or repetitions" },
+    { kind: "timer", symbol: "▶", label: "Timer", note: "Pause and resume one running total" },
+    { kind: "rating", symbol: "★", label: "Rating", note: "Rate the day from one to five" },
+    { kind: "number", symbol: "#", label: "Number entry", note: "Save a daily measurement" },
+    { kind: "note", symbol: "✎", label: "Note", note: "Write a short daily entry" },
+    { kind: "photo", symbol: "▣", label: "Photo", note: "Attach a daily progress image" },
+    { kind: "avoidance", symbol: "⊘", label: "Avoided habit", note: "Check off something you avoided today" },
+  ];
   return <fieldset className="tracking-builder">
     <legend>Tracking</legend>
     <input type="hidden" name="trackingMode" value={trackingMode} />
@@ -1683,7 +2228,7 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { l
       <button type="button" className="tracking-add-button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen}>+ Add tracking</button>
       {menuOpen && <div className="tracking-add-menu">
         <button type="button" onClick={addList} disabled={lists.length >= 6}><span aria-hidden="true">☷</span><div><strong>List</strong><small>Named steps to check off</small></div></button>
-        <button type="button" onClick={addAmount} disabled={amounts.length >= 6}><span aria-hidden="true">▥</span><div><strong>Daily amount</strong><small>A named numbered tracker</small></div></button>
+        {options.map((option) => <button type="button" key={option.kind} onClick={() => addTracker(option.kind)} disabled={amounts.length >= 10}><span aria-hidden="true">{option.symbol}</span><div><strong>{option.label}</strong><small>{option.note}</small></div></button>)}
       </div>}
     </div>
     {!lists.length && !amounts.length && <p className="tracking-empty-note">No extras yet · this will save as one check.</p>}
@@ -1693,11 +2238,25 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { l
         <label className="field"><span>List name</span><input value={list.name} onChange={(event) => onListsChange(lists.map((item) => item.key === list.key ? { ...item, name: event.target.value } : item))} placeholder="e.g. Morning checklist" maxLength={24} required /></label>
         <label className="field"><span>Items <small>One per line</small></span><textarea value={list.items} onChange={(event) => onListsChange(lists.map((item) => item.key === list.key ? { ...item, items: event.target.value } : item))} placeholder={"First step\nSecond step\nThird step"} maxLength={1000} required /></label>
       </section>)}
-      {amounts.map((amount, index) => <section className="tracking-block tracking-amount-block" key={amount.key}>
-        <header><span aria-hidden="true">▥</span><strong>Daily amount</strong><button type="button" onClick={() => onAmountsChange(amounts.filter((item) => item.key !== amount.key))} aria-label={`Remove ${amount.name || `amount ${index + 1}`}`}><Trash2 aria-hidden="true" /></button></header>
-        <div className="tracking-amount-fields"><label className="field"><span>Name</span><input value={amount.name} onChange={(event) => onAmountsChange(amounts.map((item) => item.key === amount.key ? { ...item, name: event.target.value } : item))} placeholder="e.g. Vitamin C" maxLength={24} required /></label>
-        <label className="field"><span>Amount</span><input type="number" min="2" max="12" value={amount.targetCount} onChange={(event) => onAmountsChange(amounts.map((item) => item.key === amount.key ? { ...item, targetCount: Math.min(12, Math.max(2, Number(event.target.value) || 2)) } : item))} required /></label></div>
-      </section>)}
+      {amounts.map((amount, index) => {
+        const kind = trackerKind(amount);
+        const symbols: Record<TrackerKind, string> = { amount: "▥", duration: "◴", timer: "▶", rating: "★", number: "#", note: "✎", photo: "▣", avoidance: "⊘" };
+        const placeholders: Record<TrackerKind, string> = { amount: "e.g. Vitamin C", duration: "e.g. Meditation", timer: "e.g. Focus session", rating: "e.g. Energy", number: "e.g. Pages read", note: "e.g. Daily reflection", photo: "e.g. Progress photo", avoidance: "e.g. Drinking soda" };
+        const update = (next: Partial<RoutineAmount>) => onAmountsChange(amounts.map((item) => item.key === amount.key ? { ...item, ...next } : item));
+        return <section className={`tracking-block tracking-amount-block tracking-kind-${kind}`} key={amount.key}>
+          <header><span aria-hidden="true">{symbols[kind]}</span><strong>{trackerKindLabel(amount)}</strong><button type="button" onClick={() => onAmountsChange(amounts.filter((item) => item.key !== amount.key))} aria-label={`Remove ${amount.name || `tracker ${index + 1}`}`}><Trash2 aria-hidden="true" /></button></header>
+          <div className={`tracking-amount-fields${kind === "rating" || kind === "note" || kind === "photo" || kind === "avoidance" ? " single" : ""}`}><label className="field"><span>Name</span><input value={amount.name} onChange={(event) => update({ name: event.target.value })} placeholder={placeholders[kind]} maxLength={24} required /></label>
+          {kind === "amount" && <label className="field"><span>Amount</span><input type="number" min="2" max="12" value={amount.targetCount} onChange={(event) => update({ targetCount: Math.min(12, Math.max(2, Number(event.target.value) || 2)) })} required /></label>}
+          {(kind === "duration" || kind === "timer") && <label className="field"><span>Goal minutes</span><input type="number" min="1" max="1440" value={amount.targetCount} onChange={(event) => update({ targetCount: Math.min(1440, Math.max(1, Number(event.target.value) || 1)), unit: "min" })} required /></label>}
+          {kind === "number" && <label className="field tracking-unit-field"><span>Unit <small>Optional</small></span><input value={amount.unit ?? ""} onChange={(event) => update({ unit: event.target.value })} placeholder="pages" maxLength={16} /></label>}
+          </div>
+          {kind === "rating" && <p className="tracking-type-note">A rating is complete after choosing 1–5 stars.</p>}
+          {kind === "number" && <p className="tracking-type-note">Enter any amount for the day—there is no goal to reach.</p>}
+          {kind === "note" && <p className="tracking-type-note">A saved note completes this tracker for the day.</p>}
+          {kind === "photo" && <p className="tracking-type-note">Images are stored privately with the routine.</p>}
+          {kind === "avoidance" && <p className="tracking-type-note">Check “I avoided this today” when you did not do the habit.</p>}
+        </section>;
+      })}
     </div>
   </fieldset>;
 }

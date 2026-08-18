@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { ensureDatabase, ownerKey } from "../../../db/storage";
 
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
+type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
 const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
 const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
 type RoutineRow = {
@@ -21,7 +22,7 @@ type RoutineRow = {
   endDate: string;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
-type RoutineAmount = { key: string; name: string; targetCount: number };
+type RoutineAmount = { key: string; name: string; targetCount: number; kind: TrackerKind; unit: string };
 type RoutineListInput = { key: string; name: string; items: string[] };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days,
@@ -53,18 +54,26 @@ function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetC
   const source = Array.isArray(amounts) ? amounts : [];
   const clean: RoutineAmount[] = [];
   const usedKeys = new Set<string>();
-  for (const [index, item] of source.slice(0, 6).entries()) {
+  for (const [index, item] of source.slice(0, 10).entries()) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
     let key = String(record.key ?? `amount-${index + 1}`).trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || `amount-${index + 1}`;
     while (usedKeys.has(key)) key = `${key}-${index + 1}`;
     usedKeys.add(key);
+    const requestedKind = String(record.kind ?? "amount");
+    const kind: TrackerKind = requestedKind === "duration" || requestedKind === "timer" || requestedKind === "rating" || requestedKind === "number" || requestedKind === "note" || requestedKind === "photo" || requestedKind === "avoidance" ? requestedKind : "amount";
     const name = String(record.name ?? "").trim().slice(0, 24);
     const count = Math.round(Number(record.targetCount));
-    if (name) clean.push({ key, name, targetCount: Number.isFinite(count) ? Math.min(12, Math.max(2, count)) : 4 });
+    const defaultTarget = kind === "duration" || kind === "timer" ? 30 : kind === "amount" ? 4 : 1;
+    const maximum = kind === "amount" ? 12 : kind === "duration" || kind === "timer" ? 1440 : 1;
+    const minimum = kind === "amount" ? 2 : 1;
+    const targetCount = Number.isFinite(count) ? Math.min(maximum, Math.max(minimum, count)) : defaultTarget;
+    const defaultUnit = kind === "duration" || kind === "timer" ? "min" : kind === "rating" ? "stars" : "";
+    const unit = String(record.unit ?? defaultUnit).trim().slice(0, 16) || defaultUnit;
+    if (name) clean.push({ key, name, targetCount, kind, unit });
   }
   if (clean.length) return clean;
-  return [{ key: "amount-1", name: fallback?.unit || "pills", targetCount: fallback?.targetCount || 4 }];
+  return [{ key: "amount-1", name: fallback?.unit || "pills", targetCount: fallback?.targetCount || 4, kind: "amount" as const, unit: fallback?.unit || "pills" }];
 }
 
 function cleanLists(lists: unknown, mode: TrackingMode, legacyItems: unknown = []) {
@@ -141,11 +150,14 @@ export async function GET(request: Request) {
   const routines = await env.DB.prepare(`SELECT ${ROUTINE_SELECT} FROM routines WHERE owner_key = ? ORDER BY id`)
     .bind(owner).all<RoutineRow>();
 
-  const [items, completions, itemCompletions, amountCompletions] = await Promise.all([
+  const [items, completions, itemCompletions, amountCompletions, trackerEntries] = await Promise.all([
     getItems(owner),
     env.DB.prepare("SELECT routine_id AS routineId, date, status FROM completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; date: string; status: string }>(),
     env.DB.prepare("SELECT item_id AS itemId, date FROM item_completions WHERE owner_key = ?").bind(owner).all<{ itemId: number; date: string }>(),
     env.DB.prepare("SELECT routine_id AS routineId, amount_key AS amountKey, date, count FROM amount_completions WHERE owner_key = ?").bind(owner).all<{ routineId: number; amountKey: string; date: string; count: number }>(),
+    env.DB.prepare(`SELECT routine_id AS routineId, tracker_key AS trackerKey, date, value_text AS value,
+      CASE WHEN file_key <> '' THEN 1 ELSE 0 END AS hasFile FROM tracker_entries WHERE owner_key = ?`)
+      .bind(owner).all<{ routineId: number; trackerKey: string; date: string; value: string; hasFile: number }>(),
   ]);
   const itemsByRoutine = new Map<number, RoutineItemRow[]>();
   for (const item of items.results) itemsByRoutine.set(item.routineId, [...(itemsByRoutine.get(item.routineId) ?? []), item]);
@@ -154,6 +166,7 @@ export async function GET(request: Request) {
     completions: completions.results,
     itemCompletions: itemCompletions.results,
     amountCompletions: amountCompletions.results,
+    trackerEntries: trackerEntries.results.map((entry) => ({ ...entry, hasFile: Boolean(entry.hasFile) })),
   });
 }
 
@@ -173,7 +186,7 @@ export async function POST(request: Request) {
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
   const amounts = cleanAmounts(payload.amounts, trackingMode, { targetCount, unit });
-  const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times" };
+  const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times", kind: "amount" as const, unit: "times" };
   const dayVariants = cleanDayVariants(payload.dayVariants);
   const startDate = cleanDate(payload.startDate);
   const endDate = cleanDate(payload.endDate);
@@ -221,7 +234,7 @@ export async function PUT(request: Request) {
   try { existingAmountData = JSON.parse(existing.amountConfig); } catch { existingAmountData = []; }
   const currentAmounts = cleanAmounts(existingAmountData, currentMode, { targetCount: existing.targetCount, unit: existing.unit });
   const amounts = cleanAmounts(payload.amounts ?? currentAmounts, trackingMode, { targetCount, unit });
-  const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times" };
+  const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times", kind: "amount" as const, unit: "times" };
   let currentDayVariants: Record<string, string> = {};
   try { currentDayVariants = cleanDayVariants(JSON.parse(existing.dayVariants)); } catch { currentDayVariants = {}; }
   const dayVariants = cleanDayVariants(payload.dayVariants ?? currentDayVariants);
@@ -240,6 +253,10 @@ export async function PUT(request: Request) {
     env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, amount_config = ?, list_config = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
       .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(nextListConfig), JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
   ];
+  const nextAmountKeys = new Set(amounts.map((amount) => amount.key));
+  const removedAmounts = currentAmounts.filter((amount) => !nextAmountKeys.has(amount.key));
+  const removedFiles = (await Promise.all(removedAmounts.map((amount) => env.DB.prepare("SELECT file_key AS fileKey FROM tracker_entries WHERE owner_key = ? AND routine_id = ? AND tracker_key = ? AND file_key <> ''")
+    .bind(owner, existing.id, amount.key).all<{ fileKey: string }>()))).flatMap((result) => result.results.map((entry) => entry.fileKey));
   if (itemsChanged) {
     statements.push(
       env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, existing.id),
@@ -248,15 +265,25 @@ export async function PUT(request: Request) {
     );
   }
   if (!usesQuantity(trackingMode)) {
-    statements.push(env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id));
+    statements.push(
+      env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
+      env.DB.prepare("DELETE FROM tracker_entries WHERE owner_key = ? AND routine_id = ?").bind(owner, existing.id),
+    );
   } else {
-    const amountKeys = new Set(amounts.map((amount) => amount.key));
-    for (const oldAmount of currentAmounts) {
-      if (!amountKeys.has(oldAmount.key)) statements.push(env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ? AND amount_key = ?").bind(owner, existing.id, oldAmount.key));
+    for (const oldAmount of removedAmounts) {
+      statements.push(
+        env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ? AND amount_key = ?").bind(owner, existing.id, oldAmount.key),
+        env.DB.prepare("DELETE FROM tracker_entries WHERE owner_key = ? AND routine_id = ? AND tracker_key = ?").bind(owner, existing.id, oldAmount.key),
+      );
     }
-    for (const amount of amounts) statements.push(env.DB.prepare("UPDATE amount_completions SET count = MIN(count, ?) WHERE owner_key = ? AND routine_id = ? AND amount_key = ?").bind(amount.targetCount, owner, existing.id, amount.key));
+    for (const amount of amounts) {
+      const maximum = amount.kind === "rating" ? 5 : amount.kind === "avoidance" || amount.kind === "note" || amount.kind === "photo" ? 1 : amount.kind === "timer" ? 86_400 : amount.kind === "number" ? 1_000_000_000 : amount.targetCount;
+      statements.push(env.DB.prepare("UPDATE amount_completions SET count = MIN(count, ?) WHERE owner_key = ? AND routine_id = ? AND amount_key = ?").bind(maximum, owner, existing.id, amount.key));
+    }
   }
   await env.DB.batch(statements);
+  const uploads = (env as unknown as { UPLOADS?: R2Bucket }).UPLOADS;
+  if (uploads && removedFiles.length) await uploads.delete(removedFiles);
   const [updated, items] = await Promise.all([
     getRoutine(owner, existing.id),
     env.DB.prepare("SELECT id, routine_id AS routineId, title, list_key AS listKey, position FROM routine_items WHERE owner_key = ? AND routine_id = ? ORDER BY list_key, position, id")
@@ -270,13 +297,17 @@ export async function DELETE(request: Request) {
   const owner = ownerKey(request);
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isInteger(id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
+  const photoFiles = await env.DB.prepare("SELECT file_key AS fileKey FROM tracker_entries WHERE owner_key = ? AND routine_id = ? AND file_key <> ''").bind(owner, id).all<{ fileKey: string }>();
   await env.DB.batch([
     env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, id),
     env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM completions WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM quantity_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM amount_completions WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
+    env.DB.prepare("DELETE FROM tracker_entries WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
     env.DB.prepare("DELETE FROM routines WHERE owner_key = ? AND id = ?").bind(owner, id),
   ]);
+  const uploads = (env as unknown as { UPLOADS?: R2Bucket }).UPLOADS;
+  if (uploads && photoFiles.results.length) await uploads.delete(photoFiles.results.map((entry) => entry.fileKey));
   return Response.json({ ok: true });
 }
