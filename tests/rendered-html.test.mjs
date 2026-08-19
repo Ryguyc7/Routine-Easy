@@ -323,6 +323,13 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.primary-button, \.secondary-button[^}]*font-weight: 650/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes routine-reveal/);
   assert.match(page, /CalendarPlus2/);
+  assert.match(fullPageBuilderCss, /\.onboarding-shell \{[^}]*position: fixed;[^}]*height: 100dvh;[^}]*overflow: hidden/);
+  assert.match(fullPageBuilderCss, /\.onboarding-card \{[^}]*height: 100%;[^}]*overflow: hidden;[^}]*background: transparent;[^}]*border: 0;[^}]*box-shadow: none/);
+  assert.match(fullPageBuilderCss, /\.onboarding-skip \{[^}]*width: min\(300px, 100%\);[^}]*font-size: 15px/);
+  assert.match(page, /className="onboarding-live-card"/);
+  assert.match(page, /Make every day feel a little easier/);
+  assert.match(fullPageBuilderCss, /@keyframes onboarding-progress-fill/);
+  assert.match(fullPageBuilderCss, /@keyframes onboarding-row-in/);
   assert.match(page, /ChevronLeft/);
   assert.match(page, /day-fill/);
   assert.match(page, /calendar-day \$\{isToday/);
@@ -381,6 +388,7 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(page, /<h2>Welcome screen<\/h2>/);
   assert.match(page, /onClick=\{onShowOnboarding\}[\s\S]*?View onboarding/);
   assert.match(page, /function showOnboarding\(\) \{[\s\S]*?setOnboardingState\("show"\)/);
+  assert.match(page, /<button className="onboarding-cta premium-action"[\s\S]*?<button className="onboarding-skip" onClick=\{\(\) => onComplete\(false\)\}>Skip for now<\/button>\s*<\/section>/);
   assert.match(page, /settingsReturnTabRef = useRef<Exclude<Tab, "settings">>/);
   assert.match(page, /if \(tab !== "settings"\) settingsReturnTabRef\.current = tab/);
   assert.match(page, /className="settings-toolbar"/);

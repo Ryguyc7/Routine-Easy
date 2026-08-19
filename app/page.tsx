@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, startTransition, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, startTransition, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CirclePlay, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, completeDeviceOnboarding, hasCompletedDeviceOnboarding, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
@@ -1584,33 +1584,43 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
 
 function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => void }) {
   return <main className="onboarding-shell">
-    <div className="onboarding-glow glow-one" aria-hidden="true" />
-    <div className="onboarding-glow glow-two" aria-hidden="true" />
     <section className="onboarding-card" aria-labelledby="onboarding-title">
+      <div className="onboarding-art" aria-hidden="true">
+        <i className="onboarding-shape coral" /><i className="onboarding-shape cream" />
+        <i className="onboarding-shape blue" /><i className="onboarding-shape gold" />
+        <span className="onboarding-leaf top">❧</span><span className="onboarding-leaf bottom">❧</span>
+        <span className="onboarding-dot one" /><span className="onboarding-dot two" /><span className="onboarding-dot three" />
+      </div>
       <header className="onboarding-top">
-        <div className="brand" aria-label="Routine EASY"><img className="brand-logo" src="/routineez-checklist.png" alt="" /><span>Routine<EasyWord className="brand-easy" /></span></div>
-        <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
+        <img className="brand-logo" src="/routineez-checklist.png" alt="" />
+        <div><h1 id="onboarding-title">Routine<EasyWord className="brand-easy" /></h1><p>Small routines. Easier days.</p></div>
       </header>
-      <div className="onboarding-layout">
-        <div className="onboarding-copy">
-          <p className="eyebrow">Welcome to your new rhythm</p>
-          <h1 id="onboarding-title">Small routines.<br /><span>Easier days.</span></h1>
-          <p className="onboarding-lead">Plan the little things that keep your day moving—from workouts and vitamins to breakfast, lunch, and dinner.</p>
-          <div className="onboarding-benefits" aria-label="Routine EASY features">
-            <div><span className="benefit-icon purple">✓</span><p><strong>Simple check-offs</strong><small>See today and keep moving.</small></p></div>
-            <div><span className="benefit-icon coral">●</span><p><strong>Color-coded plans</strong><small>Your routines at a glance.</small></p></div>
-            <div><span className="benefit-icon green">↗</span><p><strong>Gentle progress</strong><small>Small wins that add up.</small></p></div>
-          </div>
-          <button className="onboarding-cta premium-action" onClick={() => onComplete(true)}><span>Build my first routine</span><i aria-hidden="true">→</i></button>
-          <p className="onboarding-note">No pressure. Start with just one thing.</p>
+      <div className="onboarding-live-card" aria-label="A sample day with four of five routines complete">
+        <div className="onboarding-progress-row">
+          <span className="onboarding-sun">☀</span>
+          <span className="onboarding-progress-track"><i /></span>
+          <strong>4/5</strong>
         </div>
-        <div className="onboarding-visual">
-          <div className="onboarding-image-wrap">
-            <img src="/og.png" alt="Routine EASY color-coded routine checklist preview" />
-          </div>
-          <div className="onboarding-mini-card"><span>✦</span><div><strong>A calmer day starts small.</strong><small>One routine is enough.</small></div></div>
+        <div className="onboarding-demo-list">
+          {[
+            ["♥", "Morning vitamins", "coral", true],
+            ["☕", "Breakfast", "gold", true],
+            ["▣", "Plan the day", "sky", true],
+            ["↗", "Move a little", "green", true],
+            ["☾", "Evening reset", "purple", false],
+          ].map(([icon, label, color, complete], index) => <div className="onboarding-demo-row" style={{ "--row-delay": `${.32 + index * .13}s` } as CSSProperties} key={label as string}>
+            <span className={`onboarding-demo-icon ${color}`}>{icon}</span>
+            <i className="onboarding-demo-line" />
+            <span className={`onboarding-demo-check${complete ? " complete" : ""}`}>{complete ? "✓" : ""}</span>
+          </div>)}
         </div>
       </div>
+      <div className="onboarding-summary">
+        <h2>Make every day feel a little easier.</h2>
+        <p>Plan small routines, check them off, and watch your progress grow.</p>
+      </div>
+      <button className="onboarding-cta premium-action" onClick={() => onComplete(true)}><span>Build my first routine</span><i aria-hidden="true">→</i></button>
+      <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
     </section>
   </main>;
 }
