@@ -1816,8 +1816,8 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   .bottom-nav .calendar-nav-button.active .date-nav-icon i { color: #fff; background: var(--nav-accent); }
   .bottom-nav button:nth-of-type(2).calendar-nav-button.active .date-nav-icon i { color: #fff; background: var(--nav-accent); }
   .bottom-nav .calendar-nav-button.active .date-nav-icon strong { color: var(--nav-accent); }
-  .bottom-nav.creation-flow-hidden { pointer-events: none; animation: bottom-nav-slide-away .3s cubic-bezier(.4,0,.65,1) both; }
-  .bottom-nav.creation-flow-returning { animation: bottom-nav-shoot-up .58s cubic-bezier(.16,.86,.28,1) both; }
+  .bottom-nav.creation-flow-hidden { z-index: 230; pointer-events: none; animation: bottom-nav-slide-away .3s cubic-bezier(.4,0,.65,1) both; }
+  .bottom-nav.creation-flow-returning { z-index: 230; animation: bottom-nav-shoot-up .58s cubic-bezier(.16,.86,.28,1) both; }
 
   html[data-theme="dark"] .bottom-nav {
     border: 0;

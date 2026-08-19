@@ -445,9 +445,13 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(css, /html\[data-theme="dark"\] \.routine-builder-page \.add-routine-modal \.form-actions \{ background: transparent; box-shadow: none; \}/);
   assert.match(css, /\.routine-template-page \.template-dialog > \.template-dialog-header \{[^}]*height: calc\(68px \+ env\(safe-area-inset-top\)\);[^}]*grid-template-columns: 42px minmax\(0, 1fr\) 42px/);
   assert.match(page, /function animateBottomNavReturn/);
-  assert.match(page, /bottom-nav\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \|\| tab === "settings" \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
+  assert.match(page, /bottom-nav\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \|\| historyDayEditorOpen \|\| tab === "settings" \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
   assert.match(page, /function openSettings\(\) \{\s*prepareCreationFlow\(\);/);
   assert.match(page, /function closeSettings\(\) \{\s*setTab\(settingsReturnTabRef\.current\);\s*animateBottomNavReturn\(\);/);
+  assert.match(page, /function openHistoryDayEditor\(\) \{\s*prepareCreationFlow\(\);\s*setHistoryDayEditorOpen\(true\);/);
+  assert.match(page, /function closeHistoryDayEditor\(\) \{\s*setHistoryDayEditorOpen\(false\);\s*animateBottomNavReturn\(\);/);
+  assert.match(page, /onClick=\{\(\) => openDayEditor\(day\)\}/);
+  assert.match(css, /\.bottom-nav\.creation-flow-hidden \{ z-index: 230;/);
   assert.doesNotMatch(fullPageBuilderCss, /\.settings-view-open \.mobile-header, \.settings-view-open \.bottom-nav \{ display: none; \}/);
   assert.match(css, /@keyframes bottom-nav-slide-away/);
   assert.match(css, /@keyframes bottom-nav-shoot-up[\s\S]*?translateY\(-7px\)[\s\S]*?translateY\(3px\)/);

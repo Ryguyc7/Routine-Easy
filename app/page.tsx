@@ -307,6 +307,7 @@ export default function Home() {
   const [month, setMonth] = useState(() => new Date(2000, 0, 1, 12));
   const [showAdd, setShowAdd] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [historyDayEditorOpen, setHistoryDayEditorOpen] = useState(false);
   const [bottomNavReturning, setBottomNavReturning] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -480,6 +481,16 @@ export default function Home() {
 
   function closeSettings() {
     setTab(settingsReturnTabRef.current);
+    animateBottomNavReturn();
+  }
+
+  function openHistoryDayEditor() {
+    prepareCreationFlow();
+    setHistoryDayEditorOpen(true);
+  }
+
+  function closeHistoryDayEditor() {
+    setHistoryDayEditorOpen(false);
     animateBottomNavReturn();
   }
 
@@ -1069,12 +1080,12 @@ export default function Home() {
           </div>
         )}
 
-        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} onSetDayStatus={setHistoryDayStatus} onToggleItem={editHistoryItem} onSetAmount={editHistoryAmount} onSetNote={editHistoryNote} onUploadPhoto={editHistoryPhoto} onRemovePhoto={removeHistoryPhoto} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
+        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} onOpenDayEditor={openHistoryDayEditor} onCloseDayEditor={closeHistoryDayEditor} onSetDayStatus={setHistoryDayStatus} onToggleItem={editHistoryItem} onSetAmount={editHistoryAmount} onSetNote={editHistoryNote} onUploadPhoto={editHistoryPhoto} onRemovePhoto={removeHistoryPhoto} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
 
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
-      <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
+      <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
         <BottomNavSurface key={tab} tab={tab} reducedMotion={preferences.motion === "reduced"} />
         <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
         <CalendarNavButton active={tab === "calendar"} onClick={() => setTab("calendar")} date={today} />
@@ -1117,7 +1128,7 @@ function historyRate(states: HistoryDayState[], count: number) {
   return eligible.length ? Math.round((eligible.filter((day) => day.status === "completed").length / eligible.length) * 100) : 0;
 }
 
-function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatus, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, completions, itemCompletions, amountCompletions, trackerEntries, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; onSetDayStatus: (routine: Routine, date: string, status: EditableHistoryStatus) => Promise<void>; onToggleItem: (routine: Routine, itemId: number, date: string) => Promise<void>; onSetAmount: (routine: Routine, tracker: RoutineAmount, count: number, date: string) => Promise<void>; onSetNote: (routine: Routine, tracker: RoutineAmount, value: string, date: string) => Promise<void>; onUploadPhoto: (routine: Routine, tracker: RoutineAmount, file: File, date: string) => Promise<void>; onRemovePhoto: (routine: Routine, tracker: RoutineAmount, date: string) => Promise<void>; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; trackerEntries: TrackerEntry[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
+function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onOpenDayEditor, onCloseDayEditor, onSetDayStatus, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, completions, itemCompletions, amountCompletions, trackerEntries, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; onOpenDayEditor: () => void; onCloseDayEditor: () => void; onSetDayStatus: (routine: Routine, date: string, status: EditableHistoryStatus) => Promise<void>; onToggleItem: (routine: Routine, itemId: number, date: string) => Promise<void>; onSetAmount: (routine: Routine, tracker: RoutineAmount, count: number, date: string) => Promise<void>; onSetNote: (routine: Routine, tracker: RoutineAmount, value: string, date: string) => Promise<void>; onUploadPhoto: (routine: Routine, tracker: RoutineAmount, file: File, date: string) => Promise<void>; onRemovePhoto: (routine: Routine, tracker: RoutineAmount, date: string) => Promise<void>; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; trackerEntries: TrackerEntry[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
   const selected = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
   const effectiveSelection = selected ? selected.id : "all";
   const [editingDay, setEditingDay] = useState<HistoryDayState | null>(null);
@@ -1130,6 +1141,14 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
   const firstWeekday = (historyMonth.getDay() - (weekStartsOn === "monday" ? 1 : 0) + 7) % 7;
   const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey, historyMonth)])), [routines, completions, itemCompletions, amountCompletions, todayKey, historyMonth]);
   const activeEditingDay = editingDay && selected ? historyByRoutine.get(selected.id)?.find((day) => day.key === editingDay.key) ?? editingDay : null;
+  const openDayEditor = (day: HistoryDayState) => {
+    onOpenDayEditor();
+    setEditingDay(day);
+  };
+  const closeDayEditor = () => {
+    setEditingDay(null);
+    onCloseDayEditor();
+  };
 
   return <div className={`page history-page${selected ? " history-page-detail" : ""}`}>
     <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
@@ -1150,7 +1169,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
           const className = `history-day ${day.status}${isToday ? " is-today" : ""}${editable ? " history-day-editable" : ""}`;
           const contents = <><small>{day.date.toLocaleDateString("en-US", { weekday: "narrow" })}</small><strong>{day.date.getDate()}</strong></>;
           return editable
-            ? <button type="button" key={day.key} className={className} aria-current={isToday ? "date" : undefined} aria-label={`View details for ${day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, currently ${day.status}`} onClick={() => setEditingDay(day)}>{contents}</button>
+            ? <button type="button" key={day.key} className={className} aria-current={isToday ? "date" : undefined} aria-label={`View details for ${day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, currently ${day.status}`} onClick={() => openDayEditor(day)}>{contents}</button>
             : <div key={day.key} className={className} aria-current={isToday ? "date" : undefined} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}>{contents}</div>;
         })}</div></div>
         <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
@@ -1167,7 +1186,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
         </button>;
       })}</div>
     </section>}
-    {activeEditingDay && selected && <HistoryDayEditor routine={selected} day={activeEditingDay} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} onClose={() => setEditingDay(null)} onSave={(status) => onSetDayStatus(selected, activeEditingDay.key, status)} onToggleItem={(itemId) => onToggleItem(selected, itemId, activeEditingDay.key)} onSetAmount={(tracker, count) => onSetAmount(selected, tracker, count, activeEditingDay.key)} onSetNote={(tracker, value) => onSetNote(selected, tracker, value, activeEditingDay.key)} onUploadPhoto={(tracker, file) => onUploadPhoto(selected, tracker, file, activeEditingDay.key)} onRemovePhoto={(tracker) => onRemovePhoto(selected, tracker, activeEditingDay.key)} />}
+    {activeEditingDay && selected && <HistoryDayEditor routine={selected} day={activeEditingDay} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} onClose={closeDayEditor} onSave={(status) => onSetDayStatus(selected, activeEditingDay.key, status)} onToggleItem={(itemId) => onToggleItem(selected, itemId, activeEditingDay.key)} onSetAmount={(tracker, count) => onSetAmount(selected, tracker, count, activeEditingDay.key)} onSetNote={(tracker, value) => onSetNote(selected, tracker, value, activeEditingDay.key)} onUploadPhoto={(tracker, file) => onUploadPhoto(selected, tracker, file, activeEditingDay.key)} onRemovePhoto={(tracker) => onRemovePhoto(selected, tracker, activeEditingDay.key)} />}
   </div>;
 }
 
