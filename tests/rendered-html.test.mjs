@@ -117,13 +117,14 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(fullPageBuilderCss, /\.wizard-progress \{[^}]*repeat\(4, 1fr\)/);
   assert.match(fullPageBuilderCss, /\.add-form-shell\.step-tone-4 \{[^}]*var\(--sky\)/);
   assert.doesNotMatch(page, /Your rhythm at a glance/);
-  assert.match(page, /edit-modal-backdrop/);
-  assert.match(page, /createPortal\(<div className="edit-modal-backdrop"/);
+  assert.match(page, /createPortal\(<div className="add-modal-backdrop routine-builder-page edit-routine-page"/);
   assert.match(page, /aria-label="Edit routine progress"/);
-  assert.match(page, /className="add-modal-stack edit-modal-stack"/);
+  assert.match(page, /aria-label=\{step === 0 \? "Close routine editor" : "Go back to previous step"\}/);
+  assert.match(page, /showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null/);
   assert.match(page, /edit-routine-wizard/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.edit-modal-backdrop \{ z-index: 120/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.edit-form-shell \{ --wizard-accent:[^}]*max-height: 100%;[^}]*overflow: hidden/);
+  const routineEditorSource = page.slice(page.indexOf("function RoutineOptionsEditor"), page.indexOf("function ScrollablePicker"));
+  assert.doesNotMatch(routineEditorSource, /edit-modal-backdrop|edit-modal-stack|edit-form-shell|edit-routine-modal/);
+  assert.doesNotMatch(routineEditorSource, /className="secondary-button"/);
   assert.match(page, /function DeleteRoutineDialog/);
   assert.match(page, /role="alertdialog"/);
   assert.match(page, /Delete routine/);
@@ -444,7 +445,7 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(css, /html\[data-theme="dark"\] \.routine-builder-page \.add-routine-modal \.form-actions \{ background: transparent; box-shadow: none; \}/);
   assert.match(css, /\.routine-template-page \.template-dialog > \.template-dialog-header \{[^}]*height: calc\(68px \+ env\(safe-area-inset-top\)\);[^}]*grid-template-columns: 42px minmax\(0, 1fr\) 42px/);
   assert.match(page, /function animateBottomNavReturn/);
-  assert.match(page, /bottom-nav\$\{showTemplatePicker \|\| showAdd \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
+  assert.match(page, /bottom-nav\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
   assert.match(css, /@keyframes bottom-nav-slide-away/);
   assert.match(css, /@keyframes bottom-nav-shoot-up[\s\S]*?translateY\(-7px\)[\s\S]*?translateY\(3px\)/);
   assert.match(page, /function CompletionHistoryDialog/);

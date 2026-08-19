@@ -447,6 +447,11 @@ export default function Home() {
     animateBottomNavReturn();
   }
 
+  function closeEditRoutine() {
+    setEditingRoutineId(null);
+    animateBottomNavReturn();
+  }
+
   useEffect(() => {
     if (!preferencesLoaded) return;
     const resolvedDarkTheme = preferences.theme === "dark" || (preferences.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -894,6 +899,7 @@ export default function Home() {
     if (response.ok) {
       await loadData();
       setEditingRoutineId(null);
+      animateBottomNavReturn();
       setError("");
     } else {
       setError("That routine could not be saved. Please try again.");
@@ -1050,12 +1056,12 @@ export default function Home() {
             {showAdd && <AddRoutineForm key={selectedTemplate?.id ?? "blank"} template={selectedTemplate} onSubmit={addRoutine} onCancel={closeAddRoutine} saving={saving} usedEmojis={routines.map((routine) => routine.emoji)} usedColors={routines.map((routine) => routine.color)} />}
             {editingRoutineId !== null && (() => {
               const routine = routines.find((item) => item.id === editingRoutineId);
-              return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={() => setEditingRoutineId(null)} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
+              return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={closeEditRoutine} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
             })()}
             <section className="routine-library">
               <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />)}
+                {loading ? <LoadingRows /> : routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />)}
               </div>
             </section>
           </div>
@@ -1066,7 +1072,7 @@ export default function Home() {
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
-      <nav className={`bottom-nav${showTemplatePicker || showAdd ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
+      <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
         <BottomNavSurface key={tab} tab={tab} reducedMotion={preferences.motion === "reduced"} />
         <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
         <CalendarNavButton active={tab === "calendar"} onClick={() => setTab("calendar")} date={today} />
@@ -2160,7 +2166,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
   }, [onCancel]);
 
   const keepModalAligned = (input: HTMLInputElement) => {
-    const modal = input.closest(".edit-routine-modal");
+    const modal = input.closest(".add-routine-modal");
     window.requestAnimationFrame(() => {
       if (modal instanceof HTMLElement) modal.scrollLeft = 0;
     });
@@ -2206,13 +2212,17 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
     onSubmit(event);
   };
 
-  return createPortal(<div className="edit-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
-  <div className="add-modal-stack edit-modal-stack">
-  <div className={`edit-form-shell step-tone-${step + 1}`}>
-  <form ref={formRef} className="add-card checklist-editor edit-routine-modal edit-routine-wizard" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
+  return createPortal(<div className="add-modal-backdrop routine-builder-page edit-routine-page">
+  <BlobCorners className="creation-background-blobs" />
+  <div className="add-modal-stack">
+  <div className={`add-form-shell step-tone-${step + 1}`}>
+  <form ref={formRef} className="add-card add-routine-modal edit-routine-wizard" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
     <header className="routine-wizard-header">
-      <div key={step} className="wizard-heading" aria-live="polite"><span>Step {step + 1} of {steps.length}</span><h2>{steps[step].title}</h2><p>{steps[step].note}</p></div>
-      <div className="wizard-progress" role="progressbar" aria-label="Edit routine progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={step + 1}>{steps.map((item, index) => <i key={item.title} className={index <= step ? "active" : ""} />)}</div>
+      <button type="button" className="app-page-back routine-builder-back" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)} aria-label={step === 0 ? "Close routine editor" : "Go back to previous step"}><ChevronLeft aria-hidden="true" /></button>
+      <div className="routine-wizard-header-content">
+        <div key={step} className="wizard-heading" aria-live="polite"><span>Step {step + 1} of {steps.length}</span><h2>{steps[step].title}</h2><p>{steps[step].note}</p></div>
+        <div className="wizard-progress" role="progressbar" aria-label="Edit routine progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={step + 1}>{steps.map((item, index) => <i key={item.title} className={index <= step ? "active" : ""} />)}</div>
+      </div>
     </header>
     <div className="form-grid">
       <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
@@ -2232,7 +2242,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
         <fieldset className="color-picker"><legend>Color</legend><ScrollablePicker label="Color" wrap>{availableColors.map((color) => <label key={color}><input type="radio" name="color" value={color} checked={selectedColor.toLowerCase() === color.toLowerCase()} onChange={(event) => { setSelectedColor(color); keepModalAligned(event.currentTarget); }} /><span style={{ background: color }} /></label>)}</ScrollablePicker></fieldset>
       </section>
     </div>
-    <div className="form-actions wizard-actions"><button type="button" className="secondary-button" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)}>{step === 0 ? "Cancel" : "Back"}</button>{step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} aria-disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving} aria-disabled={saving || stepSettling}>{saving ? "Saving…" : "Save routine"}</button>}</div>
+    <div className="form-actions wizard-actions">{step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} aria-disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving} aria-disabled={saving || stepSettling}>{saving ? "Saving…" : "Save routine"}</button>}</div>
   </form>
   <VerticalScrollIndicator scrollerRef={formRef} label="Edit routine form" />
   </div>
