@@ -24,6 +24,7 @@ type RoutineRow = {
 type RoutineItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
 type RoutineAmount = { key: string; name: string; targetCount: number; kind: TrackerKind; unit: string };
 type RoutineListInput = { key: string; name: string; items: string[] };
+type DayVariant = string | { tracking: string[]; label?: string };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days,
   tracking_mode AS trackingMode, target_count AS targetCount, unit, amount_config AS amountConfig, list_config AS listConfig, day_variants AS dayVariants,
@@ -98,10 +99,19 @@ function cleanLists(lists: unknown, mode: TrackingMode, legacyItems: unknown = [
 
 function cleanDayVariants(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const clean: Record<string, string> = {};
+  const clean: Record<string, DayVariant> = {};
   for (let day = 0; day < 7; day += 1) {
-    const label = String((value as Record<string, unknown>)[day] ?? "").trim().slice(0, 80);
-    if (label) clean[String(day)] = label;
+    const raw = (value as Record<string, unknown>)[day];
+    if (typeof raw === "string") {
+      const label = raw.trim().slice(0, 80);
+      if (label) clean[String(day)] = label;
+      continue;
+    }
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    const plan = raw as { tracking?: unknown; label?: unknown };
+    const tracking = Array.isArray(plan.tracking) ? [...new Set(plan.tracking.map((item) => String(item).trim()).filter((item) => /^(all|simple|(?:list|amount):[a-zA-Z0-9_-]{1,40})$/.test(item)))].slice(0, 18) : [];
+    const label = String(plan.label ?? "").trim().slice(0, 80);
+    if (tracking.length || label) clean[String(day)] = { tracking: tracking.length ? tracking : ["all"], ...(label ? { label } : {}) };
   }
   return clean;
 }
@@ -122,7 +132,7 @@ function invalidDateRange(startDate: string, endDate: string) {
 
 function normalize(row: RoutineRow, items: RoutineItemRow[]) {
   const trackingMode = row.trackingMode === "simple" && items.length ? "checklist" : cleanMode(row.trackingMode);
-  let dayVariants: Record<string, string> = {};
+  let dayVariants: Record<string, DayVariant> = {};
   let storedAmounts: unknown = [];
   let storedLists: Array<{ key: string; name: string }> = [];
   try { dayVariants = cleanDayVariants(JSON.parse(row.dayVariants)); } catch { dayVariants = {}; }
@@ -175,7 +185,7 @@ export async function POST(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, unknown>; startDate?: string; endDate?: string; items?: string[];
   };
   const name = payload.name?.trim();
   const days = cleanDays(payload.days);
@@ -212,7 +222,7 @@ export async function PUT(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     id?: number; name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, string>; startDate?: string; endDate?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, unknown>; startDate?: string; endDate?: string; items?: string[];
   };
   if (!Number.isInteger(payload.id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const existing = await getRoutine(owner, payload.id!);
@@ -235,7 +245,7 @@ export async function PUT(request: Request) {
   const currentAmounts = cleanAmounts(existingAmountData, currentMode, { targetCount: existing.targetCount, unit: existing.unit });
   const amounts = cleanAmounts(payload.amounts ?? currentAmounts, trackingMode, { targetCount, unit });
   const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times", kind: "amount" as const, unit: "times" };
-  let currentDayVariants: Record<string, string> = {};
+  let currentDayVariants: Record<string, DayVariant> = {};
   try { currentDayVariants = cleanDayVariants(JSON.parse(existing.dayVariants)); } catch { currentDayVariants = {}; }
   const dayVariants = cleanDayVariants(payload.dayVariants ?? currentDayVariants);
   const startDate = cleanDate(payload.startDate ?? existing.startDate);

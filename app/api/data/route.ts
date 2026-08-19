@@ -6,8 +6,8 @@ type RoutineRow = {
   targetCount: number; unit: string; amountConfig: string; listConfig: string; dayVariants: string; startDate: string; endDate: string;
 };
 type ItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
-type BackupRoutine = Record<string, unknown>;
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
+type DayVariant = string | { tracking: string[]; label?: string };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days, tracking_mode AS trackingMode,
   target_count AS targetCount, unit, amount_config AS amountConfig, list_config AS listConfig,
@@ -19,6 +19,23 @@ function record(value: unknown): Record<string, unknown> { return value && typeo
 function json(value: string, fallback: unknown) { try { return JSON.parse(value); } catch { return fallback; } }
 function cleanDate(value: unknown) { const date = String(value ?? ""); return DATE_PATTERN.test(date) ? date : ""; }
 function cleanKey(value: unknown, fallback: string) { return String(value ?? fallback).trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || fallback; }
+function cleanDayVariants(value: unknown) {
+  const source = record(value);
+  const clean: Record<string, DayVariant> = {};
+  for (let day = 0; day < 7; day += 1) {
+    const raw = source[day];
+    if (typeof raw === "string") {
+      const label = raw.trim().slice(0, 80);
+      if (label) clean[String(day)] = label;
+      continue;
+    }
+    const plan = record(raw);
+    const tracking = [...new Set(array(plan.tracking).map((item) => String(item).trim()).filter((item) => /^(all|simple|(?:list|amount):[a-zA-Z0-9_-]{1,40})$/.test(item)))].slice(0, 18);
+    const label = String(plan.label ?? "").trim().slice(0, 80);
+    if (tracking.length || label) clean[String(day)] = { tracking: tracking.length ? tracking : ["all"], ...(label ? { label } : {}) };
+  }
+  return clean;
+}
 
 async function ownerRows(owner: string) {
   const [routines, items, completions, itemCompletions, amountCompletions, trackerEntries] = await Promise.all([
@@ -107,9 +124,7 @@ function cleanRoutine(value: unknown, index: number) {
     if (Number.isInteger(sourceId)) itemSourceIds.add(sourceId);
     return { sourceId, title: String(item.title ?? "").trim().slice(0, 80), listKey: listKeys.has(String(item.listKey)) ? String(item.listKey) : lists[0]?.key ?? "list-1", position: Math.max(0, Math.round(Number(item.position)) || itemIndex) };
   }).filter((item) => item.title);
-  const dayVariants: Record<string, string> = {};
-  const rawVariants = record(source.dayVariants);
-  for (let day = 0; day < 7; day += 1) { const label = String(rawVariants[day] ?? "").trim().slice(0, 80); if (label) dayVariants[day] = label; }
+  const dayVariants = cleanDayVariants(source.dayVariants);
   const cleanCompletions = array(source.completions).slice(0, 5000).map(record).map((item) => ({ date: cleanDate(item.date), status: item.status === "skipped" ? "skipped" : "completed" })).filter((item) => item.date);
   const cleanItemCompletions = array(source.itemCompletions).slice(0, 10000).map(record).map((item) => ({ sourceItemId: Number(item.sourceItemId), date: cleanDate(item.date) })).filter((item) => item.date && itemSourceIds.has(item.sourceItemId));
   const cleanAmounts = array(source.amountCompletions).slice(0, 10000).map(record).map((item) => ({ amountKey: String(item.amountKey), date: cleanDate(item.date), count: Math.min(1_000_000_000, Math.max(0, Math.round(Number(item.count)) || 0)) })).filter((item) => item.date && amountKeys.has(item.amountKey) && item.count > 0);
