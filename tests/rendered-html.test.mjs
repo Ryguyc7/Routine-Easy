@@ -440,9 +440,11 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function CompletionHistoryDialog/);
   assert.match(page, /function HistoryPage/);
   assert.match(page, /Day details/);
-  assert.match(page, /Edit what was recorded for/);
+  assert.doesNotMatch(page, /Edit what was recorded for/);
   assert.match(page, /history-tracker-editor/);
   assert.match(page, /history-summary-fix/);
+  assert.match(page, /history-status-editor/);
+  assert.match(page, />Change status<\/span>/);
   assert.doesNotMatch(page, /Correct this day/);
   assert.match(page, /createPortal\(<div className="feature-dialog-backdrop history-edit-page">/);
   assert.match(page, /className="history-page-back"[^>]*aria-label="Back to history"/);
