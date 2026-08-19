@@ -731,6 +731,14 @@ button { color: inherit; }
 .history-edit-dialog { --history-dialog-padding: 22px; width: min(500px, 100%); max-height: calc(100dvh - 40px); overscroll-behavior: contain; scrollbar-gutter: stable; }
 .history-edit-sticky { position: sticky; z-index: 4; top: calc(-1 * var(--history-dialog-padding)); margin: calc(-1 * var(--history-dialog-padding)) calc(-1 * var(--history-dialog-padding)) 11px; padding: var(--history-dialog-padding) var(--history-dialog-padding) 10px; background: #fff; box-shadow: 0 1px 0 #f0edf2; }
 .history-edit-sticky > header { margin-bottom: 12px; }
+.history-edit-page.feature-dialog-backdrop { z-index: 220; display: block; padding: 0; overscroll-behavior: none; background: linear-gradient(180deg, #fffdfa, #fbf8f2 72%); backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; }
+.history-edit-page .history-edit-dialog { position: relative; z-index: 1; width: 100%; height: 100svh; height: 100dvh; max-height: none; margin: 0; padding: 0 0 max(32px, env(safe-area-inset-bottom)); overflow-x: hidden; overflow-y: auto; overscroll-behavior: none; scrollbar-gutter: auto; border: 0; border-radius: 0; background: transparent; box-shadow: none; animation: none; }
+.history-edit-page .history-edit-sticky { top: 0; margin: 0; padding: max(20px, env(safe-area-inset-top)) max(24px, calc((100% - 680px) / 2)) 16px; background: rgba(255,255,255,.95); backdrop-filter: blur(18px) saturate(1.08); -webkit-backdrop-filter: blur(18px) saturate(1.08); box-shadow: 0 1px 0 rgba(229,221,209,.62), 0 6px 20px rgba(50,43,58,.035); }
+.history-edit-page .history-edit-sticky > header { align-items: center; }
+.history-edit-page .history-page-back { width: 42px; height: 42px; flex: 0 0 auto; border: 0; border-radius: 12px; color: var(--history-color); background: #fff; box-shadow: 0 8px 20px rgba(49,43,58,.1), inset 0 1px 0 #fff; transition: transform .18s ease, box-shadow .2s ease, background-color .18s ease; }
+.history-edit-page .history-page-back:active { transform: scale(.92); }
+.history-edit-page .history-page-back svg { width: 20px; height: 20px; }
+.history-edit-page .history-records { width: min(680px, calc(100% - 48px)); margin: 24px auto 0; }
 .history-day-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px 11px; border: 1px solid #eadfe3; border-radius: 13px; background: #fff8f9; }
 .history-edit-sticky .history-day-summary { margin-bottom: 0; }
 .history-day-summary > span { width: 31px; height: 31px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; color: #b95163; background: #ffe9ed; font-size: 17px; font-weight: 850; }
@@ -1045,6 +1053,11 @@ button { color: inherit; }
   .routine-template-page .template-dialog > .template-dialog-header > i { width: 40px; height: 40px; }
   .template-options { width: calc(100% - 32px); margin-top: 20px; }
   .history-edit-dialog { --history-dialog-padding: 18px; max-height: calc(100dvh - 24px); padding: 18px; border-radius: 20px; }
+  .history-edit-page.feature-dialog-backdrop { padding: 0; }
+  .history-edit-page .history-edit-dialog { height: 100svh; height: 100dvh; max-height: none; padding: 0 0 max(24px, env(safe-area-inset-bottom)); border-radius: 0; }
+  .history-edit-page .history-edit-sticky { padding: max(14px, env(safe-area-inset-top)) 16px 14px; }
+  .history-edit-page .history-page-back { width: 40px; height: 40px; border-radius: 11px; }
+  .history-edit-page .history-records { width: calc(100% - 32px); margin-top: 20px; }
   .template-grid { grid-template-columns: 1fr; }
   .history-grid { grid-template-columns: repeat(7, 1fr); gap: 5px; }
   .history-weekday-row { gap: 5px; }
@@ -1176,6 +1189,9 @@ html[data-theme="dark"] .creation-background-blobs { opacity: .42; }
 html[data-theme="dark"] .bottom-nav { box-shadow: 0 14px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04); }
 html[data-theme="dark"] .setting-card + .setting-card, html[data-theme="dark"] .history-tracker-editor + .history-tracker-editor, html[data-theme="dark"] .history-record-row + .history-record-row { border-color: #3c3742; }
 html[data-theme="dark"] .feature-dialog-backdrop { background: rgba(7,6,9,.62); }
+html[data-theme="dark"] .history-edit-page.feature-dialog-backdrop { background: linear-gradient(180deg, #1d1a21, #17151b 72%); }
+html[data-theme="dark"] .history-edit-page .history-edit-dialog { border: 0; background: transparent; box-shadow: none; }
+html[data-theme="dark"] .history-edit-page .history-page-back { color: var(--history-color); background: #302c35; box-shadow: 0 8px 20px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05); }
 html[data-theme="dark"] .settings-saved, html[data-theme="dark"] .setting-options span, html[data-theme="dark"] .setting-copy p { color: #aaa6b1; }
 
 @media (max-width: 420px) {

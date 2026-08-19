@@ -1196,10 +1196,11 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
     setSavingStatus(null);
   };
 
-  return createPortal(<div className="feature-dialog-backdrop">
+  return createPortal(<div className="feature-dialog-backdrop history-edit-page">
+    <BlobCorners className="creation-background-blobs" />
     <section className="history-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="history-edit-title" style={{ "--history-color": routine.color, "--routine": routine.color } as React.CSSProperties}>
       <div className="history-edit-sticky">
-        <header><span className="history-emoji" aria-hidden="true">{routine.emoji}</span><div><span>Day details</span><h2 id="history-edit-title">{dateLabel}</h2><p>Edit what was recorded for {routine.name}.</p></div><button type="button" onClick={onClose} aria-label="Close history details" disabled={Boolean(savingStatus)}><X /></button></header>
+        <header><button type="button" className="history-page-back" onClick={onClose} aria-label="Back to history" disabled={Boolean(savingStatus)}><ChevronLeft /></button><span className="history-emoji" aria-hidden="true">{routine.emoji}</span><div><span>Day details</span><h2 id="history-edit-title">{dateLabel}</h2><p>Edit what was recorded for {routine.name}.</p></div></header>
         <div className={`history-day-summary ${day.status}`}><span aria-hidden="true">{day.status === "completed" ? "✓" : day.status === "partial" ? "◐" : day.status === "skipped" ? "↷" : "×"}</span><div><strong>{statusLabels[day.status]}</strong><small>{day.status === "completed" ? "Everything required was completed or the day was marked complete." : day.status === "partial" ? "Some tracking was recorded, but the routine was not finished." : day.status === "skipped" ? "This day does not count toward your completion rate." : "No completed record was saved for this day."}</small></div><button type="button" className="history-summary-fix" onClick={() => setShowCorrection((show) => !show)} aria-expanded={showCorrection} disabled={Boolean(savingStatus)}>{showCorrection ? "Cancel" : "Fix"}</button></div>
         {showCorrection && <div className="history-edit-options history-edit-options-compact" role="group" aria-label={`Correct status for ${dateLabel}`}>
           <button type="button" className={`completed${day.status === "completed" ? " active" : ""}`} onClick={() => save("completed")} disabled={Boolean(savingStatus)}><span aria-hidden="true">✓</span><strong>{savingStatus === "completed" ? "Saving…" : "Completed"}</strong></button>

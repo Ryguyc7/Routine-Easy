@@ -443,13 +443,16 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-tracker-editor/);
   assert.match(page, /history-summary-fix/);
   assert.doesNotMatch(page, /Correct this day/);
-  assert.match(page, /createPortal\(<div className="feature-dialog-backdrop">/);
+  assert.match(page, /createPortal\(<div className="feature-dialog-backdrop history-edit-page">/);
+  assert.match(page, /className="history-page-back"[^>]*aria-label="Back to history"/);
   assert.match(page, /className="history-edit-sticky"/);
   assert.match(page, /Edit here · auto-saves/);
   assert.match(page, /history-record-row history-record-edit/);
   assert.match(page, /<TrackerControl routine=\{routine\} tracker=\{tracker\}/);
   assert.match(page, /prepareHistoryDetailEdit/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-edit-sticky \{ position: sticky/);
+  assert.match(css, /\.history-edit-page\.feature-dialog-backdrop \{[^}]*z-index: 220;[^}]*padding: 0;[^}]*backdrop-filter: none/);
+  assert.match(css, /\.history-edit-page \.history-edit-dialog \{[^}]*width: 100%;[^}]*height: 100svh;[^}]*border-radius: 0;[^}]*background: transparent/);
   assert.match(page, /History routine filters/);
   assert.match(page, /tab === "history"/);
   assert.match(page, /label="History"/);
