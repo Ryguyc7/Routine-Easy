@@ -69,6 +69,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(fullPageBuilderCss, /\.settings-back \{[^}]*width: 40px;[^}]*height: 40px;[^}]*border-radius: 12px;[^}]*box-shadow: 0 7px 17px/);
   assert.match(fullPageBuilderCss, /One exact page-back control/);
   assert.match(fullPageBuilderCss, /button\.app-page-back\.app-page-back \{\s*width: 42px;\s*height: 42px;\s*min-width: 42px;\s*min-height: 42px;[^}]*border-radius: 13px;/);
+  assert.match(fullPageBuilderCss, /\.today-page \.progress-card \{[^}]*margin-bottom: 14px;[^}]*box-shadow: none;/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-progress \{[^}]*width: 100%;[^}]*margin: 17px auto 0/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.modal-scrollbar \{ z-index: 4; \}/);
   assert.doesNotMatch(fullPageBuilderCss, /routine-wizard-header \{[^}]*padding:[^;}]*66px/);

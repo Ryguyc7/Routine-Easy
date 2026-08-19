@@ -1028,7 +1028,7 @@ button { color: inherit; }
   .page-heading { margin-bottom: 27px; }
   .page-heading h1 { font-size: 39px; letter-spacing: -1.8px; }
   .today-page { display: flex; flex-direction: column; overflow: hidden; }
-  .today-page .progress-card { flex: 0 0 auto; margin-bottom: 14px; }
+  .today-page .progress-card { flex: 0 0 auto; margin-bottom: 14px; box-shadow: none; }
   .today-page .routine-section { min-height: 0; flex: 1; display: flex; flex-direction: column; background: transparent; }
   .today-page .routine-list { min-height: 0; flex: 1; grid-auto-rows: max-content; align-content: start; padding: 3px 1px 116px; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 3px 116px; scrollbar-width: none; -webkit-overflow-scrolling: touch; background: transparent; }
   .today-page .routine-list::-webkit-scrollbar { display: none; }
