@@ -469,7 +469,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-month-toolbar/);
   assert.match(page, /history-current-month-button/);
   assert.match(page, /calendar-month-heading[^]*history-current-month-button/);
-  assert.match(page, /This month/);
+  assert.doesNotMatch(page, /This month/);
   assert.match(page, /Skip today/);
   assert.match(page, /Undo skip/);
   assert.match(page, /routine-swipe-surface/);
