@@ -61,7 +61,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.routine-wizard-header \{[^}]*z-index: 5;[^}]*padding: max\(24px, env\(safe-area-inset-top\)\) 24px 20px;[^}]*background: #fff/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-heading \{[^}]*justify-items: center;[^}]*text-align: center/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-heading h2 \{[^}]*font-size: 24px;[^}]*font-weight: 760;[^}]*line-height: 1\.05/);
-  assert.match(fullPageBuilderCss, /\.routine-builder-back \{[^}]*border: 0;[^}]*border-radius: 12px;[^}]*background: #fff;[^}]*box-shadow: 0 8px 20px/);
+  assert.match(fullPageBuilderCss, /\.routine-builder-back \{[^}]*width: 42px;[^}]*height: 42px;[^}]*border: 1px solid color-mix[^}]*border-radius: 13px;[^}]*background: color-mix[^}]*box-shadow: 0 7px 17px/);
+  assert.match(fullPageBuilderCss, /\.history-edit-page \.history-page-back \{[^}]*width: 42px;[^}]*height: 42px;[^}]*border-radius: 13px;[^}]*box-shadow: 0 7px 17px/);
+  assert.match(fullPageBuilderCss, /\.settings-back \{[^}]*width: 40px;[^}]*height: 40px;[^}]*border-radius: 12px;[^}]*box-shadow: 0 7px 17px/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-progress \{[^}]*width: 100%;[^}]*margin: 17px auto 0/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.modal-scrollbar \{ z-index: 4; \}/);
   assert.doesNotMatch(fullPageBuilderCss, /routine-wizard-header \{[^}]*padding:[^;}]*66px/);
