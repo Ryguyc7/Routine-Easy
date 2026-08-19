@@ -56,8 +56,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(addRoutineSource, /step === 0 \? "Cancel" : "Back"/);
   const fullPageBuilderCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(fullPageBuilderCss, /The add flow is a full-screen page/);
-  assert.match(fullPageBuilderCss, /\.routine-builder-page\.add-modal-backdrop \{[^}]*z-index: 220;[^}]*padding: 0;[^}]*backdrop-filter: none/);
-  assert.match(fullPageBuilderCss, /\.routine-builder-page \.add-routine-modal \{[^}]*width: 100%;[^}]*height: 100%;[^}]*border-radius: 0/);
+  assert.match(fullPageBuilderCss, /\.routine-builder-page\.add-modal-backdrop \{[^}]*z-index: 220;[^}]*padding: 0;[^}]*overscroll-behavior: none;[^}]*backdrop-filter: none/);
+  assert.match(fullPageBuilderCss, /\.routine-builder-page \.add-routine-modal \{[^}]*width: 100%;[^}]*height: 100%;[^}]*overscroll-behavior-y: none;[^}]*-webkit-overflow-scrolling: auto;[^}]*border-radius: 0/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.routine-wizard-header \{[^}]*z-index: 5;[^}]*padding: max\(24px, env\(safe-area-inset-top\)\) 24px 20px;[^}]*background: #fff/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-heading \{[^}]*justify-items: center;[^}]*text-align: center/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-heading h2 \{[^}]*font-size: 24px;[^}]*font-weight: 760;[^}]*line-height: 1\.05/);
