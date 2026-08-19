@@ -211,7 +211,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /setMonth\(new Date\(today\.getFullYear\(\), today\.getMonth\(\), 1\)\)/);
   assert.match(page, /calendar-filter-picker/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@property --easy-ring-angle[\s\S]*?@keyframes easy-ring-orbit/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button:first-child\.active \{[\s\S]*?border: 3px solid transparent;[\s\S]*?linear-gradient\(#fff,#fff\) padding-box,[\s\S]*?conic-gradient\(from var\(--easy-ring-angle\), var\(--purple\) 0 25%, var\(--coral\) 25% 50%, var\(--gold\) 50% 75%, var\(--sky\) 75% 100%\) border-box[\s\S]*?animation: easy-ring-orbit 4\.8s linear infinite/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button:first-child\.active \{[\s\S]*?border: 3px solid transparent;[\s\S]*?linear-gradient\(#fff,#fff\) padding-box,[\s\S]*?conic-gradient\(from var\(--easy-ring-angle\), var\(--purple\) 0 25%, var\(--coral\) 25% 50%, var\(--gold\) 50% 75%, var\(--sky\) 75% 100%\) border-box;[\s\S]*?box-shadow: none;[\s\S]*?animation: easy-ring-orbit 4\.8s linear infinite/);
   assert.match(page, /scrollClassName="filter-pills"/);
   assert.match(page, /Scroll horizontally for more/);
   assert.doesNotMatch(page, /scroller\.scrollBy|picker-scroll-hint/);
@@ -547,7 +547,7 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /html\[data-theme="dark"\] \.date-range-toggle \{[^}]*background: transparent;[^}]*box-shadow: none/);
   assert.match(css, /html\[data-theme="dark"\] \.date-range-settings \{ box-shadow: none; \}/);
   assert.match(css, /html\[data-theme="dark"\] \.filter-pills button\.active \{[^}]*background: var\(--pill\)/);
-  assert.match(css, /html\[data-theme="dark"\] :is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button:first-child\.active \{[\s\S]*?linear-gradient\(#2b2731,#2b2731\) padding-box,[\s\S]*?box-shadow: 0 0 0 2px rgba\(255,255,255,\.82\)/);
+  assert.match(css, /html\[data-theme="dark"\] :is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button:first-child\.active \{[\s\S]*?linear-gradient\(#2b2731,#2b2731\) padding-box,[\s\S]*?box-shadow: none/);
   assert.match(css, /html\[data-theme="dark"\] \.routine-card-actions button \{[^}]*background: color-mix/);
   assert.match(css, /html\[data-theme="dark"\] \.delete-button,/);
   assert.match(css, /Floating mobile navigation with an instant-position, pull-down active cutout/);

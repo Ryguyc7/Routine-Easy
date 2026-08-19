@@ -274,7 +274,7 @@ button { color: inherit; }
   color: var(--ink);
   border: 3px solid transparent;
   background: linear-gradient(#fff,#fff) padding-box, conic-gradient(from var(--easy-ring-angle), var(--purple) 0 25%, var(--coral) 25% 50%, var(--gold) 50% 75%, var(--sky) 75% 100%) border-box;
-  box-shadow: 0 7px 17px rgba(49,43,58,.13), inset 0 1px 0 rgba(255,255,255,.9);
+  box-shadow: none;
   text-shadow: none;
   animation: easy-ring-orbit 4.8s linear infinite;
 }
@@ -1575,7 +1575,7 @@ html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .fi
   color: #f4f1f7;
   border: 3px solid transparent;
   background: linear-gradient(#2b2731,#2b2731) padding-box, conic-gradient(from var(--easy-ring-angle), var(--purple) 0 25%, var(--coral) 25% 50%, var(--gold) 50% 75%, var(--sky) 75% 100%) border-box;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.82), 0 7px 18px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.08);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .routine-card-actions button {
