@@ -1631,13 +1631,13 @@ function EasyWord({ className }: { className: string }) {
 }
 
 function BottomNavSurface({ tab, reducedMotion }: { tab: Tab; reducedMotion: boolean }) {
-  const centers: Partial<Record<Tab, string>> = {
-    today: "calc(12.5% + 9px)",
-    calendar: "calc(37.5% + 3px)",
-    routines: "calc(62.5% - 3px)",
-    history: "calc(87.5% - 9px)",
+  const centers: Partial<Record<Tab, { percent: string; offset: number }>> = {
+    today: { percent: "12.5%", offset: 9 },
+    calendar: { percent: "37.5%", offset: 3 },
+    routines: { percent: "62.5%", offset: -3 },
+    history: { percent: "87.5%", offset: -9 },
   };
-  const center = centers[tab] ?? "-40px";
+  const center = centers[tab] ?? { percent: "0%", offset: -40 };
   const maskId = `bottom-nav-mask-${tab}`;
   const notchId = `bottom-nav-notch-${tab}`;
   const sheenId = `bottom-nav-sheen-${tab}`;
@@ -1647,7 +1647,7 @@ function BottomNavSurface({ tab, reducedMotion }: { tab: Tab; reducedMotion: boo
       <path id={notchId} d="M 42 -8 L -42 -8 L -42 0 C -36 0 -34 2 -33 9 C -30 29 -18 42 0 42 C 18 42 30 29 33 9 C 34 2 36 0 42 0 Z" />
       <mask id={maskId} x="0" y="0" width="100%" height="100%" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
         <rect width="100%" height="100%" fill="#fff" />
-        <use href={`#${notchId}`} x={center} y="0" fill="#000">
+        <use href={`#${notchId}`} x={center.percent} y="0" transform={`translate(${center.offset} 0)`} fill="#000">
           {!reducedMotion && <animate attributeName="y" from="-42" to="0" dur="220ms" calcMode="spline" keyTimes="0;1" keySplines=".2 .85 .3 1" fill="freeze" />}
         </use>
       </mask>

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("ships the Routine EASY product instead of starter content", async () => {
-  const [page, layout, packageJson, routinesRoute, quantityRoute, completionRoute, storage] = await Promise.all([
+  const [page, layout, packageJson, routinesRoute, quantityRoute, completionRoute, storage, mobileIndex, mobileMain, capacitorConfig] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -11,6 +11,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
     readFile(new URL("../app/api/quantity-completions/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/completions/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../db/storage.ts", import.meta.url), "utf8"),
+    readFile(new URL("../mobile/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../mobile/main.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../capacitor.config.ts", import.meta.url), "utf8"),
   ]);
 
   assert.doesNotMatch(page, /Today’s routines/);
@@ -278,16 +281,21 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-page, \.routines-page, \.history-page \{ padding-bottom: 132px/);
   assert.match(page, /function BottomNavSurface/);
   assert.match(page, /<BottomNavSurface key=\{tab\} tab=\{tab\}/);
-  assert.match(page, /today: "calc\(12\.5% \+ 9px\)"[\s\S]*?history: "calc\(87\.5% - 9px\)"/);
+  assert.match(page, /today: \{ percent: "12\.5%", offset: 9 \}[\s\S]*?history: \{ percent: "87\.5%", offset: -9 \}/);
   assert.match(page, /bottom-nav-notch-\$\{tab\}/);
   assert.match(page, /M 42 -8 L -42 -8 L -42 0 C -36 0 -34 2 -33 9/);
-  assert.match(page, /<use href=\{`#\$\{notchId\}`\} x=\{center\} y="0" fill="#000">/);
+  assert.match(page, /<use href=\{`#\$\{notchId\}`\} x=\{center\.percent\} y="0" transform=\{`translate\(\$\{center\.offset\} 0\)`\} fill="#000">/);
   assert.match(page, /<animate attributeName="y" from="-42" to="0"/);
   assert.match(page, /<linearGradient id=\{sheenId\}[\s\S]*?bottom-nav-sheen-bottom/);
   assert.match(page, /className="bottom-nav-surface-sheen"/);
   assert.match(page, /className="mobile-add premium-action"/);
   assert.doesNotMatch(page, /className="bottom-nav-add"|className="mobile-header-balance"/);
   assert.doesNotMatch(page, /LiquidButton|liquid-glass/);
+  assert.match(mobileIndex, /maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover/);
+  assert.match(mobileMain, /document\.documentElement\.classList\.add\("capacitor-native"\)/);
+  assert.match(capacitorConfig, /contentInset: "never"/);
+  assert.match(fullPageBuilderCss, /html\.capacitor-native body \{ position: fixed; inset: 0; touch-action: manipulation/);
+  assert.match(fullPageBuilderCss, /html\.capacitor-native input,[\s\S]*?font-size: max\(16px, 1em\)/);
   assert.match(page, /premium-action/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Premium actions: solid, polished/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /--brand-spectrum/);
@@ -574,7 +582,7 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /html\[data-theme="dark"\] \.delete-button,/);
   assert.match(css, /Floating mobile navigation with an instant-position, pull-down active cutout/);
   assert.doesNotMatch(css, /transition: --active-x|@property --active-x/);
-  assert.match(css, /\.bottom-nav \{\s*inset: auto 14px 12px;\s*height: 72px;[\s\S]*?grid-template-columns: repeat\(4/);
+  assert.match(css, /\.bottom-nav \{\s*inset: auto max\(14px, env\(safe-area-inset-right\)\) max\(12px, env\(safe-area-inset-bottom\)\) max\(14px, env\(safe-area-inset-left\)\);\s*height: 72px;[\s\S]*?grid-template-columns: repeat\(4/);
   assert.match(css, /\.bottom-nav \{[\s\S]*?background: transparent/);
   assert.match(css, /\.bottom-nav \{[\s\S]*?border-radius: 24px/);
   assert.match(css, /\.bottom-nav::before, \.bottom-nav::after \{ display: none/);
