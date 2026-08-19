@@ -3,6 +3,7 @@
 import { FormEvent, startTransition, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { clearDeviceData, completeDeviceOnboarding, hasCompletedDeviceOnboarding, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
@@ -35,7 +36,7 @@ type Routine = {
 type Completion = { routineId: number; date: string; status: "completed" | "skipped" };
 type ItemCompletion = { itemId: number; date: string };
 type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
-type TrackerEntry = { routineId: number; trackerKey: string; date: string; value: string; hasFile: boolean };
+type TrackerEntry = { routineId: number; trackerKey: string; date: string; value: string; hasFile: boolean; filePath?: string; contentType?: string };
 type Tab = "today" | "calendar" | "routines" | "history" | "settings";
 type OnboardingState = "checking" | "show" | "done";
 type TimeFormat = "12-hour" | "24-hour";
@@ -217,6 +218,36 @@ function readTrackingLists(form: FormData) {
   }
 }
 
+function routineFromForm(form: FormData, id: number, existing: Routine | undefined, nextItemId: number): Routine {
+  const drafts = readTrackingLists(form);
+  const amounts = (() => {
+    try { return JSON.parse(String(form.get("amounts") ?? "[]")) as RoutineAmount[]; } catch { return []; }
+  })();
+  const days = DAY_NAMES.map((_, index) => index).filter((index) => form.get(`day-${index}`));
+  let itemId = nextItemId;
+  const items = drafts.flatMap((list) => list.items.map((title, position) => {
+    const previous = existing?.items.find((item) => item.listKey === list.key && item.title === title);
+    return { id: previous?.id ?? itemId++, routineId: id, title, listKey: list.key, position };
+  }));
+  return {
+    id,
+    name: String(form.get("name") ?? "New routine").trim().slice(0, 80) || "New routine",
+    emoji: String(form.get("emoji") ?? "✨").slice(0, 12),
+    color: String(form.get("color") ?? COLORS[0]),
+    time: String(form.get("time") ?? ""),
+    days,
+    trackingMode: trackingModeFor(drafts.map(({ key, name, items }) => ({ key, name, items: items.join("\n") })), amounts),
+    targetCount: amounts[0]?.targetCount ?? 1,
+    unit: amounts[0]?.unit ?? "",
+    amounts,
+    lists: drafts.map(({ key, name }) => ({ key, name })),
+    dayVariants: readDayVariants(form),
+    startDate: String(form.get("startDate") ?? ""),
+    endDate: String(form.get("endDate") ?? ""),
+    items,
+  };
+}
+
 function routineActiveOnDate(routine: Routine, date: string) {
   return (!routine.startDate || date >= routine.startDate) && (!routine.endDate || date <= routine.endDate);
 }
@@ -325,6 +356,7 @@ export default function Home() {
   const amountCompletionsRef = useRef<AmountCompletion[]>([]);
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
+  const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const bottomNavReturnTimerRef = useRef<number | undefined>(undefined);
   const [today, setToday] = useState(() => new Date(2000, 0, 1, 12));
   const todayKey = localDateKey(today);
@@ -354,6 +386,7 @@ export default function Home() {
   }
 
   function queueRoutineMutation(routineId: number, request: () => Promise<Response>) {
+    if (isNativeApp()) return Promise.resolve();
     const queues = routineMutationQueuesRef.current;
     const previous = queues.get(routineId) ?? Promise.resolve();
     const current = previous.catch(() => undefined).then(async () => {
@@ -370,6 +403,20 @@ export default function Home() {
 
   async function loadData() {
     try {
+      if (isNativeApp()) {
+        const data = await loadDeviceSnapshot();
+        setRoutines(data.routines as Routine[]);
+        completionsRef.current = data.completions as Completion[];
+        itemCompletionsRef.current = data.itemCompletions as ItemCompletion[];
+        amountCompletionsRef.current = data.amountCompletions as AmountCompletion[];
+        trackerEntriesRef.current = data.trackerEntries as TrackerEntry[];
+        setCompletions(completionsRef.current);
+        setItemCompletions(itemCompletionsRef.current);
+        setAmountCompletions(amountCompletionsRef.current);
+        setTrackerEntries(trackerEntriesRef.current);
+        setError("");
+        return;
+      }
       const response = await fetch("/api/routines", { cache: "no-store" });
       if (!response.ok) throw new Error("Could not load your routines.");
       const data = await response.json();
@@ -395,26 +442,46 @@ export default function Home() {
     setToday(currentDate);
     setMonth(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1, 12));
     const forceOnboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
-    const completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
-    try {
-      const savedPreferences = JSON.parse(window.localStorage.getItem("routineez-preferences") ?? "{}");
-      setPreferences(cleanPreferences(savedPreferences));
-    } catch {
-      setPreferences(DEFAULT_PREFERENCES);
-    }
-    setPreferencesLoaded(true);
     let splashExitTimer = 0;
-    const splashTimer = window.setTimeout(() => {
-      setOnboardingState(forceOnboarding || !completed ? "show" : "done");
-      setSplashLeaving(true);
-      splashExitTimer = window.setTimeout(() => setSplashVisible(false), SPLASH_FADE_MS);
-    }, SPLASH_DURATION_MS);
-    loadData();
+    let splashTimer = 0;
+    let cancelled = false;
+    const initialize = async () => {
+      let completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
+      let savedPreferences: unknown = {};
+      try {
+        if (isNativeApp()) {
+          completed = await hasCompletedDeviceOnboarding();
+          savedPreferences = await loadDevicePreferences() ?? {};
+        } else {
+          savedPreferences = JSON.parse(window.localStorage.getItem("routineez-preferences") ?? "{}");
+        }
+      } catch { savedPreferences = {}; }
+      if (cancelled) return;
+      setPreferences(cleanPreferences(savedPreferences));
+      setPreferencesLoaded(true);
+      splashTimer = window.setTimeout(() => {
+        setOnboardingState(forceOnboarding || !completed ? "show" : "done");
+        setSplashLeaving(true);
+        splashExitTimer = window.setTimeout(() => setSplashVisible(false), SPLASH_FADE_MS);
+      }, SPLASH_DURATION_MS);
+      void loadData();
+    };
+    void initialize();
     return () => {
+      cancelled = true;
       window.clearTimeout(splashTimer);
       window.clearTimeout(splashExitTimer);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isNativeApp() || loading) return;
+    const snapshot: DeviceSnapshot = { version: 1, routines, completions, itemCompletions, amountCompletions, trackerEntries };
+    deviceSaveQueueRef.current = deviceSaveQueueRef.current
+      .catch(() => undefined)
+      .then(() => saveDeviceSnapshot(snapshot))
+      .catch(() => setError("Your latest change could not be saved on this device."));
+  }, [routines, completions, itemCompletions, amountCompletions, trackerEntries, loading]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -498,6 +565,7 @@ export default function Home() {
     setPreferences((current) => {
       const updated = { ...current, ...next };
       window.localStorage.setItem("routineez-preferences", JSON.stringify(updated));
+      if (isNativeApp()) void saveDevicePreferences(updated);
       return updated;
     });
   }
@@ -506,10 +574,12 @@ export default function Home() {
     const updated = cleanPreferences(next);
     setPreferences(updated);
     window.localStorage.setItem("routineez-preferences", JSON.stringify(updated));
+    if (isNativeApp()) void saveDevicePreferences(updated);
   }
 
   function completeOnboarding(addRoutine = false) {
     window.localStorage.setItem("routineez-onboarding-complete", "true");
+    if (isNativeApp()) void completeDeviceOnboarding();
     if (new URLSearchParams(window.location.search).has("onboarding")) {
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -704,6 +774,14 @@ export default function Home() {
 
   async function uploadTrackerPhoto(routineId: number, tracker: RoutineAmount, file: File, date = todayKey) {
     const version = String(Date.now());
+    if (isNativeApp()) {
+      const previous = trackerEntriesRef.current.find((item) => item.routineId === routineId && item.trackerKey === tracker.key && item.date === date);
+      const saved = await saveDevicePhoto(routineId, tracker.key, date, file);
+      await removeDevicePhoto(previous?.filePath);
+      updateTrackerEntries((items) => [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: version, hasFile: true, filePath: saved.path, contentType: saved.contentType }]);
+      updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
+      return;
+    }
     updateTrackerEntries((items) => [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: version, hasFile: true }]);
     updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
     const form = new FormData();
@@ -715,8 +793,13 @@ export default function Home() {
   }
 
   async function removeTrackerPhoto(routineId: number, tracker: RoutineAmount, date = todayKey) {
+    const previous = trackerEntriesRef.current.find((item) => item.routineId === routineId && item.trackerKey === tracker.key && item.date === date);
     updateTrackerEntries((items) => items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)));
     updateAmountCompletions((items) => items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)));
+    if (isNativeApp()) {
+      await removeDevicePhoto(previous?.filePath);
+      return;
+    }
     const query = new URLSearchParams({ routineId: String(routineId), trackerKey: tracker.key, date });
     await queueRoutineMutation(routineId, () => fetch(`/api/tracker-photo?${query}`, { method: "DELETE" }));
   }
@@ -806,6 +889,17 @@ export default function Home() {
       return;
     }
     setSaving(true);
+    if (isNativeApp()) {
+      const id = Math.max(0, ...routines.map((routine) => routine.id)) + 1;
+      const nextItemId = Math.max(0, ...routines.flatMap((routine) => routine.items.map((item) => item.id))) + 1;
+      setRoutines((items) => [...items, routineFromForm(form, id, undefined, nextItemId)]);
+      setShowAdd(false);
+      setSelectedTemplate(null);
+      animateBottomNavReturn();
+      setError("");
+      setSaving(false);
+      return;
+    }
     const response = await fetch("/api/routines", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -863,11 +957,19 @@ export default function Home() {
   async function deleteRoutine(id: number) {
     setDeleting(true);
     const itemIds = new Set(routines.find((routine) => routine.id === id)?.items.map((item) => item.id) ?? []);
+    const removedPhotos = trackerEntriesRef.current.filter((item) => item.routineId === id).map((item) => item.filePath);
     setRoutines((items) => items.filter((routine) => routine.id !== id));
     updateCompletions((items) => items.filter((item) => item.routineId !== id));
     updateItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
     updateAmountCompletions((items) => items.filter((item) => item.routineId !== id));
     updateTrackerEntries((items) => items.filter((item) => item.routineId !== id));
+    if (isNativeApp()) {
+      await Promise.all(removedPhotos.map((path) => removeDevicePhoto(path)));
+      setError("");
+      setDeleting(false);
+      setRoutineToDelete(null);
+      return;
+    }
     try {
       const response = await fetch(`/api/routines?id=${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Delete failed");
@@ -891,6 +993,19 @@ export default function Home() {
       return;
     }
     setSavingList(true);
+    if (isNativeApp()) {
+      const nextItemId = Math.max(0, ...routines.flatMap((item) => item.items.map((entry) => entry.id))) + 1;
+      const updated = routineFromForm(form, routine.id, routine, nextItemId);
+      const nextItemIds = new Set(updated.items.map((item) => item.id));
+      const removedItemIds = new Set(routine.items.filter((item) => !nextItemIds.has(item.id)).map((item) => item.id));
+      setRoutines((items) => items.map((item) => item.id === routine.id ? updated : item));
+      updateItemCompletions((items) => items.filter((item) => !removedItemIds.has(item.itemId)));
+      setEditingRoutineId(null);
+      animateBottomNavReturn();
+      setError("");
+      setSavingList(false);
+      return;
+    }
     const response = await fetch("/api/routines", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -1369,9 +1484,14 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
     setBusy("export");
     setMessage("");
     try {
-      const response = await fetch("/api/data", { cache: "no-store" });
-      if (!response.ok) throw new Error("Export failed");
-      const data = await response.json();
+      let data: Record<string, unknown>;
+      if (isNativeApp()) {
+        data = await loadDeviceSnapshot() as unknown as Record<string, unknown>;
+      } else {
+        const response = await fetch("/api/data", { cache: "no-store" });
+        if (!response.ok) throw new Error("Export failed");
+        data = await response.json();
+      }
       const blob = new Blob([JSON.stringify({ ...data, preferences }, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1392,8 +1512,19 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
     setMessage("");
     try {
       const backup = JSON.parse(await file.text());
-      const response = await fetch("/api/data", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ backup }) });
-      if (!response.ok) throw new Error("Import failed");
+      if (isNativeApp()) {
+        await saveDeviceSnapshot({
+          version: 1,
+          routines: Array.isArray(backup.routines) ? backup.routines : [],
+          completions: Array.isArray(backup.completions) ? backup.completions : [],
+          itemCompletions: Array.isArray(backup.itemCompletions) ? backup.itemCompletions : [],
+          amountCompletions: Array.isArray(backup.amountCompletions) ? backup.amountCompletions : [],
+          trackerEntries: Array.isArray(backup.trackerEntries) ? backup.trackerEntries.filter((entry: TrackerEntry) => !entry.hasFile) : [],
+        });
+      } else {
+        const response = await fetch("/api/data", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ backup }) });
+        if (!response.ok) throw new Error("Import failed");
+      }
       if (backup.preferences) onReplacePreferences(backup.preferences);
       await onRefreshData();
       setMessage("Backup restored successfully.");
@@ -1408,8 +1539,12 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
     setBusy("erase");
     setMessage("");
     try {
-      const response = await fetch("/api/data", { method: "DELETE" });
-      if (!response.ok) throw new Error("Erase failed");
+      if (isNativeApp()) {
+        await clearDeviceData();
+      } else {
+        const response = await fetch("/api/data", { method: "DELETE" });
+        if (!response.ok) throw new Error("Erase failed");
+      }
       onReplacePreferences(DEFAULT_PREFERENCES);
       await onRefreshData();
       onClose();
@@ -1426,7 +1561,7 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
         <button type="button" onClick={() => void exportBackup()} disabled={Boolean(busy)}><Download aria-hidden="true" /><span><strong>{busy === "export" ? "Preparing backup…" : "Download backup"}</strong><small>Routines, progress, notes, and preferences</small></span></button>
         <label className={busy ? "disabled" : ""}><Upload aria-hidden="true" /><span><strong>{busy === "import" ? "Restoring backup…" : "Restore from backup"}</strong><small>Replaces current routines and progress</small></span><input type="file" accept="application/json,.json" disabled={Boolean(busy)} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.currentTarget.value = ""; }} /></label>
       </div>
-      <p className="data-photo-note">Photo files are not included in JSON backups. Erasing data permanently removes stored photos.</p>
+      <p className="data-photo-note">Photo files are not included in JSON backups. Erasing data permanently removes {isNativeApp() ? "photos from this device" : "stored photos"}.</p>
       <div className="data-danger-zone">
         <div><strong>Erase everything</strong><small>Delete every routine, history record, note, and photo.</small></div>
         {!confirmErase ? <button type="button" onClick={() => setConfirmErase(true)} disabled={Boolean(busy)}>Erase data</button> : <button type="button" className="confirm" onClick={() => void eraseData()} disabled={Boolean(busy)}>{busy === "erase" ? "Erasing…" : "Confirm erase"}</button>}
@@ -1692,6 +1827,22 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   </article>;
 }
 
+function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallbackUrl: string; alt: string }) {
+  const [src, setSrc] = useState(isNativeApp() ? "" : fallbackUrl);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isNativeApp() || !entry.filePath) {
+      setSrc(fallbackUrl);
+      return;
+    }
+    void readDevicePhoto(entry.filePath, entry.contentType).then((value) => { if (!cancelled) setSrc(value); });
+    return () => { cancelled = true; };
+  }, [entry.filePath, entry.contentType, entry.value, fallbackUrl]);
+
+  return src ? <img src={src} alt={alt} /> : <div className="tracker-photo-loading" role="status">Loading photo…</div>;
+}
+
 function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetNote, onUploadPhoto, onRemovePhoto }: { routine: Routine; tracker: RoutineAmount; count: number; entry?: TrackerEntry; date: string; onChange: (count: number) => void; onSetNote: (value: string) => void; onUploadPhoto: (file: File) => void; onRemovePhoto: () => void }) {
   const kind = trackerKind(tracker);
   const [draft, setDraft] = useState(entry?.value ?? "");
@@ -1746,7 +1897,7 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
 
   if (kind === "photo") {
     const photoUrl = `/api/tracker-photo?${new URLSearchParams({ routineId: String(routine.id), trackerKey: tracker.key, date, v: entry?.value ?? "" })}`;
-    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>{entry?.hasFile ? "Replace" : "Choose photo"}</span></label><label><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>Take photo</span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <img src={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
+    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>{entry?.hasFile ? "Replace" : "Choose photo"}</span></label><label><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>Take photo</span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
   }
 
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;

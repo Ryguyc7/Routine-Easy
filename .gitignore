@@ -38,6 +38,7 @@ dev.stderr.log
 .vercel
 
 /dist/
+/mobile-dist/
 /.wrangler/
 /outputs/
 /work/

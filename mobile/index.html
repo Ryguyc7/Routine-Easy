@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fffaf4" />
+    <title>Routine EASY</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const showLaunchError = (message) => {
+        document.body.style.cssText = "margin:0;padding:48px 24px;background:#fffaf4;color:#20212c;font:16px/1.5 -apple-system,sans-serif";
+        document.body.innerHTML = `<h1 style="font-size:24px">Routine EASY could not open</h1><p>${String(message).replace(/[<>&]/g, "")}</p>`;
+      };
+      window.addEventListener("error", (event) => showLaunchError(event.message));
+      window.addEventListener("unhandledrejection", (event) => showLaunchError(event.reason?.message ?? event.reason));
+    </script>
+    <script type="module" src="/main.tsx"></script>
+  </body>
+</html>
