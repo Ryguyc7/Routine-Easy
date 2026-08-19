@@ -1134,7 +1134,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
       const completedDays = eligibleStates.filter((day) => day.status === "completed").length;
       return <section className="history-detail-card" style={{ "--history-color": selected.color } as React.CSSProperties}>
         <header><div className="history-title-row"><span className="history-emoji">{selected.emoji}</span><h2>{selected.name}</h2></div></header>
-        <div className="history-month-toolbar"><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() - 1, 1))} aria-label="Previous history month"><ChevronLeft aria-hidden="true" /></button><h3>{historyMonthLabel}</h3><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() + 1, 1))} aria-label="Next history month" disabled={viewingCurrentMonth}><ChevronRight aria-hidden="true" /></button></div>
+        <div className="history-month-toolbar"><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() - 1, 1))} aria-label="Previous history month"><ChevronLeft aria-hidden="true" /></button><div className="calendar-month-heading"><h3>{historyMonthLabel}</h3>{!viewingCurrentMonth && <button className="history-current-month-button" onClick={() => setHistoryMonth(currentMonth)}>This month</button>}</div><button onClick={() => setHistoryMonth(new Date(historyMonth.getFullYear(), historyMonth.getMonth() + 1, 1))} aria-label="Next history month" disabled={viewingCurrentMonth}><ChevronRight aria-hidden="true" /></button></div>
         <div className="history-stats"><div><strong>{historyRate(states, states.length)}%</strong><span>Monthly completion</span></div><div><strong>{completedDays}/{eligibleStates.length}</strong><span>Days completed</span></div></div>
         <div className="history-month-calendar"><div className="history-weekday-row">{historyDayNames.map((day) => <span key={day}>{day}</span>)}</div><div className="history-grid">{Array.from({ length: firstWeekday }, (_, index) => <i className="history-day-spacer" key={`spacer-${index}`} />)}{states.map((day) => {
           const isToday = day.key === todayKey;
@@ -1145,7 +1145,6 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
             ? <button type="button" key={day.key} className={className} aria-current={isToday ? "date" : undefined} aria-label={`View details for ${day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, currently ${day.status}`} onClick={() => setEditingDay(day)}>{contents}</button>
             : <div key={day.key} className={className} aria-current={isToday ? "date" : undefined} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}>{contents}</div>;
         })}</div></div>
-        {!viewingCurrentMonth && <button className="history-current-month-button" onClick={() => setHistoryMonth(currentMonth)}>This month</button>}
         <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
         <p className="history-edit-hint">Tap a past day to see what you recorded or correct it.</p>
       </section>;

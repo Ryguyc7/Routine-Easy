@@ -879,7 +879,7 @@ button { color: inherit; }
 .history-day.off { opacity: .42; }
 .history-month-calendar .history-day.is-today { border-color: var(--sky); box-shadow: inset 0 0 0 1px var(--sky), 0 4px 10px rgba(77,150,255,.14); }
 .history-month-calendar .history-day small { display: none; }
-.history-current-month-button { display: block; min-width: 92px; min-height: 31px; margin: 14px auto 0; padding: 0 15px; border: 0; border-radius: 999px; color: #fff; background: var(--history-color); box-shadow: 0 7px 16px color-mix(in srgb, var(--history-color) 24%, transparent); font-size: 10px; font-weight: 750; cursor: pointer; transition: transform .18s ease, box-shadow .2s ease, filter .18s ease; }
+.history-month-toolbar .history-current-month-button { display: grid; place-items: center; width: auto; min-width: 68px; height: 27px; padding: 0 11px; border: 1px solid color-mix(in srgb, var(--history-color) 42%, #fff); border-radius: 999px; color: var(--history-color); background: color-mix(in srgb, var(--history-color) 8%, #fff); box-shadow: none; font-size: 9px; font-weight: 750; cursor: pointer; transform-origin: center; animation: calendar-today-arrive .46s cubic-bezier(.2,.9,.24,1.18) both; transition: transform .18s ease, border-color .18s ease, box-shadow .2s ease, background-color .18s ease; }
 .history-legend { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 11px; margin: 14px 0; color: #777580; font-size: 9px; }
 .history-legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 3px; vertical-align: -1px; }
 .history-legend .completed::before { background: var(--history-color); }
@@ -1097,7 +1097,7 @@ button { color: inherit; }
   .history-page-detail .history-stats strong { font-size: 20px; }
   .history-page-detail .history-weekday-row { margin-bottom: 4px; }
   .history-page-detail .history-day-spacer, .history-page-detail .history-day { height: clamp(34px, 5svh, 44px); aspect-ratio: auto; }
-  .history-page-detail .history-current-month-button { min-height: 28px; margin-top: 8px; }
+  .history-page-detail .history-month-toolbar .history-current-month-button { min-width: 64px; height: 25px; padding-inline: 9px; }
   .history-page-detail .history-legend { gap: 9px; margin: 9px 0 0; }
   .history-overview { padding: 0; }
   .history-overview > header { justify-content: flex-start; margin-bottom: 11px; text-align: left; }
@@ -1483,6 +1483,7 @@ html[data-theme="dark"] :is(.filter-pills button, .calendar-toolbar button, .his
   background: #25222b;
 }
 html[data-theme="dark"] .history-month-toolbar .calendar-today-button { color: var(--sky); border-color: color-mix(in srgb, var(--sky) 45%, #45404b); background: color-mix(in srgb, var(--sky) 11%, #25222b); }
+html[data-theme="dark"] .history-month-toolbar .history-current-month-button { color: var(--history-color); border-color: color-mix(in srgb, var(--history-color) 45%, #45404b); background: color-mix(in srgb, var(--history-color) 11%, #25222b); }
 html[data-theme="dark"] .calendar-toolbar > .calendar-prev { color: var(--coral); background: color-mix(in srgb, var(--coral) 10%, #25222b); }
 html[data-theme="dark"] .calendar-toolbar > .calendar-next { color: var(--sky); background: color-mix(in srgb, var(--sky) 10%, #25222b); }
 html[data-theme="dark"] :is(.day-cell, .day-cell.empty) { border-color: #39343e; background: transparent; }
