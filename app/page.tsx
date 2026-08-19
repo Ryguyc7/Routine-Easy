@@ -1148,7 +1148,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
         <p className="history-edit-hint">Tap a past day to see what you recorded or correct it.</p>
       </section>;
     })() : <section className="history-overview">
-      <header><div><span>This month</span><h2>Your progress</h2></div><p>Select a routine for the full monthly view.</p></header>
+      <header><h2>Monthly progress</h2></header>
       <div className="history-overview-grid">{routines.map((routine) => {
         const states = historyByRoutine.get(routine.id) ?? [];
         const rate = historyRate(states, states.length);
