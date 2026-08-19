@@ -292,9 +292,10 @@ button { color: inherit; }
 .calendar-toolbar .calendar-next { grid-column: 3; grid-row: 1; }
 .calendar-toolbar button { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); background: #fff; border-radius: 9px; cursor: pointer; color: #777; line-height: 1; transition: transform .18s cubic-bezier(.16,1,.3,1), border-color .18s ease, box-shadow .18s ease, background-color .18s ease; }
 .calendar-toolbar button svg { display: block; width: 17px; height: 17px; stroke-width: 2; transition: transform .2s cubic-bezier(.16,1,.3,1); }
-.calendar-today-row { display: grid; place-items: center; min-height: 48px; padding: 13px 0 1px; overflow: visible; }
-.calendar-today-button { display: grid; place-items: center; min-width: 74px; height: 31px; padding: 0 16px; border: 1px solid color-mix(in srgb, var(--sky) 76%, #fff); border-radius: 999px; color: #fff; background: var(--sky); box-shadow: 0 8px 18px rgba(77,150,255,.25), inset 0 1px 0 rgba(255,255,255,.34); font-size: 10px; font-weight: 800; cursor: pointer; transform-origin: center; animation: calendar-today-arrive .58s cubic-bezier(.2,.9,.24,1.25) both; }
-.calendar-today-button:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(77,150,255,.3), inset 0 1px 0 rgba(255,255,255,.4); }
+.calendar-month-heading { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.history-month-toolbar .calendar-month-heading h3 { min-width: 0; }
+.history-month-toolbar .calendar-today-button { display: grid; place-items: center; width: auto; min-width: 56px; height: 27px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--sky) 42%, #fff); border-radius: 999px; color: var(--sky); background: color-mix(in srgb, var(--sky) 8%, #fff); box-shadow: none; font-size: 9px; font-weight: 800; cursor: pointer; transform-origin: center; animation: calendar-today-arrive .46s cubic-bezier(.2,.9,.24,1.18) both; }
+.history-month-toolbar .calendar-today-button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--sky) 62%, #fff); background: color-mix(in srgb, var(--sky) 13%, #fff); box-shadow: 0 5px 12px rgba(77,150,255,.13); }
 .calendar-today-button:active { transform: scale(.95); }
 @keyframes calendar-today-arrive { 0% { opacity: 0; transform: translateY(-5px) scale(.62); } 62% { opacity: 1; transform: translateY(1px) scale(1.09); } 82% { transform: translateY(0) scale(.97); } 100% { opacity: 1; transform: none; } }
 .weekday-row, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
@@ -1081,8 +1082,7 @@ button { color: inherit; }
   .calendar-page-matched .history-stats strong { font-size: 20px; }
   .calendar-page-matched .history-weekday-row { margin-bottom: 4px; }
   .calendar-page-matched .history-day-spacer, .calendar-page-matched .history-day { height: clamp(34px, 5svh, 44px); aspect-ratio: auto; }
-  .calendar-page-matched .calendar-today-row { min-height: 34px; padding: 5px 0 0; }
-  .calendar-page-matched .calendar-today-button { height: 28px; }
+  .calendar-page-matched .history-month-toolbar .calendar-today-button { min-width: 52px; height: 25px; padding-inline: 10px; }
   .calendar-page-matched .calendar-legend { margin-top: 8px; }
   .history-page-detail { display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden; scroll-padding-bottom: 0; }
   .history-page-detail .history-filter-picker { flex: 0 0 auto; margin-bottom: 10px; }
@@ -1482,6 +1482,7 @@ html[data-theme="dark"] :is(.filter-pills button, .calendar-toolbar button, .his
   border-color: #45404b;
   background: #25222b;
 }
+html[data-theme="dark"] .history-month-toolbar .calendar-today-button { color: var(--sky); border-color: color-mix(in srgb, var(--sky) 45%, #45404b); background: color-mix(in srgb, var(--sky) 11%, #25222b); }
 html[data-theme="dark"] .calendar-toolbar > .calendar-prev { color: var(--coral); background: color-mix(in srgb, var(--coral) 10%, #25222b); }
 html[data-theme="dark"] .calendar-toolbar > .calendar-next { color: var(--sky); background: color-mix(in srgb, var(--sky) 10%, #25222b); }
 html[data-theme="dark"] :is(.day-cell, .day-cell.empty) { border-color: #39343e; background: transparent; }

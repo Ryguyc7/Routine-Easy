@@ -1018,7 +1018,10 @@ export default function Home() {
               <header className="calendar-detail-heading"><div className="history-title-row"><span className="history-emoji calendar-heading-icon">{selectedCalendarRoutine ? selectedCalendarRoutine.emoji : <CalendarDays aria-hidden="true" />}</span><h2>{selectedCalendarRoutine?.name ?? "All routines"}</h2></div></header>
               <div className="history-month-toolbar calendar-detail-toolbar">
                 <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft aria-hidden="true" /></button>
-                <h3>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3>
+                <div className="calendar-month-heading">
+                  <h3>{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3>
+                  {!viewingCurrentMonth && <button className="calendar-today-button" onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>Today</button>}
+                </div>
                 <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
               </div>
               <div className="history-stats calendar-summary-stats"><div><strong>{calendarScheduledDays}</strong><span>Days scheduled</span></div><div><strong>{calendarRoutineCount}</strong><span>Routines shown</span></div></div>
@@ -1037,7 +1040,6 @@ export default function Home() {
                 })}
                 </div>
               </div>
-              {!viewingCurrentMonth && <div className="calendar-today-row"><button className="calendar-today-button" onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>Today</button></div>}
               <div className="calendar-legend">Colored bars show the routines scheduled for each day.</div>
             </section>
           </div>

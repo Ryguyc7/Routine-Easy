@@ -204,8 +204,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /Days scheduled/);
   assert.match(page, /Routines shown/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.calendar-page-matched \{ display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden/);
-  assert.match(page, /calendar-today-row/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-today-button \{[^}]*background: var\(--sky\)/);
+  assert.match(page, /calendar-month-heading/);
+  assert.doesNotMatch(page, /calendar-today-row/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /history-month-toolbar \.calendar-today-button \{[^}]*color: var\(--sky\)[^}]*background: color-mix/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@keyframes calendar-today-arrive/);
   assert.match(page, /setMonth\(new Date\(today\.getFullYear\(\), today\.getMonth\(\), 1\)\)/);
   assert.match(page, /calendar-filter-picker/);
