@@ -743,6 +743,7 @@ button { color: inherit; }
 .history-day-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px 11px; border: 1px solid #eadfe3; border-radius: 13px; background: #fff8f9; }
 .history-edit-sticky .history-day-summary { margin-bottom: 0; }
 .history-day-summary > span { width: 31px; height: 31px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; color: #b95163; background: #ffe9ed; font-size: 17px; font-weight: 850; }
+.history-day-summary > span svg, .history-edit-options .skipped > span svg { width: 17px; height: 17px; stroke-width: 3; }
 .history-day-summary > div { min-width: 0; display: grid; gap: 2px; }
 .history-day-summary strong { color: var(--ink); font-size: 11px; }
 .history-day-summary small { color: #8f8c96; font-size: 8.5px; line-height: 1.35; }
@@ -810,6 +811,7 @@ button { color: inherit; }
 .history-edit-options-compact { margin: 10px 0 0; }
 .history-edit-options-compact button { min-height: 54px; grid-template-columns: 25px minmax(0, 1fr); justify-items: start; align-content: center; gap: 7px; padding: 8px 9px; }
 .history-edit-options-compact button > span { width: 25px; height: 25px; border-radius: 8px; font-size: 14px; }
+.history-edit-options-compact .skipped > span svg { width: 15px; height: 15px; }
 .data-dialog { width: min(520px, 100%); max-height: calc(100dvh - 40px); padding: 22px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid rgba(255,255,255,.9); border-radius: 22px; background: #fff; box-shadow: 0 28px 70px rgba(34,25,48,.24); animation: modal-rise .22s cubic-bezier(.16,1,.3,1); }
 .data-dialog > header { display: grid; grid-template-columns: 42px minmax(0, 1fr) 31px; align-items: start; gap: 11px; margin-bottom: 17px; }
 .data-dialog-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: var(--purple); background: var(--lavender); }

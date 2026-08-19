@@ -470,6 +470,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-current-month-button/);
   assert.match(page, /calendar-month-heading[^]*history-current-month-button/);
   assert.doesNotMatch(page, /This month/);
+  assert.match(page, /className=\{`skipped[^]*?<SkipForward \/>/);
+  assert.doesNotMatch(page, /↷/);
   assert.match(page, /Skip today/);
   assert.match(page, /Undo skip/);
   assert.match(page, /routine-swipe-surface/);
