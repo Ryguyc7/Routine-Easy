@@ -944,10 +944,10 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .history-mini-days i.skipped { background: #cfc6da; }
 .history-mini-days i.missed { background: #f2b6c0; }
 .history-mini-days i.off, .history-mini-days i.scheduled { background: #eeeaf0; }
-.history-empty { padding: 65px 22px; display: grid; justify-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 20px; background: rgba(255,255,255,.9); text-align: center; }
-.history-empty svg { width: 28px; height: 28px; color: var(--sky); }
-.history-empty h2 { margin: 4px 0 0; font-size: 18px; }
-.history-empty p { margin: 0; color: var(--muted); font-size: 11px; }
+.history-empty { padding: 55px 25px; border: 0; background: transparent; text-align: center; }
+.history-empty-icon { color: var(--sky); border-color: color-mix(in srgb, var(--sky) 24%, #fff); background: linear-gradient(145deg, color-mix(in srgb, var(--sky) 11%, #fff), #fff); }
+.history-empty h3 { margin: 16px 0 6px; font-weight: 600; letter-spacing: -.35px; }
+.history-empty p { margin: 0 0 19px; color: var(--muted); font-size: 13px; }
 
 @media (max-width: 760px) {
   html, body, #root { width: 100%; max-width: 100%; min-height: 100%; overflow-x: hidden; overscroll-behavior: none; }
@@ -1044,6 +1044,8 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
   .today-page .routine-list { min-height: 0; flex: 1; grid-auto-rows: max-content; align-content: start; padding: 3px 1px 116px; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 3px 116px; scrollbar-width: none; -webkit-overflow-scrolling: touch; background: transparent; }
   .today-page .routine-list::-webkit-scrollbar { display: none; }
   .calendar-page, .routines-page, .history-page { padding-bottom: 132px; scroll-padding-bottom: 132px; }
+  .history-page-empty { display: flex; flex-direction: column; }
+  .history-page-empty .history-empty { min-height: 0; flex: 1; display: grid; justify-items: center; align-content: center; padding-bottom: 150px; }
   .settings-page { padding-bottom: 132px; scroll-padding-bottom: 132px; }
   .settings-view-open .mobile-header { display: none; }
   .settings-view-open .content { height: 100svh; height: 100dvh; padding-top: 0; }
@@ -1203,7 +1205,7 @@ html[data-theme="dark"] {
 }
 html[data-theme="dark"] body { color: var(--ink); background: radial-gradient(circle at 12% 8%, rgba(255,128,101,.08), transparent 25%), #17151b; }
 html[data-theme="dark"] .content { background: linear-gradient(180deg, #1d1a21, #17151b 72%); }
-html[data-theme="dark"] :is(.sidebar, .mobile-header, .bottom-nav, .profile-card, .profile-stats, .routine-row, .routine-swipe-surface, .routine-card, .calendar-card, .history-overview-card, .history-empty, .settings-list, .template-dialog, .history-dialog, .history-edit-dialog, .history-edit-sticky, .data-dialog, .add-card, .delete-dialog, .onboarding-card) { color: var(--ink); border-color: var(--line); background: #25222b; }
+html[data-theme="dark"] :is(.sidebar, .mobile-header, .bottom-nav, .profile-card, .profile-stats, .routine-row, .routine-swipe-surface, .routine-card, .calendar-card, .history-overview-card, .settings-list, .template-dialog, .history-dialog, .history-edit-dialog, .history-edit-sticky, .data-dialog, .add-card, .delete-dialog, .onboarding-card) { color: var(--ink); border-color: var(--line); background: #25222b; }
 html[data-theme="dark"] :is(.history-record-section, .history-simple-record, .history-tracker-record, .setting-options button.active, .setting-open-button, .completed-hidden-state, .data-action-list > button, .data-action-list > label, .profile-stats, .setting-icon) { background: #2b2731; }
 html[data-theme="dark"] :is(.mobile-wordmark-name, .splash-wordmark, .routine-info strong, .card-body strong, .setting-copy h2, .data-action-list strong, .history-record-row strong, .history-tracker-copy strong) { color: var(--ink); }
 html[data-theme="dark"] :is(.field input, .field textarea, .tracker-number input, .tracker-wide-control textarea, .preview-number-entry input, .time-input-wrap input) { color: var(--ink); border-color: #48424f; background: #211e26; }

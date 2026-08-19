@@ -2,7 +2,7 @@
 
 import { FormEvent, startTransition, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CirclePlay, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, completeDeviceOnboarding, hasCompletedDeviceOnboarding, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -588,6 +588,11 @@ export default function Home() {
       setShowTemplatePicker(true);
     }
     setOnboardingState("done");
+  }
+
+  function showOnboarding() {
+    setShowProfile(false);
+    setOnboardingState("show");
   }
 
   const todayRoutines = routines.filter((routine) => routine.days.includes(today.getDay()) && routineActiveOnDate(routine, todayKey));
@@ -1195,9 +1200,9 @@ export default function Home() {
           </div>
         )}
 
-        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} onOpenDayEditor={openHistoryDayEditor} onCloseDayEditor={closeHistoryDayEditor} onSetDayStatus={setHistoryDayStatus} onToggleItem={editHistoryItem} onSetAmount={editHistoryAmount} onSetNote={editHistoryNote} onUploadPhoto={editHistoryPhoto} onRemovePhoto={removeHistoryPhoto} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
+        {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} onAddRoutine={openAddFromHeader} onOpenDayEditor={openHistoryDayEditor} onCloseDayEditor={closeHistoryDayEditor} onSetDayStatus={setHistoryDayStatus} onToggleItem={editHistoryItem} onSetAmount={editHistoryAmount} onSetNote={editHistoryNote} onUploadPhoto={editHistoryPhoto} onRemovePhoto={removeHistoryPhoto} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
 
-        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
+        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onShowOnboarding={showOnboarding} onBack={closeSettings} />}
       </section>
 
       <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
@@ -1243,7 +1248,7 @@ function historyRate(states: HistoryDayState[], count: number) {
   return eligible.length ? Math.round((eligible.filter((day) => day.status === "completed").length / eligible.length) * 100) : 0;
 }
 
-function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onOpenDayEditor, onCloseDayEditor, onSetDayStatus, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, completions, itemCompletions, amountCompletions, trackerEntries, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; onOpenDayEditor: () => void; onCloseDayEditor: () => void; onSetDayStatus: (routine: Routine, date: string, status: EditableHistoryStatus) => Promise<void>; onToggleItem: (routine: Routine, itemId: number, date: string) => Promise<void>; onSetAmount: (routine: Routine, tracker: RoutineAmount, count: number, date: string) => Promise<void>; onSetNote: (routine: Routine, tracker: RoutineAmount, value: string, date: string) => Promise<void>; onUploadPhoto: (routine: Routine, tracker: RoutineAmount, file: File, date: string) => Promise<void>; onRemovePhoto: (routine: Routine, tracker: RoutineAmount, date: string) => Promise<void>; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; trackerEntries: TrackerEntry[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
+function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine, onOpenDayEditor, onCloseDayEditor, onSetDayStatus, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, completions, itemCompletions, amountCompletions, trackerEntries, todayKey, weekStartsOn, loading }: { routines: Routine[]; selectedRoutine: number | "all"; onSelectRoutine: (routine: number | "all") => void; onAddRoutine: () => void; onOpenDayEditor: () => void; onCloseDayEditor: () => void; onSetDayStatus: (routine: Routine, date: string, status: EditableHistoryStatus) => Promise<void>; onToggleItem: (routine: Routine, itemId: number, date: string) => Promise<void>; onSetAmount: (routine: Routine, tracker: RoutineAmount, count: number, date: string) => Promise<void>; onSetNote: (routine: Routine, tracker: RoutineAmount, value: string, date: string) => Promise<void>; onUploadPhoto: (routine: Routine, tracker: RoutineAmount, file: File, date: string) => Promise<void>; onRemovePhoto: (routine: Routine, tracker: RoutineAmount, date: string) => Promise<void>; completions: Completion[]; itemCompletions: ItemCompletion[]; amountCompletions: AmountCompletion[]; trackerEntries: TrackerEntry[]; todayKey: string; weekStartsOn: WeekStart; loading: boolean }) {
   const selected = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
   const effectiveSelection = selected ? selected.id : "all";
   const [editingDay, setEditingDay] = useState<HistoryDayState | null>(null);
@@ -1265,12 +1270,12 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onOpenDayEdit
     onCloseDayEditor();
   };
 
-  return <div className={`page history-page${selected ? " history-page-detail" : ""}`}>
-    <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
+  return <div className={`page history-page${selected ? " history-page-detail" : ""}${!loading && !routines.length ? " history-page-empty" : ""}`}>
+    {routines.length > 0 && <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
       <button className={effectiveSelection === "all" ? "active" : ""} aria-pressed={effectiveSelection === "all"} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
       {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} aria-pressed={effectiveSelection === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
-    </ScrollablePicker>
-    {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><History aria-hidden="true" /><h2>No history yet</h2><p>Add a routine and your progress will appear here.</p></section> : selected ? (() => {
+    </ScrollablePicker>}
+    {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><span className="empty-state-icon history-empty-icon" aria-hidden="true"><History /></span><h3>Your progress starts here</h3><p>Add a routine and its history will appear here.</p><button className="primary-button premium-action" onClick={onAddRoutine}>Add your first routine</button></section> : selected ? (() => {
       const states = historyByRoutine.get(selected.id) ?? [];
       const eligibleStates = states.filter((day) => day.status !== "off" && day.status !== "skipped" && day.status !== "scheduled");
       const completedDays = eligibleStates.filter((day) => day.status === "completed").length;
@@ -1365,7 +1370,7 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
   </div>, document.body);
 }
 
-function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshData, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void>; onBack: () => void }) {
+function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshData, onShowOnboarding, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void>; onShowOnboarding: () => void; onBack: () => void }) {
   const [showDataPrivacy, setShowDataPrivacy] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
 
@@ -1452,6 +1457,11 @@ function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshDa
           <button className={preferences.reminders === "on" ? "active" : ""} onClick={() => void setReminders(true)}><strong>On</strong><span>Use routine times</span></button>
           <button className={preferences.reminders === "off" ? "active" : ""} onClick={() => void setReminders(false)}><strong>Off</strong><span>No alerts</span></button>
         </div>
+      </section>
+      <section className="setting-card">
+        <div className="setting-icon"><CirclePlay aria-hidden="true" /></div>
+        <div className="setting-copy"><h2>Welcome screen</h2><p>Replay the introduction without changing your routines or progress.</p></div>
+        <button type="button" className="setting-open-button" onClick={onShowOnboarding}><CirclePlay aria-hidden="true" />View onboarding</button>
       </section>
       <section className="setting-card">
         <div className="setting-icon"><Database aria-hidden="true" /></div>

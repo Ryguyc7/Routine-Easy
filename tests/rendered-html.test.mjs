@@ -378,6 +378,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /profile-stats"><div><i><ListChecks/);
 assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-hidden="true" \/>Manage routines<\/button>/);
   assert.match(page, /function SettingsPage/);
+  assert.match(page, /<h2>Welcome screen<\/h2>/);
+  assert.match(page, /onClick=\{onShowOnboarding\}[\s\S]*?View onboarding/);
+  assert.match(page, /function showOnboarding\(\) \{[\s\S]*?setOnboardingState\("show"\)/);
   assert.match(page, /settingsReturnTabRef = useRef<Exclude<Tab, "settings">>/);
   assert.match(page, /if \(tab !== "settings"\) settingsReturnTabRef\.current = tab/);
   assert.match(page, /className="settings-toolbar"/);
@@ -465,6 +468,10 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(css, /@keyframes bottom-nav-shoot-up[\s\S]*?translateY\(-7px\)[\s\S]*?translateY\(3px\)/);
   assert.match(page, /function CompletionHistoryDialog/);
   assert.match(page, /function HistoryPage/);
+  assert.match(page, /Your progress starts here/);
+  assert.match(page, /onClick=\{onAddRoutine\}>Add your first routine/);
+  assert.match(page, /!loading && !routines\.length \? " history-page-empty"/);
+  assert.match(page, /\{routines\.length > 0 && <ScrollablePicker label="History routine filters"/);
   assert.match(page, /Day details/);
   assert.doesNotMatch(page, /Edit what was recorded for/);
   assert.match(page, /history-tracker-editor/);
