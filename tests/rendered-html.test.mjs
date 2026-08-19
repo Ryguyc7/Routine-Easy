@@ -358,6 +358,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /CircleUserRound/);
   assert.match(page, /profile-popover-backdrop/);
   assert.match(page, /profile-settings-button/);
+  assert.match(page, /profile-stats"><div><i><ListChecks/);
+assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-hidden="true" \/>Manage routines<\/button>/);
   assert.match(page, /function SettingsPage/);
   assert.match(page, /settingsReturnTabRef = useRef<Exclude<Tab, "settings">>/);
   assert.match(page, /if \(tab !== "settings"\) settingsReturnTabRef\.current = tab/);

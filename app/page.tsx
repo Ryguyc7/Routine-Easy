@@ -955,13 +955,13 @@ export default function Home() {
 
         {showProfile && <div className="profile-popover-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowProfile(false); }}>
           <section className="profile-card" role="dialog" aria-label="Your Routine EASY profile">
-            <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile">×</button>
+            <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile"><X aria-hidden="true" /></button>
             <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
             <div className="profile-copy"><small>Your profile</small><h2>My Routine<EasyWord className="brand-easy" /></h2><p>Small routines. Easier days.</p></div>
-            <div className="profile-stats"><div><strong>{routines.length}</strong><span>Routines</span></div><div><strong>{doneCount}/{eligibleTodayRoutines.length}</strong><span>Done today</span></div></div>
+            <div className="profile-stats"><div><i><ListChecks aria-hidden="true" /></i><span><strong>{routines.length}</strong><small>Routines</small></span></div><div><i><CircleCheckBig aria-hidden="true" /></i><span><strong>{doneCount}/{eligibleTodayRoutines.length}</strong><small>Done today</small></span></div></div>
             <div className="profile-actions">
               <button className="profile-settings-button" onClick={openSettings}><Settings2 aria-hidden="true" />Settings</button>
-              <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}>Manage routines</button>
+              <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}><ListChecks aria-hidden="true" />Manage routines</button>
             </div>
           </section>
         </div>}
