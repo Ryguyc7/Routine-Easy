@@ -457,6 +457,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /tab === "history"/);
   assert.match(page, /label="History"/);
   assert.match(page, /history-overview-grid/);
+  assert.match(page, /className="history-overview-progress" role="progressbar"/);
+  assert.match(page, /View monthly details/);
+  assert.match(page, /className="history-overview-meta"/);
   assert.match(page, /history-title-row/);
   assert.match(page, /buildRoutineHistory/);
   assert.match(page, /Monthly completion/);
@@ -595,6 +598,8 @@ test("motion polish stays tactile and respects reduced motion", async () => {
   assert.doesNotMatch(css, /\.quantity-trackers\.tracker-controls-collapsed \{ display: none/);
   assert.doesNotMatch(css, /\.routine-row:not\(\.expanded\) \{ height: 110px/);
   assert.match(css, /\.history-overview-card \{ animation: detail-card-arrive/);
+  assert.match(css, /\.history-overview-progress \{[^}]*height: 6px;[^}]*border-radius: 999px/);
+  assert.match(css, /\.history-overview-progress i \{[^}]*background: var\(--history-color\);[^}]*transition: width \.5s/);
   assert.match(css, /\.setting-card:hover \.setting-icon \{ transform: translateY\(-1px\) rotate\(-4deg\) scale\(1\.055\)/);
   assert.match(css, /@keyframes saved-check-arrive/);
   assert.match(css, /\.reduce-motion \*, \.reduce-motion \*::before, \.reduce-motion \*::after \{[^}]*animation-iteration-count: 1 !important/);

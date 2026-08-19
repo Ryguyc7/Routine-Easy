@@ -1151,9 +1151,10 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onSetDayStatu
       <header><div><span>This month</span><h2>Your progress</h2></div><p>Select a routine for the full monthly view.</p></header>
       <div className="history-overview-grid">{routines.map((routine) => {
         const states = historyByRoutine.get(routine.id) ?? [];
-        return <button key={routine.id} className="history-overview-card" style={{ "--history-color": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}>
-          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>This month</small></span><b>{historyRate(states, states.length)}%</b>
-          <span className="history-mini-days" aria-hidden="true">{states.slice(-14).map((day) => <i key={day.key} className={day.status} />)}</span>
+        const rate = historyRate(states, states.length);
+        return <button key={routine.id} className="history-overview-card" style={{ "--history-color": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)} aria-label={`View ${routine.name} monthly history, ${rate}% complete`}>
+          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>View monthly details</small></span><span className="history-overview-meta"><b>{rate}%</b><ChevronRight aria-hidden="true" /></span>
+          <span className="history-overview-progress" role="progressbar" aria-label={`${routine.name} monthly progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate}><i style={{ width: `${rate}%` }} /></span>
         </button>;
       })}</div>
     </section>}
