@@ -50,7 +50,10 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /add-modal-backdrop/);
   assert.match(page, /createPortal\(<div className="add-modal-backdrop routine-builder-page"/);
   assert.match(page, /aria-modal="true" aria-label="Add a routine"/);
-  assert.match(page, /className="routine-builder-back"/);
+  assert.match(page, /className="app-page-back routine-builder-back"/);
+  assert.match(page, /className="app-page-back template-page-back"/);
+  assert.match(page, /className="app-page-back settings-back"/);
+  assert.match(page, /className="app-page-back history-page-back"/);
   assert.match(page, /aria-label=\{step === 0 \? "Close routine builder" : "Go back to previous step"\}/);
   const addRoutineSource = page.slice(page.indexOf("function AddRoutineForm"), page.indexOf("function UniqueChoiceToggles"));
   assert.doesNotMatch(addRoutineSource, /step === 0 \? "Cancel" : "Back"/);
@@ -64,6 +67,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(fullPageBuilderCss, /\.routine-builder-back \{[^}]*width: 42px;[^}]*height: 42px;[^}]*border: 1px solid color-mix[^}]*border-radius: 13px;[^}]*background: color-mix[^}]*box-shadow: 0 7px 17px/);
   assert.match(fullPageBuilderCss, /\.history-edit-page \.history-page-back \{[^}]*width: 42px;[^}]*height: 42px;[^}]*border-radius: 13px;[^}]*box-shadow: 0 7px 17px/);
   assert.match(fullPageBuilderCss, /\.settings-back \{[^}]*width: 40px;[^}]*height: 40px;[^}]*border-radius: 12px;[^}]*box-shadow: 0 7px 17px/);
+  assert.match(fullPageBuilderCss, /One exact page-back control/);
+  assert.match(fullPageBuilderCss, /button\.app-page-back\.app-page-back \{\s*width: 42px;\s*height: 42px;\s*min-width: 42px;\s*min-height: 42px;[^}]*border-radius: 13px;/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-progress \{[^}]*width: 100%;[^}]*margin: 17px auto 0/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.modal-scrollbar \{ z-index: 4; \}/);
   assert.doesNotMatch(fullPageBuilderCss, /routine-wizard-header \{[^}]*padding:[^;}]*66px/);
@@ -366,7 +371,7 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(page, /settingsReturnTabRef = useRef<Exclude<Tab, "settings">>/);
   assert.match(page, /if \(tab !== "settings"\) settingsReturnTabRef\.current = tab/);
   assert.match(page, /className="settings-toolbar"/);
-  assert.match(page, /className="settings-back" onClick=\{onBack\} aria-label="Back to app"/);
+  assert.match(page, /className="app-page-back settings-back" onClick=\{onBack\} aria-label="Back to app"/);
   const settingsSource = page.slice(page.indexOf("function SettingsPage"), page.indexOf("function OnboardingPage"));
   assert.doesNotMatch(settingsSource, /Make it yours|Choose how Routine EASY looks and feels/);
   assert.match(page, /tab === "settings" \? " settings-view-open"/);
@@ -402,7 +407,7 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(templateChooserSource, /<BlobCorners className="creation-background-blobs" \/>/);
   assert.match(templateChooserSource, /<\/div>, document\.body\);/);
   assert.match(page, /className="template-dialog-header"/);
-  assert.match(templateChooserSource, /className="template-page-back"/);
+  assert.match(templateChooserSource, /className="app-page-back template-page-back"/);
   assert.match(templateChooserSource, /aria-label="Back to routines"/);
   assert.match(templateChooserSource, /className="template-options"/);
   assert.doesNotMatch(page, /className="template-heading-icon"/);
@@ -451,7 +456,7 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(page, />Change status<\/span>/);
   assert.doesNotMatch(page, /Correct this day/);
   assert.match(page, /createPortal\(<div className="feature-dialog-backdrop history-edit-page">/);
-  assert.match(page, /className="history-page-back"[^>]*aria-label="Back to history"/);
+  assert.match(page, /className="app-page-back history-page-back"[^>]*aria-label="Back to history"/);
   assert.match(page, /className="history-edit-sticky"/);
   assert.match(page, /Edit here · auto-saves/);
   assert.match(page, /history-record-row history-record-edit/);

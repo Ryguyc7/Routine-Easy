@@ -1202,7 +1202,7 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
     <BlobCorners className="creation-background-blobs" />
     <section className="history-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="history-edit-title" style={{ "--history-color": routine.color, "--routine": routine.color } as React.CSSProperties}>
       <div className="history-edit-sticky">
-        <header><button type="button" className="history-page-back" onClick={onClose} aria-label="Back to history" disabled={Boolean(savingStatus)}><ChevronLeft /></button><span className="history-emoji" aria-hidden="true">{routine.emoji}</span><div><span>Day details</span><h2 id="history-edit-title">{dateLabel}</h2></div></header>
+        <header><button type="button" className="app-page-back history-page-back" onClick={onClose} aria-label="Back to history" disabled={Boolean(savingStatus)}><ChevronLeft /></button><span className="history-emoji" aria-hidden="true">{routine.emoji}</span><div><span>Day details</span><h2 id="history-edit-title">{dateLabel}</h2></div></header>
         <div className={`history-day-summary ${day.status}`}><span aria-hidden="true">{day.status === "completed" ? "✓" : day.status === "partial" ? "◐" : day.status === "skipped" ? <SkipForward /> : "×"}</span><div><strong>{statusLabels[day.status]}</strong><small>{day.status === "completed" ? "Everything required was completed or the day was marked complete." : day.status === "partial" ? "Some tracking was recorded, but the routine was not finished." : day.status === "skipped" ? "This day does not count toward your completion rate." : "No completed record was saved for this day."}</small></div><button type="button" className="history-summary-fix" onClick={() => setShowCorrection((show) => !show)} aria-expanded={showCorrection} disabled={Boolean(savingStatus)}>{showCorrection ? "Cancel" : "Change"}</button></div>
         {showCorrection && <div className="history-status-editor"><span>Change status</span><div className="history-edit-options history-edit-options-compact" role="group" aria-label={`Correct status for ${dateLabel}`}>
           <button type="button" className={`completed${day.status === "completed" ? " active" : ""}`} onClick={() => save("completed")} disabled={Boolean(savingStatus)}><span aria-hidden="true">✓</span><strong>{savingStatus === "completed" ? "Saving…" : "Completed"}</strong></button>
@@ -1249,7 +1249,7 @@ function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshDa
 
   return <div className="page settings-page">
     <header className="settings-toolbar">
-      <button type="button" className="settings-back" onClick={onBack} aria-label="Back to app"><ChevronLeft aria-hidden="true" /></button>
+      <button type="button" className="app-page-back settings-back" onClick={onBack} aria-label="Back to app"><ChevronLeft aria-hidden="true" /></button>
       <h1>Settings</h1>
       <i aria-hidden="true" />
     </header>
@@ -1779,7 +1779,7 @@ function TemplateChooser({ onCancel, onChoose }: { onCancel: () => void; onChoos
     <BlobCorners className="creation-background-blobs" />
     <section className="template-dialog" role="dialog" aria-modal="true" aria-labelledby="template-title">
       <header className="template-dialog-header">
-        <button type="button" className="template-page-back" onClick={onCancel} aria-label="Back to routines"><ChevronLeft aria-hidden="true" /></button>
+        <button type="button" className="app-page-back template-page-back" onClick={onCancel} aria-label="Back to routines"><ChevronLeft aria-hidden="true" /></button>
         <h2 id="template-title">Create routine</h2>
         <i aria-hidden="true" />
       </header>
@@ -2010,7 +2010,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
   <div className={`add-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
     <header className="routine-wizard-header">
-      <button type="button" className="routine-builder-back" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)} aria-label={step === 0 ? "Close routine builder" : "Go back to previous step"}><ChevronLeft aria-hidden="true" /></button>
+      <button type="button" className="app-page-back routine-builder-back" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)} aria-label={step === 0 ? "Close routine builder" : "Go back to previous step"}><ChevronLeft aria-hidden="true" /></button>
       <div className="routine-wizard-header-content">
         <div key={step} className="wizard-heading" aria-live="polite"><span>Step {step + 1} of {steps.length}</span><h2>{steps[step].title}</h2><p>{steps[step].note}</p></div>
         <div className="wizard-progress" role="progressbar" aria-label="Add routine progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={step + 1}>
