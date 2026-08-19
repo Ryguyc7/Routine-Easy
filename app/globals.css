@@ -1034,7 +1034,7 @@ button { color: inherit; }
   .today-page .routine-list::-webkit-scrollbar { display: none; }
   .calendar-page, .routines-page, .history-page { padding-bottom: 132px; scroll-padding-bottom: 132px; }
   .settings-page { padding-bottom: 132px; scroll-padding-bottom: 132px; }
-  .settings-view-open .mobile-header, .settings-view-open .bottom-nav { display: none; }
+  .settings-view-open .mobile-header { display: none; }
   .settings-view-open .content { height: 100svh; height: 100dvh; padding-top: 0; }
   .settings-view-open .settings-page { position: relative; width: 100%; max-width: none; height: 100svh; height: 100dvh; padding: max(88px, calc(env(safe-area-inset-top) + 76px)) 20px max(30px, env(safe-area-inset-bottom)); scroll-padding-top: 88px; scroll-padding-bottom: 30px; }
   .settings-toolbar { position: fixed; inset: 0 0 auto; z-index: 32; width: 100%; max-width: none; height: calc(68px + env(safe-area-inset-top)); margin: 0; padding: env(safe-area-inset-top) 20px 0; grid-template-columns: 40px minmax(0, 1fr) 40px; background: rgba(255,253,249,.95); box-shadow: 0 1px 0 rgba(229,221,209,.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }

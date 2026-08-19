@@ -472,6 +472,7 @@ export default function Home() {
   }
 
   function openSettings() {
+    prepareCreationFlow();
     setShowProfile(false);
     if (tab !== "settings") settingsReturnTabRef.current = tab;
     setTab("settings");
@@ -479,6 +480,7 @@ export default function Home() {
 
   function closeSettings() {
     setTab(settingsReturnTabRef.current);
+    animateBottomNavReturn();
   }
 
   function updatePreferences(next: Partial<AppPreferences>) {
@@ -1072,7 +1074,7 @@ export default function Home() {
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
-      <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
+      <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
         <BottomNavSurface key={tab} tab={tab} reducedMotion={preferences.motion === "reduced"} />
         <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
         <CalendarNavButton active={tab === "calendar"} onClick={() => setTab("calendar")} date={today} />
