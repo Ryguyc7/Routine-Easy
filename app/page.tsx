@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, startTransition, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, startTransition, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CirclePlay, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
-import { clearDeviceData, completeDeviceOnboarding, hasCompletedDeviceOnboarding, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
+import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
@@ -38,7 +38,6 @@ type ItemCompletion = { itemId: number; date: string };
 type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
 type TrackerEntry = { routineId: number; trackerKey: string; date: string; value: string; hasFile: boolean; filePath?: string; contentType?: string };
 type Tab = "today" | "calendar" | "routines" | "history" | "settings";
-type OnboardingState = "checking" | "show" | "done";
 type TimeFormat = "12-hour" | "24-hour";
 type WeekStart = "sunday" | "monday";
 type MotionPreference = "full" | "reduced";
@@ -322,7 +321,6 @@ function useAnimatedNumber(target: number, duration = 600) {
 }
 
 export default function Home() {
-  const [onboardingState, setOnboardingState] = useState<OnboardingState>("checking");
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashLeaving, setSplashLeaving] = useState(false);
   const [tab, setTab] = useState<Tab>("today");
@@ -441,16 +439,13 @@ export default function Home() {
     const currentDate = new Date();
     setToday(currentDate);
     setMonth(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1, 12));
-    const forceOnboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
     let splashExitTimer = 0;
     let splashTimer = 0;
     let cancelled = false;
     const initialize = async () => {
-      let completed = window.localStorage.getItem("routineez-onboarding-complete") === "true";
       let savedPreferences: unknown = {};
       try {
         if (isNativeApp()) {
-          completed = await hasCompletedDeviceOnboarding();
           savedPreferences = await loadDevicePreferences() ?? {};
         } else {
           savedPreferences = JSON.parse(window.localStorage.getItem("routineez-preferences") ?? "{}");
@@ -460,7 +455,6 @@ export default function Home() {
       setPreferences(cleanPreferences(savedPreferences));
       setPreferencesLoaded(true);
       splashTimer = window.setTimeout(() => {
-        setOnboardingState(forceOnboarding || !completed ? "show" : "done");
         setSplashLeaving(true);
         splashExitTimer = window.setTimeout(() => setSplashVisible(false), SPLASH_FADE_MS);
       }, SPLASH_DURATION_MS);
@@ -575,24 +569,6 @@ export default function Home() {
     setPreferences(updated);
     window.localStorage.setItem("routineez-preferences", JSON.stringify(updated));
     if (isNativeApp()) void saveDevicePreferences(updated);
-  }
-
-  function completeOnboarding(addRoutine = false) {
-    window.localStorage.setItem("routineez-onboarding-complete", "true");
-    if (isNativeApp()) void completeDeviceOnboarding();
-    if (new URLSearchParams(window.location.search).has("onboarding")) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-    if (addRoutine) {
-      setTab("routines");
-      setShowTemplatePicker(true);
-    }
-    setOnboardingState("done");
-  }
-
-  function showOnboarding() {
-    setShowProfile(false);
-    setOnboardingState("show");
   }
 
   const todayRoutines = routines.filter((routine) => routine.days.includes(today.getDay()) && routineActiveOnDate(routine, todayKey));
@@ -1062,7 +1038,6 @@ export default function Home() {
   const calendarRoutineCount = new Set(calendarEntries.flatMap((entry) => entry?.matches.map((routine) => routine.id) ?? [])).size;
 
   const splashOverlay = splashVisible ? <OnboardingSplash leaving={splashLeaving} /> : null;
-  if (onboardingState === "show") return <><OnboardingPage onComplete={completeOnboarding} />{splashOverlay}</>;
 
   return (
     <><main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}${darkTheme ? " theme-dark" : ""}${tab === "settings" ? " settings-view-open" : ""}`}>
@@ -1202,7 +1177,7 @@ export default function Home() {
 
         {tab === "history" && <HistoryPage routines={routines} selectedRoutine={selectedHistoryRoutine} onSelectRoutine={setSelectedHistoryRoutine} onAddRoutine={openAddFromHeader} onOpenDayEditor={openHistoryDayEditor} onCloseDayEditor={closeHistoryDayEditor} onSetDayStatus={setHistoryDayStatus} onToggleItem={editHistoryItem} onSetAmount={editHistoryAmount} onSetNote={editHistoryNote} onUploadPhoto={editHistoryPhoto} onRemovePhoto={removeHistoryPhoto} completions={completions} itemCompletions={itemCompletions} amountCompletions={amountCompletions} trackerEntries={trackerEntries} todayKey={todayKey} weekStartsOn={preferences.weekStartsOn} loading={loading} />}
 
-        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onShowOnboarding={showOnboarding} onBack={closeSettings} />}
+        {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
       <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
@@ -1370,7 +1345,7 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
   </div>, document.body);
 }
 
-function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshData, onShowOnboarding, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void>; onShowOnboarding: () => void; onBack: () => void }) {
+function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshData, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void>; onBack: () => void }) {
   const [showDataPrivacy, setShowDataPrivacy] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
 
@@ -1457,11 +1432,6 @@ function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshDa
           <button className={preferences.reminders === "on" ? "active" : ""} onClick={() => void setReminders(true)}><strong>On</strong><span>Use routine times</span></button>
           <button className={preferences.reminders === "off" ? "active" : ""} onClick={() => void setReminders(false)}><strong>Off</strong><span>No alerts</span></button>
         </div>
-      </section>
-      <section className="setting-card">
-        <div className="setting-icon"><CirclePlay aria-hidden="true" /></div>
-        <div className="setting-copy"><h2>Welcome screen</h2><p>Replay the introduction without changing your routines or progress.</p></div>
-        <button type="button" className="setting-open-button" onClick={onShowOnboarding}><CirclePlay aria-hidden="true" />View onboarding</button>
       </section>
       <section className="setting-card">
         <div className="setting-icon"><Database aria-hidden="true" /></div>
@@ -1580,49 +1550,6 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
       {message && <p className="data-dialog-message" role="status">{message}</p>}
     </section>
   </div>, document.body);
-}
-
-function OnboardingPage({ onComplete }: { onComplete: (addRoutine?: boolean) => void }) {
-  return <main className="onboarding-shell">
-    <section className="onboarding-card" aria-labelledby="onboarding-title">
-      <div className="onboarding-art" aria-hidden="true">
-        <i className="onboarding-shape coral" /><i className="onboarding-shape cream" />
-        <i className="onboarding-shape blue" /><i className="onboarding-shape gold" />
-        <span className="onboarding-leaf top">❧</span><span className="onboarding-leaf bottom">❧</span>
-        <span className="onboarding-dot one" /><span className="onboarding-dot two" /><span className="onboarding-dot three" />
-      </div>
-      <header className="onboarding-top">
-        <img className="brand-logo" src="/routineez-checklist.png" alt="" />
-        <div><h1 id="onboarding-title">Routine<EasyWord className="brand-easy" /></h1><p>Small routines. Easier days.</p></div>
-      </header>
-      <div className="onboarding-live-card" aria-label="A sample day with four of five routines complete">
-        <div className="onboarding-progress-row">
-          <span className="onboarding-sun">☀</span>
-          <span className="onboarding-progress-track"><i /></span>
-          <strong>4/5</strong>
-        </div>
-        <div className="onboarding-demo-list">
-          {[
-            ["♥", "Morning vitamins", "coral", true],
-            ["☕", "Breakfast", "gold", true],
-            ["▣", "Plan the day", "sky", true],
-            ["↗", "Move a little", "green", true],
-            ["☾", "Evening reset", "purple", false],
-          ].map(([icon, label, color, complete], index) => <div className="onboarding-demo-row" style={{ "--row-delay": `${.32 + index * .13}s` } as CSSProperties} key={label as string}>
-            <span className={`onboarding-demo-icon ${color}`}>{icon}</span>
-            <i className="onboarding-demo-line" />
-            <span className={`onboarding-demo-check${complete ? " complete" : ""}`}>{complete ? "✓" : ""}</span>
-          </div>)}
-        </div>
-      </div>
-      <div className="onboarding-summary">
-        <h2>Make every day feel a little easier.</h2>
-        <p>Plan small routines, check them off, and watch your progress grow.</p>
-      </div>
-      <button className="onboarding-cta premium-action" onClick={() => onComplete(true)}><span>Build my first routine</span><i aria-hidden="true">→</i></button>
-      <button className="onboarding-skip" onClick={() => onComplete(false)}>Skip for now</button>
-    </section>
-  </main>;
 }
 
 function BlobCorners({ className = "" }: { className?: string }) {
