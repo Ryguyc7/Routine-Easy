@@ -1563,7 +1563,7 @@ function BlobCorners({ className = "" }: { className?: string }) {
 
 function OnboardingSplash({ leaving = false }: { leaving?: boolean }) {
   return <main className={`onboarding-splash splash-overlay${leaving ? " leaving" : ""}`} aria-label="Loading Routine EASY">
-    <BlobCorners />
+    <BlobCorners className="app-background-blobs splash-home-blobs" />
     <div className="splash-brand">
           <img className="splash-logo" src="/routineez-checklist-glossy.png" alt="" />
       <div className="splash-wordmark" aria-hidden="true">
