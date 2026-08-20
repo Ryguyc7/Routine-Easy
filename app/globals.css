@@ -1988,29 +1988,32 @@ body {
   z-index: 0;
   inset: 0;
   display: block;
-  background: color-mix(in srgb, var(--blob-dark) 86%, #21182d);
-  filter: blur(.55px);
-  opacity: .86;
+  background: color-mix(in srgb, var(--blob-dark) 70%, #30263a);
+  filter: blur(1.15px);
+  opacity: .58;
+  animation: splash-blob-flow 5.4s cubic-bezier(.45,0,.55,1) .78s infinite alternate both;
+  will-change: transform;
   pointer-events: none;
 }
+:is(.creation-background-blobs) .splash-blob::before { animation: none; }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob > i { z-index: 1; }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob-purple::before {
-  transform: translate(5px, 6px);
+  translate: 3px 3px;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 0H100V17C97 27 89 31 78 35C66 39 66 50 56 57C43 66 22 68 0 62Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 0H100V17C97 27 89 31 78 35C66 39 66 50 56 57C43 66 22 68 0 62Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob-coral::before {
-  transform: translate(-5px, 6px);
+  translate: -3px 3px;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 0H100V64C78 69 58 66 45 57C34 50 35 39 23 35C12 31 4 27 0 17Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 0H100V64C78 69 58 66 45 57C34 50 35 39 23 35C12 31 4 27 0 17Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob-gold::before {
-  transform: translate(5px, -6px);
+  translate: 3px -3px;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 45C12 42 23 43 34 48C47 54 50 67 64 72C78 77 91 83 100 100H0Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 45C12 42 23 43 34 48C47 54 50 67 64 72C78 77 91 83 100 100H0Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob-sky::before {
-  transform: translate(-5px, -6px);
+  translate: -3px -3px;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 100C9 82 22 76 36 71C49 66 53 54 66 48C77 43 88 42 100 45V100Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 100C9 82 22 76 36 71C49 66 53 54 66 48C77 43 88 42 100 45V100Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
