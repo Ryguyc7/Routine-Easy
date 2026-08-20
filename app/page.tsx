@@ -1565,7 +1565,7 @@ function OnboardingSplash({ leaving = false }: { leaving?: boolean }) {
   return <main className={`onboarding-splash splash-overlay${leaving ? " leaving" : ""}`} aria-label="Loading Routine EASY">
     <BlobCorners />
     <div className="splash-brand">
-      <img className="splash-logo" src="/routineez-checklist.png" alt="" />
+          <img className="splash-logo" src="/routineez-checklist-glossy.png" alt="" />
       <div className="splash-wordmark" aria-hidden="true">
         <span className="splash-routine">Routine</span><EasyWord className="splash-easy" />
       </div>
