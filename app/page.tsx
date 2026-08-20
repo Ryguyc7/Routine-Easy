@@ -1043,7 +1043,7 @@ export default function Home() {
     <><main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}${darkTheme ? " theme-dark" : ""}${tab === "settings" ? " settings-view-open" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="Routine EASY home">
-          <img className="brand-logo" src="/routineez-checklist.png" alt="" />
+          <img className="brand-logo" src="/routineez-checklist-glossy.png" alt="" />
           <span>Routine<EasyWord className="brand-easy" /></span>
         </div>
         <p className="sidebar-date">{today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
@@ -1061,7 +1061,7 @@ export default function Home() {
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="Routine EASY">
-            <img src="/routineez-checklist.png" alt="" />
+            <img src="/routineez-checklist-glossy.png" alt="" />
             <span className="mobile-wordmark-name">Routine<EasyWord className="mobile-wordmark-easy" /></span>
           </div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
