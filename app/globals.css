@@ -1224,6 +1224,18 @@ html[data-theme="dark"] {
 }
 html[data-theme="dark"] body { color: var(--ink); background: radial-gradient(circle at 12% 8%, rgba(255,128,101,.08), transparent 25%), #17151b; }
 html[data-theme="dark"] .content { background: linear-gradient(180deg, #1d1a21, #17151b 72%); }
+html[data-theme="dark"] .onboarding-splash {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(92,78,126,.3) 0 10%, rgba(38,33,47,.24) 30%, transparent 55%),
+    linear-gradient(180deg, #1d1a21 0%, #17151b 72%);
+}
+html[data-theme="dark"] .onboarding-splash .app-background-blobs { opacity: 1; }
+html[data-theme="dark"] .splash-brand::before {
+  background: conic-gradient(from 35deg, rgba(255,113,91,.13), rgba(255,189,60,.11), rgba(70,149,255,.14), rgba(104,76,255,.17), rgba(255,113,91,.13));
+  filter: blur(42px) brightness(.72);
+}
+html[data-theme="dark"] .splash-logo { filter: saturate(1.08) brightness(.98) drop-shadow(0 14px 26px rgba(0,0,0,.46)); }
+html[data-theme="dark"] .splash-wordmark { text-shadow: 0 1px 0 rgba(0,0,0,.55), 0 0 24px rgba(255,255,255,.045); }
 html[data-theme="dark"] :is(.sidebar, .mobile-header, .bottom-nav, .profile-card, .profile-stats, .routine-row, .routine-swipe-surface, .routine-card, .calendar-card, .history-overview-card, .settings-list, .template-dialog, .history-dialog, .history-edit-dialog, .history-edit-sticky, .data-dialog, .add-card, .delete-dialog) { color: var(--ink); border-color: var(--line); background: #25222b; }
 html[data-theme="dark"] :is(.history-record-section, .history-simple-record, .history-tracker-record, .setting-options button.active, .setting-open-button, .completed-hidden-state, .data-action-list > button, .data-action-list > label, .profile-stats, .setting-icon) { background: #2b2731; }
 html[data-theme="dark"] :is(.mobile-wordmark-name, .splash-wordmark, .routine-info strong, .card-body strong, .setting-copy h2, .data-action-list strong, .history-record-row strong, .history-tracker-copy strong) { color: var(--ink); }
