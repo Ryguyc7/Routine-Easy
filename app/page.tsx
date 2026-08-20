@@ -2208,7 +2208,11 @@ function IconPicker({ availableEmojis, selectedEmoji, onSelect }: { availableEmo
     const measure = () => {
       const gridTop = grid.getBoundingClientRect().top;
       const previewBottom = previewEnd.getBoundingClientRect().bottom;
-      const next = { collapsed: Math.ceil(previewBottom - gridTop), expanded: grid.scrollHeight };
+      const gridBottomBuffer = 8;
+      const next = {
+        collapsed: Math.ceil(previewBottom - gridTop) + gridBottomBuffer,
+        expanded: grid.scrollHeight + gridBottomBuffer,
+      };
       setGridHeights((current) => current.collapsed === next.collapsed && current.expanded === next.expanded ? current : next);
     };
     measure();
