@@ -481,6 +481,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .modal-scroll-thumb::after { content: ""; position: absolute; top: 1px; bottom: 1px; left: 50%; width: 5px; border-radius: 3px; background: var(--wizard-accent, var(--sky)); transform: translateX(-50%); }
 .modal-scroll-thumb.dragging { cursor: grabbing; }
 .modal-scroll-thumb:focus-visible { outline: 2px solid color-mix(in srgb, var(--wizard-accent, var(--sky)) 38%, transparent); outline-offset: 0; border-radius: 4px; }
+.settings-scrollbar { display: none; --wizard-accent: var(--sky); }
 .add-routine-modal .form-actions { position: sticky; bottom: -23px; z-index: 2; margin: 18px -23px -23px; padding: 15px 23px 23px; background: linear-gradient(180deg, rgba(255,255,255,.78), #fff 28%); }
 .add-routine-modal .form-actions { justify-content: center; }
 .add-routine-modal .form-actions button { min-width: 122px; }
@@ -1069,6 +1070,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
   .settings-view-open .mobile-header { display: none; }
   .settings-view-open .content { height: 100svh; height: 100dvh; padding-top: 0; }
   .settings-view-open .settings-page { position: relative; width: 100%; max-width: none; height: 100svh; height: 100dvh; padding: max(88px, calc(env(safe-area-inset-top) + 76px)) 20px max(30px, env(safe-area-inset-bottom)); scroll-padding-top: 88px; scroll-padding-bottom: 30px; }
+  .settings-view-open .settings-scrollbar { position: fixed; right: max(2px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 33; display: block; }
   .settings-toolbar { position: fixed; inset: 0 0 auto; z-index: 32; width: 100%; max-width: none; height: calc(68px + env(safe-area-inset-top)); margin: 0; padding: env(safe-area-inset-top) 20px 0; grid-template-columns: 40px minmax(0, 1fr) 40px; background: rgba(255,253,249,.95); box-shadow: 0 1px 0 rgba(229,221,209,.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
   .settings-view-open .settings-toolbar h1 { grid-column: 2; font-size: 22px; font-weight: 760; letter-spacing: -.65px; }
   .settings-toolbar > i { display: block; width: 40px; height: 40px; }

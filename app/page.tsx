@@ -1346,6 +1346,7 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
 }
 
 function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshData, onBack }: { preferences: AppPreferences; onChange: (next: Partial<AppPreferences>) => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void>; onBack: () => void }) {
+  const pageRef = useRef<HTMLDivElement>(null);
   const [showDataPrivacy, setShowDataPrivacy] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
 
@@ -1369,7 +1370,7 @@ function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshDa
     }
   };
 
-  return <div className="page settings-page">
+  return <><div ref={pageRef} className="page settings-page">
     <header className="settings-toolbar">
       <button type="button" className="app-page-back settings-back" onClick={onBack} aria-label="Back to app"><ChevronLeft aria-hidden="true" /></button>
       <h1>Settings</h1>
@@ -1441,7 +1442,9 @@ function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshDa
     </div>
     <p className="settings-saved"><CircleCheckBig aria-hidden="true" />Preferences save automatically</p>
     {showDataPrivacy && <DataPrivacyDialog preferences={preferences} onClose={() => setShowDataPrivacy(false)} onReplacePreferences={onReplacePreferences} onRefreshData={onRefreshData} />}
-  </div>;
+  </div>
+  <VerticalScrollIndicator scrollerRef={pageRef} label="Settings page" className="settings-scrollbar" headerSelector=".settings-toolbar" />
+  </>;
 }
 
 function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefreshData }: { preferences: AppPreferences; onClose: () => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void> }) {
@@ -2452,7 +2455,7 @@ function ScrollablePicker({ label, children, className = "", scrollClassName = "
   </div>;
 }
 
-function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObject<HTMLFormElement | null>; label: string }) {
+function VerticalScrollIndicator<T extends HTMLElement>({ scrollerRef, label, className = "", headerSelector = ".routine-wizard-header" }: { scrollerRef: RefObject<T | null>; label: string; className?: string; headerSelector?: string }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLButtonElement>(null);
   const dragOffsetRef = useRef(0);
@@ -2464,7 +2467,7 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
   const updateIndicator = () => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
-    const stickyHeader = scroller.querySelector<HTMLElement>(".routine-wizard-header");
+    const stickyHeader = scroller.querySelector<HTMLElement>(headerSelector);
     setTrackTop(stickyHeader ? Math.ceil(stickyHeader.getBoundingClientRect().height) + 6 : 12);
     const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
     setScrollable(maxScroll > 1);
@@ -2489,7 +2492,7 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
       mutationObserver.disconnect();
       scroller.removeEventListener("scroll", updateIndicator);
     };
-  }, [scrollerRef]);
+  }, [scrollerRef, headerSelector]);
 
   const scrollFromThumb = (clientY: number) => {
     const scroller = scrollerRef.current;
@@ -2530,7 +2533,7 @@ function VerticalScrollIndicator({ scrollerRef, label }: { scrollerRef: RefObjec
 
   if (!scrollable) return null;
 
-  return <div ref={trackRef} className="modal-scrollbar" style={{ top: `${trackTop}px` }}>
+  return <div ref={trackRef} className={`modal-scrollbar${className ? ` ${className}` : ""}`} style={{ top: `${trackTop}px` }}>
     <button ref={thumbRef} type="button" className={`modal-scroll-thumb${dragging ? " dragging" : ""}`} style={{ top: `calc(${thumb.top}% + 1px)`, height: `calc(${thumb.height}% - 2px)` }} aria-label={`Scroll ${label}`} onPointerDown={beginDrag} onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) scrollFromThumb(event.clientY); }} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={handleKeyDown} />
   </div>;
 }
