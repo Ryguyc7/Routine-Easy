@@ -2070,3 +2070,12 @@ html[data-theme="dark"] .empty-state-icon {
   background: transparent;
   box-shadow: none;
 }
+
+@media (max-width: 760px) {
+  .today-page .progress-card {
+    box-shadow: inset 0 1.5px 0 #fff;
+  }
+  html[data-theme="dark"] .today-page .progress-card {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
+  }
+}
