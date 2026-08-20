@@ -2063,3 +2063,10 @@ html[data-theme="dark"] .empty-state-icon {
   }
   html[data-theme="dark"] .mobile-profile { background: radial-gradient(circle at 32% 20%, #3b3642, #27232d 68%); }
 }
+
+/* Keep the calendar surface open so the shared corner blobs remain continuous. */
+.calendar-page-matched .calendar-detail-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
