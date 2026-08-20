@@ -1988,9 +1988,9 @@ body {
   z-index: 0;
   inset: 0;
   display: block;
-  background: color-mix(in srgb, var(--blob-dark) 70%, #30263a);
-  filter: blur(1.15px);
-  opacity: .58;
+  background: color-mix(in srgb, var(--blob-dark) 92%, #17111d);
+  filter: blur(1.9px);
+  opacity: .43;
   animation: splash-blob-flow 5.4s cubic-bezier(.45,0,.55,1) .78s infinite alternate both;
   will-change: transform;
   pointer-events: none;
