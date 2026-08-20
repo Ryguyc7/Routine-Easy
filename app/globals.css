@@ -1906,3 +1906,141 @@ html[data-theme="dark"] button.app-page-back.app-page-back {
     border-radius: 12px;
   }
 }
+
+/* Vibrant glass finish shared with the refreshed app icon. */
+body {
+  background:
+    radial-gradient(circle at 12% 7%, rgba(108,92,231,.12), transparent 25%),
+    radial-gradient(circle at 88% 9%, rgba(255,128,101,.12), transparent 27%),
+    linear-gradient(180deg, #fffefa 0%, #fbf8f2 58%, #f8f8fc 100%);
+}
+.app-background-blobs .splash-blob > i {
+  filter: saturate(1.22) brightness(1.03);
+  box-shadow: 0 22px 54px color-mix(in srgb, var(--blob-color) 27%, transparent), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.premium-action {
+  color: #fff;
+  border-color: rgba(255,255,255,.62);
+  background: linear-gradient(145deg, #69adff 0%, #4d96ff 54%, #367eea 100%);
+  box-shadow: 0 12px 25px rgba(49,128,234,.28), inset 0 1.5px 0 rgba(255,255,255,.58), inset 0 -1px 0 rgba(33,105,210,.18);
+  text-shadow: 0 1px 1px rgba(29,90,171,.16);
+}
+.progress-card {
+  border-color: rgba(229,221,210,.9);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,255,255,.98), transparent 44%),
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(255,252,247,.91));
+  box-shadow: 0 18px 42px rgba(65,49,35,.1), 0 3px 10px rgba(65,49,35,.035), inset 0 1.5px 0 #fff;
+}
+.progress-icon {
+  background: radial-gradient(circle at 32% 22%, #ffd86f 0 12%, #f8bd42 40%, #eea526 100%);
+  box-shadow: 0 10px 22px rgba(244,185,66,.34), inset 0 1.5px 0 rgba(255,255,255,.55);
+}
+.progress-track {
+  background: linear-gradient(180deg, #eee9f8, #e4def2);
+  box-shadow: inset 0 1px 2px rgba(80,63,120,.08), 0 1px 0 rgba(255,255,255,.8);
+}
+.progress-track span {
+  background: linear-gradient(90deg, #ff947f, #ff7158);
+  box-shadow: 0 2px 8px rgba(255,113,88,.28), inset 0 1px 0 rgba(255,255,255,.3);
+}
+:is(.routine-row, .routine-card, .calendar-detail-card, .history-detail-card, .history-overview-card, .setting-card, .profile-card) {
+  border-color: rgba(229,223,214,.88);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,255,255,.98), transparent 42%),
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(255,253,249,.92));
+  box-shadow: 0 13px 32px rgba(65,51,39,.075), 0 2px 7px rgba(65,51,39,.025), inset 0 1px 0 #fff;
+}
+:is(.routine-emoji, .card-color, .history-emoji, .history-overview-emoji, .empty-state-icon) {
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--routine, var(--history-color, var(--purple))) 17%, transparent), inset 0 1.5px 0 rgba(255,255,255,.68);
+}
+.empty-state-icon {
+  border-color: color-mix(in srgb, currentColor 18%, #fff);
+  background:
+    radial-gradient(circle at 31% 22%, rgba(255,255,255,.98), transparent 29%),
+    linear-gradient(145deg, color-mix(in srgb, currentColor 10%, #fff), #fff);
+}
+.routines-empty-icon { color: #b57a08; }
+.routines-empty-icon svg { width: 25px; height: 25px; stroke-width: 2.05; }
+.routine-library-empty {
+  min-height: calc(100dvh - 190px);
+  display: flex;
+  flex-direction: column;
+}
+.routine-library-empty .routine-grid {
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+}
+.routines-empty {
+  width: min(430px, 100%);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  padding: 38px 24px 92px;
+  text-align: center;
+  animation: routine-reveal .48s cubic-bezier(.16,1,.3,1) both;
+}
+.routines-empty h3 { margin: 18px 0 7px; font-size: 21px; font-weight: 700; letter-spacing: -.55px; }
+.routines-empty p { margin: 0 0 21px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.routines-empty .primary-button { min-width: 190px; }
+
+@media (max-width: 760px) {
+  .mobile-header {
+    background:
+      radial-gradient(circle at 50% -35%, rgba(255,255,255,1) 0 26%, transparent 62%),
+      linear-gradient(180deg, rgba(255,254,251,.99), rgba(255,251,246,.94));
+    box-shadow: 0 1px 0 rgba(229,221,209,.55), 0 9px 26px rgba(74,54,35,.035);
+    backdrop-filter: blur(20px) saturate(1.28);
+    -webkit-backdrop-filter: blur(20px) saturate(1.28);
+  }
+  .mobile-profile {
+    border-color: rgba(219,213,230,.9);
+    background: radial-gradient(circle at 32% 20%, #fff 0 21%, #fbfaff 58%, #f3f0f8 100%);
+    box-shadow: 0 9px 21px rgba(62,48,88,.11), inset 0 1.5px 0 #fff;
+  }
+  .mobile-add {
+    border-color: rgba(255,255,255,.78);
+    background: radial-gradient(circle at 32% 20%, #8bc1ff 0 8%, #5ba3ff 35%, #3f85ed 100%);
+    box-shadow: 0 12px 27px rgba(53,132,237,.34), inset 0 1.5px 0 rgba(255,255,255,.62), inset 0 -1px 0 rgba(20,92,190,.18);
+  }
+  .mobile-wordmark img { filter: drop-shadow(0 9px 15px rgba(71,55,116,.22)) saturate(1.1); }
+  .today-page .progress-card { box-shadow: 0 17px 38px rgba(65,49,35,.085), inset 0 1.5px 0 #fff; }
+  .routine-row { box-shadow: 0 12px 29px rgba(65,51,39,.07), inset 0 1px 0 #fff; }
+  .bottom-nav-surface { filter: drop-shadow(0 0 .75px rgba(68,63,82,.42)) drop-shadow(0 11px 20px rgba(48,43,57,.2)); }
+  .bottom-nav-surface-sheen { opacity: 1; }
+  .bottom-nav button.active::before,
+  .bottom-nav button.calendar-nav-button.active::before {
+    background: radial-gradient(circle at 34% 20%, color-mix(in srgb, var(--nav-accent) 45%, #fff) 0 9%, var(--nav-accent) 46%, color-mix(in srgb, var(--nav-accent) 82%, #222) 100%);
+    box-shadow: 0 12px 24px color-mix(in srgb, var(--nav-accent) 38%, transparent), inset 0 1.5px 0 rgba(255,255,255,.58), inset 0 -1px 0 rgba(35,29,69,.18);
+  }
+  .routine-library-empty { min-height: calc(100dvh - 190px - env(safe-area-inset-top)); }
+  .routines-empty { padding-bottom: 138px; }
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% 7%, rgba(108,92,231,.12), transparent 27%),
+    radial-gradient(circle at 88% 8%, rgba(255,128,101,.09), transparent 29%),
+    #18161d;
+}
+html[data-theme="dark"] :is(.routine-row, .routine-card, .calendar-detail-card, .history-detail-card, .history-overview-card, .setting-card, .profile-card, .progress-card) {
+  border-color: #45404b;
+  background:
+    radial-gradient(circle at 13% 0%, rgba(255,255,255,.055), transparent 42%),
+    linear-gradient(145deg, #2a2630, #232029);
+  box-shadow: 0 15px 34px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.055);
+}
+html[data-theme="dark"] .empty-state-icon {
+  border-color: color-mix(in srgb, currentColor 25%, #3d3843);
+  background: radial-gradient(circle at 31% 22%, rgba(255,255,255,.08), transparent 30%), #29252f;
+  box-shadow: 0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.07);
+}
+@media (max-width: 760px) {
+  html[data-theme="dark"] .mobile-header {
+    background: linear-gradient(180deg, rgba(38,34,44,.99), rgba(31,28,36,.96));
+    box-shadow: 0 1px 0 #3c3742, 0 10px 28px rgba(0,0,0,.13);
+  }
+  html[data-theme="dark"] .mobile-profile { background: radial-gradient(circle at 32% 20%, #3b3642, #27232d 68%); }
+}

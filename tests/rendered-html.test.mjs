@@ -19,6 +19,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(page, /Today’s routines/);
   assert.match(page, /Calendar/);
   assert.match(page, /Add a routine/);
+  assert.match(page, /Your routines start here/);
+  assert.match(page, /Create one small routine and build from there/);
+  assert.match(page, /className="routines-empty"/);
   assert.doesNotMatch(page, /function OnboardingPage|routineez-onboarding-complete/);
   assert.match(page, /SPLASH_DURATION_MS = 2100/);
   assert.match(page, /splash-routine/);
