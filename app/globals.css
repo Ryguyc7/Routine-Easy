@@ -1974,9 +1974,15 @@ body {
   filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(1px -1px 0 rgba(255,255,255,.48)) drop-shadow(-3px 4px 1px rgba(5,4,8,.3)) drop-shadow(-7px 10px 8px rgba(5,4,8,.15));
 }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob-gold > i {
+  background:
+    radial-gradient(ellipse at 20% 74%, rgba(255,255,255,.74) 0 3%, rgba(255,255,255,.3) 14%, transparent 34%),
+    linear-gradient(145deg, var(--blob-light) 0%, var(--blob-color) 52%, var(--blob-dark) 100%);
   filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(-1px 1px 0 rgba(255,255,255,.48)) drop-shadow(3px -4px 1px rgba(5,4,8,.3)) drop-shadow(7px -10px 8px rgba(5,4,8,.15));
 }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob-sky > i {
+  background:
+    radial-gradient(ellipse at 80% 74%, rgba(255,255,255,.74) 0 3%, rgba(255,255,255,.3) 14%, transparent 34%),
+    linear-gradient(145deg, var(--blob-light) 0%, var(--blob-color) 52%, var(--blob-dark) 100%);
   filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(1px 1px 0 rgba(255,255,255,.48)) drop-shadow(-3px -4px 1px rgba(5,4,8,.3)) drop-shadow(-7px -10px 8px rgba(5,4,8,.15));
 }
 :is(.app-background-blobs, .creation-background-blobs) .splash-blob {
