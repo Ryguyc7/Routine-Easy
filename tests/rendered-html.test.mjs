@@ -35,6 +35,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /splash-blob-gold/);
   assert.match(page, /splash-blob-sky/);
   assert.match(page, /splash-easy/);
+  assert.match(page, /routineez-checklist\.png/);
   assert.match(page, /function EasyWord/);
   assert.match(page, /easy-e/);
   assert.match(page, /easy-a/);
@@ -63,6 +64,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   const addRoutineSource = page.slice(page.indexOf("function AddRoutineForm"), page.indexOf("function UniqueChoiceToggles"));
   assert.doesNotMatch(addRoutineSource, /step === 0 \? "Cancel" : "Back"/);
   const fullPageBuilderCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(fullPageBuilderCss, /\.splash-blob > i::after/);
+  assert.match(fullPageBuilderCss, /splash-glow-breathe/);
   assert.match(fullPageBuilderCss, /The add flow is a full-screen page/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page\.add-modal-backdrop \{[^}]*z-index: 220;[^}]*padding: 0;[^}]*overscroll-behavior: none;[^}]*backdrop-filter: none/);
   assert.match(fullPageBuilderCss, /\.routine-builder-page \.add-routine-modal \{[^}]*width: 100%;[^}]*height: 100%;[^}]*overscroll-behavior-y: none;[^}]*-webkit-overflow-scrolling: auto;[^}]*border-radius: 0/);
@@ -565,7 +568,6 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(layout, /suppressHydrationWarning/);
   assert.match(layout, /window\.matchMedia\("\(prefers-color-scheme: dark\)"\)/);
   assert.match(page, /if \(!preferencesLoaded\) return/);
-  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.splash-blob > i::after/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
