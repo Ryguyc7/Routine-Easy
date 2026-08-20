@@ -663,7 +663,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .picker-scroll label { position: relative; flex: 0 0 auto; scroll-snap-align: start; }
 .picker-scroll.picker-wrap { display: grid; align-items: center; justify-content: space-between; overflow: visible; padding: 2px; overscroll-behavior: auto; touch-action: auto; }
 .emoji-picker .picker-wrap { grid-template-columns: repeat(auto-fill, 34px); gap: 9px 10px; }
-.color-picker .picker-wrap { grid-template-columns: repeat(auto-fill, 25px); gap: 11px 12px; }
+.color-picker .picker-wrap { grid-template-columns: repeat(auto-fill, 25px); gap: 11px 12px; padding: 8px; }
 .icon-category-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 13px; }
 .icon-category-tabs button { --category-color: var(--purple); --category-active-ink: #fff; min-height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; border: 1px solid color-mix(in srgb, var(--category-color) 34%, #e1dce6); border-radius: 999px; color: color-mix(in srgb, var(--category-color) 78%, #4e4b55); background: color-mix(in srgb, var(--category-color) 6%, #fff); font-size: 9px; font-weight: 700; cursor: pointer; transition: transform .16s ease, color .18s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease; }
 .icon-category-tabs button > span { font-size: 11px; }
@@ -695,7 +695,6 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .emoji-picker input:checked + span { background: var(--lavender); border-color: var(--purple); }
 .color-picker label > span { position: relative; display: block; width: 25px; height: 25px; border: 4px solid #fff; outline: 1px solid #ddd; border-radius: 50%; cursor: pointer; transition: transform .18s cubic-bezier(.2,.9,.25,1.2), box-shadow .18s ease, outline-color .18s ease; }
 .color-picker input:checked + span { outline: 0; transform: scale(1.1); box-shadow: 0 0 0 2px var(--white), 0 0 0 5px var(--sky), 0 7px 15px rgba(77,150,255,.26); }
-.color-picker input:checked + span::after { content: "✓"; position: absolute; top: 50%; left: 50%; display: block; color: #fff; font-size: 14px; font-weight: 900; line-height: 1; text-shadow: 0 1px 3px rgba(23,21,27,.58); transform: translate(-50%, -50%); }
 .day-picker { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .day-picker legend { width: 100%; }
 .day-picker span { display: grid; place-items: center; width: 35px; height: 35px; border: 1px solid var(--line); border-radius: 50%; color: #85858e; font-size: 11px; cursor: pointer; }
