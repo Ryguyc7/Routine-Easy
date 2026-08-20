@@ -2199,9 +2199,7 @@ function IconPicker({ availableEmojis, selectedEmoji, onSelect }: { availableEmo
   const categoryEmojis = category === "all"
     ? availableEmojis
     : (ICON_CATEGORIES.find((item) => item.id === category)?.icons ?? []).filter((emoji) => availableSet.has(emoji));
-  const displayEmojis = category === "all" && !categoryEmojis.slice(0, ALL_ICON_PREVIEW_COUNT).includes(selectedEmoji) && availableSet.has(selectedEmoji)
-    ? [selectedEmoji, ...categoryEmojis.filter((emoji) => emoji !== selectedEmoji)]
-    : categoryEmojis;
+  const displayEmojis = categoryEmojis;
   useLayoutEffect(() => {
     if (category !== "all") return;
     const grid = gridRef.current;
