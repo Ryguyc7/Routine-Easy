@@ -2083,6 +2083,11 @@ html[data-theme="dark"] .empty-state-icon {
   background: transparent;
   box-shadow: none;
 }
+html[data-theme="dark"] :is(.calendar-page-matched .calendar-detail-card, .history-page-detail .history-detail-card) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 
 @media (max-width: 760px) {
   .today-page .progress-card {
