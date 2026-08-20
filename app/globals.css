@@ -1967,6 +1967,18 @@ body {
   opacity: 1;
   background: linear-gradient(145deg, rgba(255,255,255,.34) 0%, transparent 27%, transparent 68%, color-mix(in srgb, var(--blob-dark) 20%, transparent) 100%);
 }
+:is(.app-background-blobs, .creation-background-blobs) .splash-blob-purple > i {
+  filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(-1px -1px 0 rgba(255,255,255,.48)) drop-shadow(3px 4px 1px color-mix(in srgb, var(--blob-dark) 72%, transparent)) drop-shadow(7px 10px 8px color-mix(in srgb, var(--blob-dark) 42%, transparent));
+}
+:is(.app-background-blobs, .creation-background-blobs) .splash-blob-coral > i {
+  filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(1px -1px 0 rgba(255,255,255,.48)) drop-shadow(-3px 4px 1px color-mix(in srgb, var(--blob-dark) 72%, transparent)) drop-shadow(-7px 10px 8px color-mix(in srgb, var(--blob-dark) 42%, transparent));
+}
+:is(.app-background-blobs, .creation-background-blobs) .splash-blob-gold > i {
+  filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(-1px 1px 0 rgba(255,255,255,.48)) drop-shadow(3px -4px 1px color-mix(in srgb, var(--blob-dark) 72%, transparent)) drop-shadow(7px -10px 8px color-mix(in srgb, var(--blob-dark) 42%, transparent));
+}
+:is(.app-background-blobs, .creation-background-blobs) .splash-blob-sky > i {
+  filter: saturate(1.04) contrast(1.03) brightness(1.01) drop-shadow(1px 1px 0 rgba(255,255,255,.48)) drop-shadow(-3px -4px 1px color-mix(in srgb, var(--blob-dark) 72%, transparent)) drop-shadow(-7px -10px 8px color-mix(in srgb, var(--blob-dark) 42%, transparent));
+}
 .premium-action {
   color: #fff;
   border-color: rgba(255,255,255,.62);
