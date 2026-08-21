@@ -6,7 +6,7 @@ type RoutineRow = {
   targetCount: number; unit: string; amountConfig: string; listConfig: string; dayVariants: string; startDate: string; endDate: string;
 };
 type ItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
-type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
+type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
 type DayVariant = string | { tracking: string[]; label?: string };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days, tracking_mode AS trackingMode,
@@ -94,7 +94,7 @@ function cleanRoutine(value: unknown, index: number) {
   const trackingMode = source.trackingMode === "checklist" || source.trackingMode === "quantity" || source.trackingMode === "hybrid" ? source.trackingMode : "simple";
   const days = [...new Set(array(source.days).map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort();
   if (!days.length) throw new Error(`Routine ${index + 1} needs a day`);
-  const kinds = new Set<TrackerKind>(["amount", "duration", "timer", "rating", "number", "note", "photo", "avoidance"]);
+  const kinds = new Set<TrackerKind>(["amount", "duration", "timer", "rating", "number", "note", "instructions", "photo", "avoidance"]);
   const amountKeys = new Set<string>();
   const amounts = array(source.amounts).slice(0, 10).map((value, amountIndex) => {
     const item = record(value);
@@ -107,7 +107,7 @@ function cleanRoutine(value: unknown, index: number) {
     const minimum = kind === "amount" ? 2 : 1;
     const targetCount = Math.min(maximum, Math.max(minimum, Math.round(Number(item.targetCount)) || (kind === "amount" ? 4 : kind === "timer" || kind === "duration" ? 30 : 1)));
     const defaultUnit = kind === "timer" || kind === "duration" ? "min" : kind === "rating" ? "stars" : "";
-    return { key, name: String(item.name ?? "Tracker").trim().slice(0, 24) || "Tracker", targetCount, kind, unit: String(item.unit ?? defaultUnit).trim().slice(0, 16) };
+    return { key, name: String(item.name ?? "Tracker").trim().slice(0, 24) || "Tracker", targetCount, kind, unit: String(item.unit ?? defaultUnit).trim().slice(0, 16), ...(kind === "instructions" ? { content: String(item.content ?? "").trim().slice(0, 4000) } : {}) };
   });
   const listKeys = new Set<string>();
   const lists = array(source.lists).slice(0, 6).map((value, listIndex) => {

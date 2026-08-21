@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { ensureDatabase, ownerKey } from "../../../db/storage";
 
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
-type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
+type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
 const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
 const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
 type RoutineRow = {
@@ -22,7 +22,7 @@ type RoutineRow = {
   endDate: string;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
-type RoutineAmount = { key: string; name: string; targetCount: number; kind: TrackerKind; unit: string };
+type RoutineAmount = { key: string; name: string; targetCount: number; kind: TrackerKind; unit: string; content?: string };
 type RoutineListInput = { key: string; name: string; items: string[] };
 type DayVariant = string | { tracking: string[]; label?: string };
 
@@ -51,7 +51,6 @@ function cleanUnit(unit: unknown, mode: TrackingMode) {
 }
 
 function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetCount: number; unit: string }) {
-  if (!usesQuantity(mode)) return [];
   const source = Array.isArray(amounts) ? amounts : [];
   const clean: RoutineAmount[] = [];
   const usedKeys = new Set<string>();
@@ -62,8 +61,14 @@ function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetC
     while (usedKeys.has(key)) key = `${key}-${index + 1}`;
     usedKeys.add(key);
     const requestedKind = String(record.kind ?? "amount");
-    const kind: TrackerKind = requestedKind === "duration" || requestedKind === "timer" || requestedKind === "rating" || requestedKind === "number" || requestedKind === "note" || requestedKind === "photo" || requestedKind === "avoidance" ? requestedKind : "amount";
+    const kind: TrackerKind = requestedKind === "duration" || requestedKind === "timer" || requestedKind === "rating" || requestedKind === "number" || requestedKind === "note" || requestedKind === "instructions" || requestedKind === "photo" || requestedKind === "avoidance" ? requestedKind : "amount";
+    if (!usesQuantity(mode) && kind !== "instructions") continue;
     const name = String(record.name ?? "").trim().slice(0, 24);
+    if (kind === "instructions") {
+      const content = String(record.content ?? "").trim().slice(0, 4000);
+      if (name && content) clean.push({ key, name, targetCount: 1, kind, unit: "", content });
+      continue;
+    }
     const count = Math.round(Number(record.targetCount));
     const defaultTarget = kind === "duration" || kind === "timer" ? 30 : kind === "amount" ? 4 : 1;
     const maximum = kind === "amount" ? 12 : kind === "duration" || kind === "timer" ? 1440 : 1;
@@ -73,8 +78,8 @@ function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetC
     const unit = String(record.unit ?? defaultUnit).trim().slice(0, 16) || defaultUnit;
     if (name) clean.push({ key, name, targetCount, kind, unit });
   }
-  if (clean.length) return clean;
-  return [{ key: "amount-1", name: fallback?.unit || "pills", targetCount: fallback?.targetCount || 4, kind: "amount" as const, unit: fallback?.unit || "pills" }];
+  if (clean.some((tracker) => tracker.kind !== "instructions") || !usesQuantity(mode)) return clean;
+  return [...clean, { key: "amount-1", name: fallback?.unit || "pills", targetCount: fallback?.targetCount || 4, kind: "amount" as const, unit: fallback?.unit || "pills" }];
 }
 
 function cleanLists(lists: unknown, mode: TrackingMode, legacyItems: unknown = []) {

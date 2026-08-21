@@ -6,8 +6,8 @@ import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleChe
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
-type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "photo" | "avoidance";
-type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string };
+type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
+type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string; content?: string };
 type RoutineList = { key: string; name: string };
 type RoutineListDraft = RoutineList & { items: string };
 type DayTrackingPlan = { tracking: string[]; label?: string };
@@ -149,7 +149,8 @@ function readDayVariants(form: FormData) {
 }
 
 function trackingModeFor(lists: RoutineListDraft[], amounts: RoutineAmount[]): TrackingMode {
-  return lists.length && amounts.length ? "hybrid" : lists.length ? "checklist" : amounts.length ? "quantity" : "simple";
+  const actionableAmounts = amounts.filter((tracker) => trackerKind(tracker) !== "instructions");
+  return lists.length && actionableAmounts.length ? "hybrid" : lists.length ? "checklist" : actionableAmounts.length ? "quantity" : "simple";
 }
 
 function trackerKind(tracker: RoutineAmount): TrackerKind {
@@ -158,12 +159,14 @@ function trackerKind(tracker: RoutineAmount): TrackerKind {
 
 function trackerIsComplete(tracker: RoutineAmount, count: number) {
   const kind = trackerKind(tracker);
+  if (kind === "instructions") return true;
   if (kind === "rating" || kind === "number" || kind === "note" || kind === "photo" || kind === "avoidance") return count > 0;
   if (kind === "timer") return count >= tracker.targetCount * 60;
   return count >= tracker.targetCount;
 }
 
 function trackerProgress(tracker: RoutineAmount, count: number) {
+  if (trackerKind(tracker) === "instructions") return 0;
   if (trackerKind(tracker) === "rating" || trackerKind(tracker) === "number" || trackerKind(tracker) === "note" || trackerKind(tracker) === "photo" || trackerKind(tracker) === "avoidance") return count > 0 ? 100 : 0;
   if (trackerKind(tracker) === "timer") return Math.min(100, Math.round((count / Math.max(60, tracker.targetCount * 60)) * 100));
   return Math.min(100, Math.round((count / Math.max(1, tracker.targetCount)) * 100));
@@ -171,6 +174,7 @@ function trackerProgress(tracker: RoutineAmount, count: number) {
 
 function trackerCompletionValue(tracker: RoutineAmount) {
   const kind = trackerKind(tracker);
+  if (kind === "instructions") return 0;
   if (kind === "timer") return tracker.targetCount * 60;
   if (kind === "rating" || kind === "number" || kind === "avoidance") return 1;
   return tracker.targetCount;
@@ -178,6 +182,7 @@ function trackerCompletionValue(tracker: RoutineAmount) {
 
 function trackerMaximumValue(tracker: RoutineAmount) {
   const kind = trackerKind(tracker);
+  if (kind === "instructions") return 0;
   if (kind === "rating") return 5;
   if (kind === "avoidance") return 1;
   if (kind === "timer") return 86_400;
@@ -195,6 +200,7 @@ function formatTimerSeconds(seconds: number) {
 
 function trackerSummary(tracker: RoutineAmount, count: number) {
   const kind = trackerKind(tracker);
+  if (kind === "instructions") return tracker.name;
   if (kind === "rating") return count ? `${count}/5 ${tracker.name}` : `Rate ${tracker.name}`;
   if (kind === "note") return count ? `${tracker.name} added` : `Add ${tracker.name}`;
   if (kind === "photo") return count ? `${tracker.name} added` : `Add ${tracker.name}`;
@@ -206,7 +212,7 @@ function trackerSummary(tracker: RoutineAmount, count: number) {
 }
 
 function trackerKindLabel(tracker: RoutineAmount) {
-  const labels: Record<TrackerKind, string> = { amount: "Daily amount", duration: "Duration", timer: "Timer", rating: "Rating", number: "Number", note: "Note", photo: "Photo", avoidance: "Avoided habit" };
+  const labels: Record<TrackerKind, string> = { amount: "Daily amount", duration: "Duration", timer: "Timer", rating: "Rating", number: "Number", note: "Note", instructions: "Instructions", photo: "Photo", avoidance: "Avoided habit" };
   return labels[trackerKind(tracker)];
 }
 
@@ -258,11 +264,13 @@ function routineTrackingForDay(routine: Routine, day: number) {
   const refs = typeof variant === "object" && Array.isArray(variant.tracking) ? variant.tracking : [];
   const useAll = !refs.length || refs.includes("all");
   const lists = useAll ? routine.lists : routine.lists.filter((list) => refs.includes(`list:${list.key}`));
-  const amounts = useAll ? routine.amounts : routine.amounts.filter((amount) => refs.includes(`amount:${amount.key}`));
+  const instructions = routine.amounts.filter((amount) => trackerKind(amount) === "instructions");
+  const actionableAmounts = routine.amounts.filter((amount) => trackerKind(amount) !== "instructions");
+  const amounts = useAll ? actionableAmounts : actionableAmounts.filter((amount) => refs.includes(`amount:${amount.key}`));
   const listKeys = new Set(lists.map((list) => list.key));
   const items = useAll ? routine.items : routine.items.filter((item) => listKeys.has(item.listKey));
   const mode: TrackingMode = lists.length && amounts.length ? "hybrid" : lists.length ? "checklist" : amounts.length ? "quantity" : "simple";
-  return { lists, amounts, items, mode };
+  return { lists, amounts, instructions, items, mode };
 }
 
 function routineTrackingForDate(routine: Routine, date: string) {
@@ -1400,6 +1408,7 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
         </div></div>}
       </div>
       <div className="history-records">
+        {tracking.instructions.length > 0 && <section className="history-record-section history-instructions"><div className="history-record-heading"><h3>Instructions</h3><span>Saved with this routine</span></div><InstructionsPanel instructions={tracking.instructions} /></section>}
         {usesChecklist(tracking.mode) && <section className="history-record-section"><div className="history-record-heading"><h3>Checklist</h3><span>Tap to edit · auto-saves</span></div>{tracking.lists.map((list) => <div className="history-record-list" key={list.key}><strong>{list.name}</strong>{tracking.items.filter((item) => item.listKey === list.key).map((item) => { const checked = completedItemIds.has(item.id); return <button type="button" className={`history-record-row history-record-edit${checked ? " recorded" : ""}`} key={item.id} onClick={() => void onToggleItem(item.id)} aria-pressed={checked}><span aria-hidden="true">{checked ? "✓" : "×"}</span><div><strong>{item.title}</strong><small>{checked ? "Done" : "Not done"}</small></div></button>; })}</div>)}</section>}
         {usesQuantity(tracking.mode) && <section className="history-record-section"><div className="history-record-heading"><h3>Tracking</h3><span>Edit here · auto-saves</span></div>{tracking.amounts.map((tracker) => {
           const count = amountByKey.get(tracker.key) ?? 0;
@@ -1694,8 +1703,8 @@ function CalendarNavButton({ active, onClick, date }: { active: boolean; onClick
 function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat }) {
   const dayVariant = routine.dayVariants?.[new Date().getDay()];
   const activeTracking = routineTrackingForDay(routine, new Date().getDay());
-  const { lists: activeLists, amounts: activeAmounts, items: activeItems, mode: activeTrackingMode } = activeTracking;
-  const hasDetails = (usesChecklist(activeTrackingMode) && activeItems.length > 0) || (usesQuantity(activeTrackingMode) && activeAmounts.length > 0);
+  const { lists: activeLists, amounts: activeAmounts, instructions: activeInstructions, items: activeItems, mode: activeTrackingMode } = activeTracking;
+  const hasDetails = (usesChecklist(activeTrackingMode) && activeItems.length > 0) || (usesQuantity(activeTrackingMode) && activeAmounts.length > 0) || activeInstructions.length > 0;
   const [expanded, setExpanded] = useState(false);
   const [expansionHeight, setExpansionHeight] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -1727,6 +1736,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   const detail = [
     ...(usesChecklist(activeTrackingMode) ? [`${completedCount}/${activeItems.length} items`] : []),
     ...(usesQuantity(activeTrackingMode) ? [activeAmounts.length === 1 ? trackerSummary(activeAmounts[0], amountCounts[activeAmounts[0].key] ?? 0) : `${activeAmounts.filter((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)).length}/${activeAmounts.length} trackers`] : []),
+    ...(activeInstructions.length ? [activeInstructions.length === 1 ? "Instructions" : `${activeInstructions.length} instructions`] : []),
   ].join(" · ");
   const toggleSkip = () => {
     const nextSkipped = !skippedRef.current;
@@ -1830,6 +1840,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     </div>
     {hasDetails && <div className="routine-expansion" aria-hidden={!expanded} inert={!expanded} style={{ height: expanded ? `${expansionHeight}px` : "0px" }}>
       <div ref={expansionInnerRef} className="routine-expansion-inner">
+        {activeInstructions.length > 0 && <InstructionsPanel instructions={activeInstructions} />}
         {usesQuantity(activeTrackingMode) && <div className="quantity-trackers">{activeAmounts.map((amount) => <TrackerControl key={amount.key} routine={routine} tracker={amount} count={amountCounts[amount.key] ?? 0} entry={trackerEntries[amount.key]} date={localDateKey()} onChange={(count) => onSetAmount(amount, count)} onSetNote={(value) => onSetNote(amount, value)} onUploadPhoto={(file) => onUploadPhoto(amount, file)} onRemovePhoto={() => onRemovePhoto(amount)} />)}</div>}
         {usesChecklist(activeTrackingMode) && activeItems.length > 0 && <div className="routine-checklist">{activeLists.map((list) => <section className="routine-list-group" key={list.key}>
           <strong className="routine-list-name">{list.name}</strong>
@@ -1846,6 +1857,13 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
       <span style={{ width: `${progressValue}%` }} />
     </div>}
   </article>;
+}
+
+function InstructionsPanel({ instructions, className = "" }: { instructions: RoutineAmount[]; className?: string }) {
+  return <div className={`routine-instructions${className ? ` ${className}` : ""}`}>{instructions.map((instruction) => <section className="routine-instruction" key={instruction.key}>
+    <header><span aria-hidden="true">≡</span><strong>{instruction.name}</strong></header>
+    <p>{instruction.content}</p>
+  </section>)}</div>;
 }
 
 function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallbackUrl: string; alt: string }) {
@@ -1926,10 +1944,13 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
 
 function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
-  const trackingLabel = routine.trackingMode === "simple" ? "Single check" : [
+  const instructionCount = routine.amounts.filter((amount) => trackerKind(amount) === "instructions").length;
+  const trackingLabelParts = [
     ...(usesChecklist(routine.trackingMode) ? [`${routine.lists.length} ${routine.lists.length === 1 ? "list" : "lists"}`] : []),
-    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.map((amount) => trackerKindLabel(amount)).join(" + ")] : []),
-  ].join(" + ");
+    ...(usesQuantity(routine.trackingMode) ? [routine.amounts.filter((amount) => trackerKind(amount) !== "instructions").map((amount) => trackerKindLabel(amount)).join(" + ")] : []),
+    ...(instructionCount ? [instructionCount === 1 ? "Instructions" : `${instructionCount} instructions`] : []),
+  ].filter(Boolean);
+  const trackingLabel = trackingLabelParts.length ? trackingLabelParts.join(" + ") : "Single check";
   return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
@@ -2043,21 +2064,25 @@ function CompletionHistoryDialog({ routine, completions, itemCompletions, amount
 
 function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amounts, timeFormat }: { name: string; time: string; emoji: string; color: string; trackingMode: TrackingMode; lists: RoutineListDraft[]; amounts: RoutineAmount[]; timeFormat: TimeFormat }) {
   const items = useMemo(() => lists.flatMap((list) => list.items.split(/\r?\n/).map((title) => title.trim()).filter(Boolean).map((title) => ({ listKey: list.key, title }))), [lists]);
+  const actionableAmounts = useMemo(() => amounts.filter((amount) => trackerKind(amount) !== "instructions"), [amounts]);
+  const instructions = useMemo(() => amounts.filter((amount) => trackerKind(amount) === "instructions"), [amounts]);
   const [expanded, setExpanded] = useState(false);
   const [simpleDone, setSimpleDone] = useState(false);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [amountCounts, setAmountCounts] = useState<Record<string, number>>({});
-  const hasDetails = usesChecklist(trackingMode) || usesQuantity(trackingMode);
+  const hasDetails = usesChecklist(trackingMode) || usesQuantity(trackingMode) || instructions.length > 0;
   const checklistDone = !usesChecklist(trackingMode) || (items.length > 0 && checkedItems.length === items.length);
-  const quantityDone = !usesQuantity(trackingMode) || (amounts.length > 0 && amounts.every((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)));
+  const quantityDone = !usesQuantity(trackingMode) || (actionableAmounts.length > 0 && actionableAmounts.every((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)));
   const completed = trackingMode === "simple" ? simpleDone : checklistDone && quantityDone;
-  const detail = trackingMode === "simple" ? "Single check" : [
+  const detail = [
+    ...(trackingMode === "simple" ? ["Single check"] : []),
     ...(usesChecklist(trackingMode) ? [items.length ? `${checkedItems.length}/${items.length} items` : "List · Add items below"] : []),
-    ...(usesQuantity(trackingMode) ? [amounts.length === 1 ? trackerSummary(amounts[0], amountCounts[amounts[0].key] ?? 0) : `${amounts.filter((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)).length}/${amounts.length} trackers`] : []),
+    ...(usesQuantity(trackingMode) ? [actionableAmounts.length === 1 ? trackerSummary(actionableAmounts[0], amountCounts[actionableAmounts[0].key] ?? 0) : `${actionableAmounts.filter((amount) => trackerIsComplete(amount, amountCounts[amount.key] ?? 0)).length}/${actionableAmounts.length} trackers`] : []),
+    ...(instructions.length ? [instructions.length === 1 ? "Instructions" : `${instructions.length} instructions`] : []),
   ].join(" · ");
   const progressParts = [
     ...(usesChecklist(trackingMode) ? [items.length ? Math.round((checkedItems.length / items.length) * 100) : 0] : []),
-    ...(usesQuantity(trackingMode) ? amounts.map((amount) => trackerProgress(amount, amountCounts[amount.key] ?? 0)) : []),
+    ...(usesQuantity(trackingMode) ? actionableAmounts.map((amount) => trackerProgress(amount, amountCounts[amount.key] ?? 0)) : []),
   ];
   const progressValue = trackingMode === "simple" ? simpleDone ? 100 : 0 : Math.round(progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);
 
@@ -2073,14 +2098,14 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
   }, [items.length]);
 
   useEffect(() => {
-    setAmountCounts((counts) => Object.fromEntries(amounts.map((amount) => [amount.key, Math.min(counts[amount.key] ?? 0, trackerMaximumValue(amount))])));
-  }, [amounts]);
+    setAmountCounts((counts) => Object.fromEntries(actionableAmounts.map((amount) => [amount.key, Math.min(counts[amount.key] ?? 0, trackerMaximumValue(amount))])));
+  }, [actionableAmounts]);
 
   const toggleAll = () => {
     if (trackingMode === "simple") setSimpleDone((done) => !done);
     else {
       if (usesChecklist(trackingMode)) setCheckedItems(completed ? [] : items.map((_, index) => index));
-      if (usesQuantity(trackingMode)) setAmountCounts(Object.fromEntries(amounts.map((amount) => [amount.key, completed ? 0 : trackerCompletionValue(amount)])));
+      if (usesQuantity(trackingMode)) setAmountCounts(Object.fromEntries(actionableAmounts.map((amount) => [amount.key, completed ? 0 : trackerCompletionValue(amount)])));
     }
   };
 
@@ -2093,7 +2118,8 @@ function RoutineLivePreview({ name, time, emoji, color, trackingMode, lists, amo
       </button>
       <button type="button" className={`preview-check${completed ? " checked" : ""}`} onClick={toggleAll} aria-label={completed ? "Reset preview completion" : "Complete preview routine"}>{completed ? "✓" : ""}</button>
     </div>
-    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">{amounts.map((amount) => <PreviewTracker key={amount.key} tracker={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => setAmountCounts((counts) => ({ ...counts, [amount.key]: count }))} />)}</div>}
+    {expanded && instructions.length > 0 && <InstructionsPanel instructions={instructions} className="preview-details preview-instructions" />}
+    {expanded && usesQuantity(trackingMode) && <div className="preview-details preview-amount">{actionableAmounts.map((amount) => <PreviewTracker key={amount.key} tracker={amount} count={amountCounts[amount.key] ?? 0} onChange={(count) => setAmountCounts((counts) => ({ ...counts, [amount.key]: count }))} />)}</div>}
     {expanded && usesChecklist(trackingMode) && <div className="preview-details preview-list">
       {items.length ? lists.map((list) => <section className="preview-list-group" key={list.key}><strong>{list.name || "New list"}</strong>{items.map((item, index) => ({ item, index })).filter(({ item }) => item.listKey === list.key).map(({ item, index }) => {
         const checked = checkedItems.includes(index);
@@ -2631,6 +2657,7 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { l
     { kind: "timer", symbol: "▶", label: "Timer", note: "Pause and resume one running total" },
     { kind: "rating", symbol: "★", label: "Rating", note: "Rate the day from one to five" },
     { kind: "number", symbol: "#", label: "Number entry", note: "Save a daily measurement" },
+    { kind: "instructions", symbol: "≡", label: "Instructions", note: "Save information or steps to follow" },
     { kind: "note", symbol: "✎", label: "Note", note: "Write a short daily entry" },
     { kind: "photo", symbol: "▣", label: "Photo", note: "Attach a daily progress image" },
     { kind: "avoidance", symbol: "⊘", label: "Avoided habit", note: "Check off something you avoided today" },
@@ -2670,19 +2697,21 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { l
       </section>)}
       {amounts.map((amount, index) => {
         const kind = trackerKind(amount);
-        const symbols: Record<TrackerKind, string> = { amount: "▥", duration: "◴", timer: "▶", rating: "★", number: "#", note: "✎", photo: "▣", avoidance: "⊘" };
-        const placeholders: Record<TrackerKind, string> = { amount: "e.g. Vitamin C", duration: "e.g. Meditation", timer: "e.g. Focus session", rating: "e.g. Energy", number: "e.g. Pages read", note: "e.g. Daily reflection", photo: "e.g. Progress photo", avoidance: "e.g. Drinking soda" };
+        const symbols: Record<TrackerKind, string> = { amount: "▥", duration: "◴", timer: "▶", rating: "★", number: "#", note: "✎", instructions: "≡", photo: "▣", avoidance: "⊘" };
+        const placeholders: Record<TrackerKind, string> = { amount: "e.g. Vitamin C", duration: "e.g. Meditation", timer: "e.g. Focus session", rating: "e.g. Energy", number: "e.g. Pages read", note: "e.g. Daily reflection", instructions: "e.g. Breakfast instructions", photo: "e.g. Progress photo", avoidance: "e.g. Drinking soda" };
         const update = (next: Partial<RoutineAmount>) => onAmountsChange(amounts.map((item) => item.key === amount.key ? { ...item, ...next } : item));
         return <section className={`tracking-block tracking-amount-block tracking-kind-${kind}`} key={amount.key}>
           <header><span aria-hidden="true">{symbols[kind]}</span><strong>{trackerKindLabel(amount)}</strong><button type="button" onClick={() => onAmountsChange(amounts.filter((item) => item.key !== amount.key))} aria-label={`Remove ${amount.name || `tracker ${index + 1}`}`}><Trash2 aria-hidden="true" /></button></header>
-          <div className={`tracking-amount-fields${kind === "rating" || kind === "note" || kind === "photo" || kind === "avoidance" ? " single" : ""}`}><label className="field"><span>Name</span><input value={amount.name} onChange={(event) => update({ name: event.target.value })} placeholder={placeholders[kind]} maxLength={24} required /></label>
+          <div className={`tracking-amount-fields${kind === "rating" || kind === "note" || kind === "instructions" || kind === "photo" || kind === "avoidance" ? " single" : ""}`}><label className="field"><span>Name</span><input value={amount.name} onChange={(event) => update({ name: event.target.value })} placeholder={placeholders[kind]} maxLength={24} required /></label>
           {kind === "amount" && <label className="field"><span>Amount</span><input type="number" min="2" max="12" value={amount.targetCount} onChange={(event) => update({ targetCount: Math.min(12, Math.max(2, Number(event.target.value) || 2)) })} required /></label>}
           {(kind === "duration" || kind === "timer") && <label className="field"><span>Goal minutes</span><input type="number" min="1" max="1440" value={amount.targetCount} onChange={(event) => update({ targetCount: Math.min(1440, Math.max(1, Number(event.target.value) || 1)), unit: "min" })} required /></label>}
           {kind === "number" && <label className="field tracking-unit-field"><span>Unit <small>Optional</small></span><input value={amount.unit ?? ""} onChange={(event) => update({ unit: event.target.value })} placeholder="pages" maxLength={16} /></label>}
           </div>
+          {kind === "instructions" && <label className="field tracking-instructions-field"><span>Instructions</span><textarea value={amount.content ?? ""} onChange={(event) => update({ content: event.target.value })} placeholder={"Example:\nToast one slice of bread\nAdd eggs and fruit\nRead before preparing breakfast"} maxLength={4000} required /></label>}
           {kind === "rating" && <p className="tracking-type-note">A rating is complete after choosing 1–5 stars.</p>}
           {kind === "number" && <p className="tracking-type-note">Enter any amount for the day—there is no goal to reach.</p>}
           {kind === "note" && <p className="tracking-type-note">A saved note completes this tracker for the day.</p>}
+          {kind === "instructions" && <p className="tracking-type-note">Saved with the routine and shown every time you open it. This is not a daily entry.</p>}
           {kind === "photo" && <p className="tracking-type-note">Images are stored privately with the routine.</p>}
           {kind === "avoidance" && <p className="tracking-type-note">Check “I avoided this today” when you did not do the habit.</p>}
         </section>;
@@ -2731,7 +2760,7 @@ function DayPlanSettings({ scheduledDays, onScheduledDaysChange, lists, amounts,
 
   const trackingOptions = [
     ...lists.map((list, index) => ({ ref: `list:${list.key}`, symbol: "☷", label: list.name || `List ${index + 1}`, note: "Checklist" })),
-    ...amounts.map((amount, index) => ({ ref: `amount:${amount.key}`, symbol: ({ amount: "▥", duration: "◴", timer: "▶", rating: "★", number: "#", note: "✎", photo: "▣", avoidance: "⊘" } as Record<TrackerKind, string>)[trackerKind(amount)], label: amount.name || `${trackerKindLabel(amount)} ${index + 1}`, note: trackerKindLabel(amount) })),
+    ...amounts.filter((amount) => trackerKind(amount) !== "instructions").map((amount, index) => ({ ref: `amount:${amount.key}`, symbol: ({ amount: "▥", duration: "◴", timer: "▶", rating: "★", number: "#", note: "✎", instructions: "≡", photo: "▣", avoidance: "⊘" } as Record<TrackerKind, string>)[trackerKind(amount)], label: amount.name || `${trackerKindLabel(amount)} ${index + 1}`, note: trackerKindLabel(amount) })),
   ];
   const validTrackingRefs = new Set(trackingOptions.map((option) => option.ref));
   const storedTracking = plans[activeDay] ?? [];

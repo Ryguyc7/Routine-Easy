@@ -252,6 +252,12 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .routine-checklist button.checked { color: #9999a2; text-decoration: line-through; }
 .routine-checklist button.checked .item-check { color: #fff; border-color: var(--routine); background: var(--routine); text-decoration: none; }
 .quantity-trackers { width: 100%; display: grid; gap: 10px; padding: 11px 17px 12px 78px; }
+.routine-instructions { --instruction-accent: var(--routine, var(--preview, var(--history-color, var(--purple)))); width: 100%; display: grid; gap: 8px; padding: 11px 17px 12px 78px; }
+.routine-instruction { min-width: 0; display: grid; gap: 8px; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--instruction-accent) 24%, #e3dfe6); border-radius: 11px; background: color-mix(in srgb, var(--instruction-accent) 6%, #fff); }
+.routine-instruction header { display: flex; align-items: center; gap: 7px; }
+.routine-instruction header > span { width: 22px; height: 22px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: var(--instruction-accent); background: color-mix(in srgb, var(--instruction-accent) 12%, #fff); font-size: 13px; font-weight: 850; }
+.routine-instruction strong { color: var(--ink); font-size: 11px; }
+.routine-instruction p { margin: 0; color: #66636d; font-size: 10.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .quantity-tracker { min-width: 0; display: grid; grid-template-columns: minmax(62px, auto) minmax(0, 1fr); align-items: center; gap: 10px; }
 .quantity-name { overflow: hidden; color: #575762; font-size: 11px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 .quantity-pill { display: grid; grid-template-columns: repeat(var(--segments), minmax(0, 1fr)); height: 36px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--routine) 48%, #d8d6dd); border-radius: 999px; background: color-mix(in srgb, var(--routine) 4%, #fff); box-shadow: inset 0 1px 3px rgba(31,25,61,.05); }
@@ -575,6 +581,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .tracking-amount-fields.single { grid-template-columns: 1fr; }
 .tracking-kind-number .tracking-amount-fields { grid-template-columns: minmax(0, 1fr) 110px; }
 .tracking-type-note { margin: -2px 1px 0; color: #96949e; font-size: 8.5px; line-height: 1.4; }
+.tracking-instructions-field textarea { min-height: 132px; line-height: 1.5; }
 .date-range-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
 .date-range-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .date-range-toggle > span { display: grid; gap: 3px; }
@@ -843,6 +850,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .history-tracker-editor + .history-tracker-editor { border-top: 1px solid #e9e5eb; }
 .history-tracker-editor .quantity-tracker { grid-template-columns: minmax(86px, auto) minmax(0, 1fr); }
 .history-tracker-editor .tracker-wide-control { padding: 1px 0; }
+.history-instructions .routine-instructions { padding: 0; }
 .history-tracker-editor .tracker-photo img { max-height: 210px; }
 .history-simple-record { display: flex; align-items: center; gap: 9px; padding: 11px 12px; border: 1px solid #ebe7ed; border-radius: 13px; background: #fcfbfd; }
 .history-simple-edit { width: 100%; color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -1103,6 +1111,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
   .routine-emoji { border-radius: 50%; background: color-mix(in srgb, var(--routine) 17%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--routine) 10%, transparent); }
   .routine-checklist { padding: 13px 14px 14px 19px; }
   .quantity-trackers { padding: 11px 15px 15px 19px; }
+  .routine-instructions { padding: 11px 15px 15px 19px; }
   .routine-card { min-height: 136px; padding-bottom: 46px; }
   .routine-card-actions { left: 75px; }
   .feature-dialog-backdrop { padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
@@ -1537,6 +1546,9 @@ html[data-theme="dark"] .collapsed-progress { background: color-mix(in srgb, var
 html[data-theme="dark"] :is(.preview-list::before, .preview-amount::before) { background: #45404b; }
 html[data-theme="dark"] :is(.routine-list-group + .routine-list-group, .preview-list-group + .preview-list-group) { border-color: #45404b; }
 html[data-theme="dark"] :is(.routine-checklist button, .preview-list button, .preview-list-group > strong, .tracker-wide-control > strong, .tracker-note-heading strong, .tracker-photo-row > strong) { color: #d1ccd6; }
+html[data-theme="dark"] .routine-instruction { border-color: color-mix(in srgb, var(--instruction-accent) 30%, #48424f); background: color-mix(in srgb, var(--instruction-accent) 9%, #25222b); }
+html[data-theme="dark"] .routine-instruction header > span { background: color-mix(in srgb, var(--instruction-accent) 15%, #2b2731); }
+html[data-theme="dark"] .routine-instruction p { color: #c0bac6; }
 html[data-theme="dark"] :is(.quantity-pill, .preview-quantity, .tracker-stepper button, .tracker-timer button, .tracker-avoidance, .preview-generic-tracker, .preview-stepper button) {
   border-color: color-mix(in srgb, var(--routine, var(--preview)) 45%, #4a4550);
   background: color-mix(in srgb, var(--routine, var(--preview)) 8%, #211e26);

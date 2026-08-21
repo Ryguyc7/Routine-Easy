@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const amount = amounts.find((item) => item.key === amountKey);
   if (!amount) return Response.json({ error: "Amount tracker not found" }, { status: 404 });
   const kind = amount.kind ?? "amount";
-  if (kind === "note" || kind === "photo") return Response.json({ error: "Use the entry endpoint for this tracker" }, { status: 400 });
+  if (kind === "note" || kind === "instructions" || kind === "photo") return Response.json({ error: "Use the entry endpoint for this tracker" }, { status: 400 });
   const target = Math.max(1, Math.round(Number(amount.targetCount)) || 1);
   const maximum = kind === "rating" ? 5 : kind === "avoidance" ? 1 : kind === "timer" ? 86_400 : kind === "number" ? 1_000_000_000 : kind === "amount" ? Math.min(12, target) : Math.min(100000, target);
   const safeCount = Math.min(count, maximum);

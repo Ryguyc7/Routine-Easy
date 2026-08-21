@@ -3,11 +3,12 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("ships the Routine EASY product instead of starter content", async () => {
-  const [page, layout, packageJson, routinesRoute, quantityRoute, completionRoute, storage, mobileIndex, mobileMain, capacitorConfig] = await Promise.all([
+  const [page, layout, packageJson, routinesRoute, dataRoute, quantityRoute, completionRoute, storage, mobileIndex, mobileMain, capacitorConfig] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../app/api/routines/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/data/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/quantity-completions/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/completions/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../db/storage.ts", import.meta.url), "utf8"),
@@ -157,6 +158,12 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /\+ Add tracking/);
   assert.match(page, /Named steps to check off/);
   assert.match(page, /Pause and resume one running total/);
+  assert.match(page, /kind: "instructions", symbol: "≡", label: "Instructions"/);
+  assert.match(page, /Save information or steps to follow/);
+  assert.match(page, /This is not a daily entry/);
+  assert.match(page, /function InstructionsPanel/);
+  assert.match(page, /activeInstructions\.length > 0/);
+  assert.match(page, /trackerKind\(tracker\) !== "instructions"/);
   assert.match(page, /Attach a daily progress image/);
   assert.match(page, /function TrackerControl/);
   assert.doesNotMatch(page, /Already included on every routine/);
@@ -195,7 +202,15 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(storage, /list_key TEXT NOT NULL DEFAULT 'list-1'/);
   assert.match(quantityRoute, /amount_key AS amountKey|amount_key = \?/);
   assert.match(quantityRoute, /INSERT INTO amount_completions/);
+  assert.match(quantityRoute, /kind === "instructions"/);
   assert.match(routinesRoute, /amount_config AS amountConfig/);
+  assert.match(routinesRoute, /requestedKind === "instructions"/);
+  assert.match(routinesRoute, /record\.content/);
+  assert.match(routinesRoute, /slice\(0, 4000\)/);
+  assert.match(dataRoute, /"instructions"/);
+  assert.match(dataRoute, /item\.content/);
+  assert.match(fullPageBuilderCss, /\.routine-instruction \{/);
+  assert.match(fullPageBuilderCss, /\.tracking-instructions-field textarea \{[^}]*min-height: 132px/);
   assert.match(storage, /CREATE TABLE IF NOT EXISTS amount_completions/);
   assert.match(page, /setPreviewEmoji/);
   assert.match(page, /setPreviewColor/);
@@ -415,7 +430,6 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(page, /routine-easy-backup-/);
   assert.match(page, /document\.documentElement\.dataset\.theme/);
   assert.match(page, /Notification\.requestPermission/);
-  const dataRoute = await readFile(new URL("../app/api/data/route.ts", import.meta.url), "utf8");
   assert.match(dataRoute, /export async function GET/);
   assert.match(dataRoute, /export async function PUT/);
   assert.match(dataRoute, /export async function DELETE/);
