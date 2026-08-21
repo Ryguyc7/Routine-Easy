@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { ensureDatabase, ownerKey } from "../../../db/storage";
+import { instructionImageKeys } from "../../../db/instruction-images";
 
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
@@ -22,7 +23,8 @@ type RoutineRow = {
   endDate: string;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
-type RoutineAmount = { key: string; name: string; targetCount: number; kind: TrackerKind; unit: string; content?: string };
+type InstructionImage = { id: string; contentType?: string };
+type RoutineAmount = { key: string; name: string; targetCount: number; kind: TrackerKind; unit: string; content?: string; bullets?: string[]; images?: InstructionImage[] };
 type RoutineListInput = { key: string; name: string; items: string[] };
 type DayVariant = string | { tracking: string[]; label?: string };
 
@@ -50,6 +52,20 @@ function cleanUnit(unit: unknown, mode: TrackingMode) {
   return String(unit ?? "pills").trim().slice(0, 24) || "pills";
 }
 
+function cleanInstructionImages(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const used = new Set<string>();
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    const id = String(record.id ?? "").trim().toLowerCase();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id) || used.has(id)) return [];
+    used.add(id);
+    const contentType = String(record.contentType ?? "image/jpeg").toLowerCase();
+    return [{ id, contentType: /^image\/(?:jpeg|png|webp|gif|heic|heif)$/.test(contentType) ? contentType : "image/jpeg" }];
+  }).slice(0, 6);
+}
+
 function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetCount: number; unit: string }) {
   const source = Array.isArray(amounts) ? amounts : [];
   const clean: RoutineAmount[] = [];
@@ -63,10 +79,12 @@ function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetC
     const requestedKind = String(record.kind ?? "amount");
     const kind: TrackerKind = requestedKind === "duration" || requestedKind === "timer" || requestedKind === "rating" || requestedKind === "number" || requestedKind === "note" || requestedKind === "instructions" || requestedKind === "photo" || requestedKind === "avoidance" ? requestedKind : "amount";
     if (!usesQuantity(mode) && kind !== "instructions") continue;
-    const name = String(record.name ?? "").trim().slice(0, 24);
+    const name = String(record.name ?? "").trim().slice(0, kind === "instructions" ? 80 : 24);
     if (kind === "instructions") {
       const content = String(record.content ?? "").trim().slice(0, 4000);
-      if (name && content) clean.push({ key, name, targetCount: 1, kind, unit: "", content });
+      const bullets = (Array.isArray(record.bullets) ? record.bullets : []).map((bullet) => String(bullet).trim().slice(0, 300)).filter(Boolean).slice(0, 30);
+      const images = cleanInstructionImages(record.images);
+      if (name) clean.push({ key, name, targetCount: 1, kind, unit: "", ...(content ? { content } : {}), ...(bullets.length ? { bullets } : {}), ...(images.length ? { images } : {}) });
       continue;
     }
     const count = Math.round(Number(record.targetCount));
@@ -200,7 +218,7 @@ export async function POST(request: Request) {
   if (usesChecklist(trackingMode) && !lists.length) return Response.json({ error: "Add at least one named list with an item" }, { status: 400 });
   const targetCount = cleanCount(payload.targetCount, trackingMode);
   const unit = cleanUnit(payload.unit, trackingMode);
-  const amounts = cleanAmounts(payload.amounts, trackingMode, { targetCount, unit });
+  const amounts = cleanAmounts(payload.amounts, trackingMode, { targetCount, unit }).map((amount) => amount.kind === "instructions" ? { ...amount, images: [] } : amount);
   const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times", kind: "amount" as const, unit: "times" };
   const dayVariants = cleanDayVariants(payload.dayVariants);
   const startDate = cleanDate(payload.startDate);
@@ -248,7 +266,14 @@ export async function PUT(request: Request) {
   let existingAmountData: unknown = [];
   try { existingAmountData = JSON.parse(existing.amountConfig); } catch { existingAmountData = []; }
   const currentAmounts = cleanAmounts(existingAmountData, currentMode, { targetCount: existing.targetCount, unit: existing.unit });
-  const amounts = cleanAmounts(payload.amounts ?? currentAmounts, trackingMode, { targetCount, unit });
+  const requestedAmounts = cleanAmounts(payload.amounts ?? currentAmounts, trackingMode, { targetCount, unit });
+  const amounts = requestedAmounts.map((amount) => {
+    if (amount.kind !== "instructions") return amount;
+    const current = currentAmounts.find((tracker) => tracker.kind === "instructions" && tracker.key === amount.key);
+    const allowedImageIds = new Set(current?.images?.map((image) => image.id) ?? []);
+    const images = (amount.images ?? []).filter((image) => allowedImageIds.has(image.id));
+    return { ...amount, ...(images.length ? { images } : { images: [] }) };
+  });
   const primaryAmount = amounts[0] ?? { targetCount: 1, name: "times", kind: "amount" as const, unit: "times" };
   let currentDayVariants: Record<string, DayVariant> = {};
   try { currentDayVariants = cleanDayVariants(JSON.parse(existing.dayVariants)); } catch { currentDayVariants = {}; }
@@ -270,6 +295,9 @@ export async function PUT(request: Request) {
   ];
   const nextAmountKeys = new Set(amounts.map((amount) => amount.key));
   const removedAmounts = currentAmounts.filter((amount) => !nextAmountKeys.has(amount.key));
+  const currentInstructionImages = await instructionImageKeys(owner, existing.id, currentAmounts);
+  const nextInstructionImages = new Set(await instructionImageKeys(owner, existing.id, amounts));
+  const removedInstructionImages = currentInstructionImages.filter((key) => !nextInstructionImages.has(key));
   const removedFiles = (await Promise.all(removedAmounts.map((amount) => env.DB.prepare("SELECT file_key AS fileKey FROM tracker_entries WHERE owner_key = ? AND routine_id = ? AND tracker_key = ? AND file_key <> ''")
     .bind(owner, existing.id, amount.key).all<{ fileKey: string }>()))).flatMap((result) => result.results.map((entry) => entry.fileKey));
   if (itemsChanged) {
@@ -298,7 +326,7 @@ export async function PUT(request: Request) {
   }
   await env.DB.batch(statements);
   const uploads = (env as unknown as { UPLOADS?: R2Bucket }).UPLOADS;
-  if (uploads && removedFiles.length) await uploads.delete(removedFiles);
+  if (uploads && (removedFiles.length || removedInstructionImages.length)) await uploads.delete([...removedFiles, ...removedInstructionImages]);
   const [updated, items] = await Promise.all([
     getRoutine(owner, existing.id),
     env.DB.prepare("SELECT id, routine_id AS routineId, title, list_key AS listKey, position FROM routine_items WHERE owner_key = ? AND routine_id = ? ORDER BY list_key, position, id")
@@ -313,6 +341,9 @@ export async function DELETE(request: Request) {
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isInteger(id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const photoFiles = await env.DB.prepare("SELECT file_key AS fileKey FROM tracker_entries WHERE owner_key = ? AND routine_id = ? AND file_key <> ''").bind(owner, id).all<{ fileKey: string }>();
+  const existing = await getRoutine(owner, id);
+  const storedAmounts = (() => { try { return cleanAmounts(JSON.parse(existing?.amountConfig ?? "[]"), cleanMode(existing?.trackingMode), { targetCount: existing?.targetCount ?? 1, unit: existing?.unit ?? "" }); } catch { return []; } })();
+  const instructionFiles = await instructionImageKeys(owner, id, storedAmounts);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ? AND item_id IN (SELECT id FROM routine_items WHERE owner_key = ? AND routine_id = ?)").bind(owner, owner, id),
     env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ? AND routine_id = ?").bind(owner, id),
@@ -323,6 +354,6 @@ export async function DELETE(request: Request) {
     env.DB.prepare("DELETE FROM routines WHERE owner_key = ? AND id = ?").bind(owner, id),
   ]);
   const uploads = (env as unknown as { UPLOADS?: R2Bucket }).UPLOADS;
-  if (uploads && photoFiles.results.length) await uploads.delete(photoFiles.results.map((entry) => entry.fileKey));
+  if (uploads && (photoFiles.results.length || instructionFiles.length)) await uploads.delete([...photoFiles.results.map((entry) => entry.fileKey), ...instructionFiles]);
   return Response.json({ ok: true });
 }

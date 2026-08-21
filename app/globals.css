@@ -258,6 +258,10 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .routine-instruction header > span { width: 22px; height: 22px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: var(--instruction-accent); background: color-mix(in srgb, var(--instruction-accent) 12%, #fff); font-size: 13px; font-weight: 850; }
 .routine-instruction strong { color: var(--ink); font-size: 11px; }
 .routine-instruction p { margin: 0; color: #66636d; font-size: 10.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.routine-instruction ul { display: grid; gap: 5px; margin: 0; padding-left: 19px; color: #66636d; font-size: 10.5px; line-height: 1.45; }
+.routine-instruction li::marker { color: var(--instruction-accent); }
+.routine-instruction-images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.routine-instruction-images img, .instruction-image-placeholder { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; object-fit: cover; overflow: hidden; border-radius: 9px; color: #8a8690; background: color-mix(in srgb, var(--instruction-accent) 7%, #f4f1f5); font-size: 9px; }
 .quantity-tracker { min-width: 0; display: grid; grid-template-columns: minmax(62px, auto) minmax(0, 1fr); align-items: center; gap: 10px; }
 .quantity-name { overflow: hidden; color: #575762; font-size: 11px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 .quantity-pill { display: grid; grid-template-columns: repeat(var(--segments), minmax(0, 1fr)); height: 36px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--routine) 48%, #d8d6dd); border-radius: 999px; background: color-mix(in srgb, var(--routine) 4%, #fff); box-shadow: inset 0 1px 3px rgba(31,25,61,.05); }
@@ -291,13 +295,12 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .tracker-note-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .tracker-note-heading strong { overflow: hidden; color: #575762; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .tracker-note-heading small { flex: 0 0 auto; color: #9a97a1; font-size: 8px; }
-.tracker-photo-actions label > span, .tracker-photo-actions > button { min-height: 31px; display: grid; place-items: center; padding: 0 10px; border: 0; border-radius: 9px; color: #fff; background: var(--routine); font-size: 9px; font-weight: 800; cursor: pointer; }
+.tracker-photo-actions > button { min-height: 31px; display: grid; place-items: center; padding: 0 10px; border: 0; border-radius: 9px; color: #fff; background: var(--routine); font-size: 9px; font-weight: 800; cursor: pointer; }
 .tracker-photo .tracker-photo-row { display: grid; grid-template-columns: minmax(62px, auto) minmax(0, 1fr); align-items: center; gap: 10px; }
 .tracker-photo-row > strong { overflow: hidden; color: #575762; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .tracker-photo-row .tracker-photo-actions { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .tracker-photo img { width: min(210px, 100%); max-height: 160px; justify-self: center; object-fit: cover; border-radius: 11px; box-shadow: 0 6px 18px rgba(37,30,54,.12); }
-.tracker-photo-actions label { cursor: pointer; }
-.tracker-photo-actions label input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.tracker-photo-input { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .tracker-photo .tracker-remove-photo { color: #b84d60; background: #fff0f2; }
 .routine-row.mode-quantity.completed { opacity: 1; }
 .routine-row.mode-quantity.completed .routine-info strong { text-decoration: none; }
@@ -581,7 +584,21 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .tracking-amount-fields.single { grid-template-columns: 1fr; }
 .tracking-kind-number .tracking-amount-fields { grid-template-columns: minmax(0, 1fr) 110px; }
 .tracking-type-note { margin: -2px 1px 0; color: #96949e; font-size: 8.5px; line-height: 1.4; }
+.tracking-instructions-editor { display: grid; gap: 10px; }
 .tracking-instructions-field textarea { min-height: 132px; line-height: 1.5; }
+.tracking-bullets-field textarea { min-height: 112px; }
+.instruction-attachment-editor { display: grid; gap: 7px; }
+.instruction-attachment-editor > span { color: #65626d; font-size: 9px; font-weight: 780; }
+.instruction-attachment-editor > span small { color: #99959f; font-size: 8px; font-weight: 650; }
+.instruction-attachment-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.instruction-image-input { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.instruction-attachment-actions > button { min-height: 34px; display: grid; place-items: center; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--wizard-accent) 30%, #ddd8e1); border-radius: 10px; color: var(--wizard-accent); background: color-mix(in srgb, var(--wizard-accent) 7%, #fff); font-size: 9px; font-weight: 800; cursor: pointer; }
+.instruction-attachment-actions > button:disabled { opacity: .45; cursor: default; }
+.instruction-selected-files { overflow: hidden; color: #85818c; font-size: 8.5px; line-height: 1.4; text-overflow: ellipsis; }
+.instruction-editor-images { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.instruction-editor-images > div { position: relative; min-width: 0; }
+.instruction-editor-images img, .instruction-editor-images .instruction-image-placeholder { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+.instruction-editor-images button { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: rgba(23,20,28,.72); font-size: 16px; line-height: 1; cursor: pointer; }
 .date-range-settings { grid-column: 1 / -1; padding: 14px; border: 1px solid #e3e0e6; border-radius: 13px; background: #fcfbfd; }
 .date-range-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .date-range-toggle > span { display: grid; gap: 3px; }
@@ -1548,7 +1565,10 @@ html[data-theme="dark"] :is(.routine-list-group + .routine-list-group, .preview-
 html[data-theme="dark"] :is(.routine-checklist button, .preview-list button, .preview-list-group > strong, .tracker-wide-control > strong, .tracker-note-heading strong, .tracker-photo-row > strong) { color: #d1ccd6; }
 html[data-theme="dark"] .routine-instruction { border-color: color-mix(in srgb, var(--instruction-accent) 30%, #48424f); background: color-mix(in srgb, var(--instruction-accent) 9%, #25222b); }
 html[data-theme="dark"] .routine-instruction header > span { background: color-mix(in srgb, var(--instruction-accent) 15%, #2b2731); }
-html[data-theme="dark"] .routine-instruction p { color: #c0bac6; }
+html[data-theme="dark"] :is(.routine-instruction p, .routine-instruction ul) { color: #c0bac6; }
+html[data-theme="dark"] :is(.routine-instruction-images .instruction-image-placeholder, .instruction-editor-images .instruction-image-placeholder) { color: #aaa3b0; background: #2c2832; }
+html[data-theme="dark"] .instruction-attachment-editor > span { color: #c8c2cd; }
+html[data-theme="dark"] .instruction-attachment-actions > button { border-color: color-mix(in srgb, var(--wizard-accent) 38%, #4a4550); background: color-mix(in srgb, var(--wizard-accent) 10%, #25212a); }
 html[data-theme="dark"] :is(.quantity-pill, .preview-quantity, .tracker-stepper button, .tracker-timer button, .tracker-avoidance, .preview-generic-tracker, .preview-stepper button) {
   border-color: color-mix(in srgb, var(--routine, var(--preview)) 45%, #4a4550);
   background: color-mix(in srgb, var(--routine, var(--preview)) 8%, #211e26);

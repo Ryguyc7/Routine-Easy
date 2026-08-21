@@ -1,13 +1,14 @@
 "use client";
 
-import { FormEvent, startTransition, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
-import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
+import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
-type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string; content?: string };
+type InstructionImage = { id: string; contentType?: string; filePath?: string };
+type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string; content?: string; bullets?: string[]; images?: InstructionImage[] };
 type RoutineList = { key: string; name: string };
 type RoutineListDraft = RoutineList & { items: string };
 type DayTrackingPlan = { tracking: string[]; label?: string };
@@ -253,6 +254,34 @@ function routineFromForm(form: FormData, id: number, existing: Routine | undefin
     endDate: String(form.get("endDate") ?? ""),
     items,
   };
+}
+
+function instructionImageFiles(form: FormData, tracker: RoutineAmount) {
+  const remaining = Math.max(0, 6 - (tracker.images?.length ?? 0));
+  return form.getAll(`instruction-images-${tracker.key}`).filter((value): value is File => value instanceof File && value.size > 0 && value.type.startsWith("image/")).slice(0, remaining);
+}
+
+async function attachDeviceInstructionImages(routine: Routine, form: FormData) {
+  const amounts = await Promise.all(routine.amounts.map(async (tracker) => {
+    if (trackerKind(tracker) !== "instructions") return tracker;
+    const saved = [] as InstructionImage[];
+    for (const file of instructionImageFiles(form, tracker)) saved.push(await saveDeviceInstructionImage(routine.id, tracker.key, file));
+    return saved.length ? { ...tracker, images: [...(tracker.images ?? []), ...saved] } : tracker;
+  }));
+  return { ...routine, amounts };
+}
+
+async function uploadInstructionImages(routineId: number, amounts: RoutineAmount[], form: FormData) {
+  for (const tracker of amounts.filter((amount) => trackerKind(amount) === "instructions")) {
+    for (const file of instructionImageFiles(form, tracker)) {
+      const upload = new FormData();
+      upload.set("routineId", String(routineId));
+      upload.set("trackerKey", tracker.key);
+      upload.set("image", file);
+      const response = await fetch("/api/instruction-image", { method: "POST", body: upload });
+      if (!response.ok) throw new Error("Instruction image upload failed");
+    }
+  }
 }
 
 function routineActiveOnDate(routine: Routine, date: string) {
@@ -937,6 +966,7 @@ export default function Home() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const trackingMode = String(form.get("trackingMode") ?? "simple") as TrackingMode;
+    const amounts = (() => { try { return JSON.parse(String(form.get("amounts") ?? "[]")) as RoutineAmount[]; } catch { return []; } })();
     const days = DAY_NAMES.map((_, index) => index).filter((index) => form.get(`day-${index}`));
     if (!days.length) {
       setError("Choose at least one day for your routine.");
@@ -946,7 +976,8 @@ export default function Home() {
     if (isNativeApp()) {
       const id = Math.max(0, ...routines.map((routine) => routine.id)) + 1;
       const nextItemId = Math.max(0, ...routines.flatMap((routine) => routine.items.map((item) => item.id))) + 1;
-      setRoutines((items) => [...items, routineFromForm(form, id, undefined, nextItemId)]);
+      const routine = await attachDeviceInstructionImages(routineFromForm(form, id, undefined, nextItemId), form);
+      setRoutines((items) => [...items, routine]);
       setShowAdd(false);
       setSelectedTemplate(null);
       animateBottomNavReturn();
@@ -964,7 +995,7 @@ export default function Home() {
         time: form.get("time"),
         days,
         trackingMode,
-        amounts: JSON.parse(String(form.get("amounts") ?? "[]")),
+        amounts,
         lists: readTrackingLists(form),
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
@@ -973,11 +1004,13 @@ export default function Home() {
     });
     if (response.ok) {
       const data = await response.json();
-      setRoutines((items) => [...items, data.routine]);
+      let imageUploadFailed = false;
+      try { await uploadInstructionImages(data.routine.id, amounts, form); } catch { imageUploadFailed = true; }
+      await loadData();
       setShowAdd(false);
       setSelectedTemplate(null);
       animateBottomNavReturn();
-      setError("");
+      setError(imageUploadFailed ? "The routine was saved, but one or more instruction images could not be added." : "");
     } else {
       setError("That routine could not be added. Please try again.");
     }
@@ -995,7 +1028,7 @@ export default function Home() {
       color: routine.color,
       time: routine.time,
       days: [...routine.days],
-      amounts: routine.amounts.map((amount) => ({ ...amount })),
+      amounts: routine.amounts.map((amount) => trackerKind(amount) === "instructions" ? { ...amount, images: [] } : { ...amount }),
       lists: routine.lists.map((list) => ({
         ...list,
         items: routine.items.filter((item) => item.listKey === list.key).map((item) => item.title).join("\n"),
@@ -1010,15 +1043,17 @@ export default function Home() {
 
   async function deleteRoutine(id: number) {
     setDeleting(true);
-    const itemIds = new Set(routines.find((routine) => routine.id === id)?.items.map((item) => item.id) ?? []);
+    const deletedRoutine = routines.find((routine) => routine.id === id);
+    const itemIds = new Set(deletedRoutine?.items.map((item) => item.id) ?? []);
     const removedPhotos = trackerEntriesRef.current.filter((item) => item.routineId === id).map((item) => item.filePath);
+    const removedInstructionImages = deletedRoutine?.amounts.flatMap((amount) => amount.images ?? []).map((image) => image.filePath).filter((path): path is string => Boolean(path)) ?? [];
     setRoutines((items) => items.filter((routine) => routine.id !== id));
     updateCompletions((items) => items.filter((item) => item.routineId !== id));
     updateItemCompletions((items) => items.filter((item) => !itemIds.has(item.itemId)));
     updateAmountCompletions((items) => items.filter((item) => item.routineId !== id));
     updateTrackerEntries((items) => items.filter((item) => item.routineId !== id));
     if (isNativeApp()) {
-      await Promise.all(removedPhotos.map((path) => removeDevicePhoto(path)));
+      await Promise.all([...removedPhotos, ...removedInstructionImages].map((path) => removeDevicePhoto(path)));
       setError("");
       setDeleting(false);
       setRoutineToDelete(null);
@@ -1041,6 +1076,7 @@ export default function Home() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const trackingMode = String(form.get("trackingMode") ?? "simple") as TrackingMode;
+    const amounts = (() => { try { return JSON.parse(String(form.get("amounts") ?? "[]")) as RoutineAmount[]; } catch { return []; } })();
     const days = DAY_NAMES.map((_, index) => index).filter((index) => form.get(`day-${index}`));
     if (!days.length) {
       setError("Choose at least one day for your routine.");
@@ -1049,11 +1085,14 @@ export default function Home() {
     setSavingList(true);
     if (isNativeApp()) {
       const nextItemId = Math.max(0, ...routines.flatMap((item) => item.items.map((entry) => entry.id))) + 1;
-      const updated = routineFromForm(form, routine.id, routine, nextItemId);
+      const updated = await attachDeviceInstructionImages(routineFromForm(form, routine.id, routine, nextItemId), form);
       const nextItemIds = new Set(updated.items.map((item) => item.id));
       const removedItemIds = new Set(routine.items.filter((item) => !nextItemIds.has(item.id)).map((item) => item.id));
+      const nextImagePaths = new Set(updated.amounts.flatMap((amount) => amount.images ?? []).map((image) => image.filePath).filter(Boolean));
+      const removedInstructionImages = routine.amounts.flatMap((amount) => amount.images ?? []).map((image) => image.filePath).filter((path): path is string => Boolean(path) && !nextImagePaths.has(path));
       setRoutines((items) => items.map((item) => item.id === routine.id ? updated : item));
       updateItemCompletions((items) => items.filter((item) => !removedItemIds.has(item.itemId)));
+      await Promise.all(removedInstructionImages.map((path) => removeDevicePhoto(path)));
       setEditingRoutineId(null);
       animateBottomNavReturn();
       setError("");
@@ -1071,7 +1110,7 @@ export default function Home() {
         time: form.get("time"),
         days,
         trackingMode,
-        amounts: JSON.parse(String(form.get("amounts") ?? "[]")),
+        amounts,
         lists: readTrackingLists(form),
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
@@ -1079,10 +1118,12 @@ export default function Home() {
       }),
     });
     if (response.ok) {
+      let imageUploadFailed = false;
+      try { await uploadInstructionImages(routine.id, amounts, form); } catch { imageUploadFailed = true; }
       await loadData();
       setEditingRoutineId(null);
       animateBottomNavReturn();
-      setError("");
+      setError(imageUploadFailed ? "The routine was saved, but one or more instruction images could not be added." : "");
     } else {
       setError("That routine could not be saved. Please try again.");
     }
@@ -1408,7 +1449,7 @@ function HistoryDayEditor({ routine, day, itemCompletions, amountCompletions, tr
         </div></div>}
       </div>
       <div className="history-records">
-        {tracking.instructions.length > 0 && <section className="history-record-section history-instructions"><div className="history-record-heading"><h3>Instructions</h3><span>Saved with this routine</span></div><InstructionsPanel instructions={tracking.instructions} /></section>}
+        {tracking.instructions.length > 0 && <section className="history-record-section history-instructions"><div className="history-record-heading"><h3>Instructions</h3><span>Saved with this routine</span></div><InstructionsPanel instructions={tracking.instructions} routineId={routine.id} /></section>}
         {usesChecklist(tracking.mode) && <section className="history-record-section"><div className="history-record-heading"><h3>Checklist</h3><span>Tap to edit · auto-saves</span></div>{tracking.lists.map((list) => <div className="history-record-list" key={list.key}><strong>{list.name}</strong>{tracking.items.filter((item) => item.listKey === list.key).map((item) => { const checked = completedItemIds.has(item.id); return <button type="button" className={`history-record-row history-record-edit${checked ? " recorded" : ""}`} key={item.id} onClick={() => void onToggleItem(item.id)} aria-pressed={checked}><span aria-hidden="true">{checked ? "✓" : "×"}</span><div><strong>{item.title}</strong><small>{checked ? "Done" : "Not done"}</small></div></button>; })}</div>)}</section>}
         {usesQuantity(tracking.mode) && <section className="history-record-section"><div className="history-record-heading"><h3>Tracking</h3><span>Edit here · auto-saves</span></div>{tracking.amounts.map((tracker) => {
           const count = amountByKey.get(tracker.key) ?? 0;
@@ -1545,7 +1586,10 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
     try {
       let data: Record<string, unknown>;
       if (isNativeApp()) {
-        data = await loadDeviceSnapshot() as unknown as Record<string, unknown>;
+        const snapshot = await loadDeviceSnapshot();
+        const routines = (snapshot.routines as Routine[]).map((routine) => ({ ...routine, amounts: routine.amounts.map((amount) => trackerKind(amount) === "instructions" ? { ...amount, images: [] } : amount) }));
+        const photosExcluded = (snapshot.trackerEntries as TrackerEntry[]).filter((entry) => entry.hasFile).length + (snapshot.routines as Routine[]).reduce((total, routine) => total + routine.amounts.reduce((count, amount) => count + (amount.images?.length ?? 0), 0), 0);
+        data = { ...snapshot, routines, photosExcluded } as unknown as Record<string, unknown>;
       } else {
         const response = await fetch("/api/data", { cache: "no-store" });
         if (!response.ok) throw new Error("Export failed");
@@ -1572,9 +1616,10 @@ function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefre
     try {
       const backup = JSON.parse(await file.text());
       if (isNativeApp()) {
+        const routines = Array.isArray(backup.routines) ? backup.routines.map((routine: Routine) => ({ ...routine, amounts: Array.isArray(routine.amounts) ? routine.amounts.map((amount) => trackerKind(amount) === "instructions" ? { ...amount, images: [] } : amount) : [] })) : [];
         await saveDeviceSnapshot({
           version: 1,
-          routines: Array.isArray(backup.routines) ? backup.routines : [],
+          routines,
           completions: Array.isArray(backup.completions) ? backup.completions : [],
           itemCompletions: Array.isArray(backup.itemCompletions) ? backup.itemCompletions : [],
           amountCompletions: Array.isArray(backup.amountCompletions) ? backup.amountCompletions : [],
@@ -1840,7 +1885,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     </div>
     {hasDetails && <div className="routine-expansion" aria-hidden={!expanded} inert={!expanded} style={{ height: expanded ? `${expansionHeight}px` : "0px" }}>
       <div ref={expansionInnerRef} className="routine-expansion-inner">
-        {activeInstructions.length > 0 && <InstructionsPanel instructions={activeInstructions} />}
+        {activeInstructions.length > 0 && <InstructionsPanel instructions={activeInstructions} routineId={routine.id} />}
         {usesQuantity(activeTrackingMode) && <div className="quantity-trackers">{activeAmounts.map((amount) => <TrackerControl key={amount.key} routine={routine} tracker={amount} count={amountCounts[amount.key] ?? 0} entry={trackerEntries[amount.key]} date={localDateKey()} onChange={(count) => onSetAmount(amount, count)} onSetNote={(value) => onSetNote(amount, value)} onUploadPhoto={(file) => onUploadPhoto(amount, file)} onRemovePhoto={() => onRemovePhoto(amount)} />)}</div>}
         {usesChecklist(activeTrackingMode) && activeItems.length > 0 && <div className="routine-checklist">{activeLists.map((list) => <section className="routine-list-group" key={list.key}>
           <strong className="routine-list-name">{list.name}</strong>
@@ -1859,11 +1904,28 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   </article>;
 }
 
-function InstructionsPanel({ instructions, className = "" }: { instructions: RoutineAmount[]; className?: string }) {
+function InstructionsPanel({ instructions, routineId, className = "" }: { instructions: RoutineAmount[]; routineId?: number; className?: string }) {
   return <div className={`routine-instructions${className ? ` ${className}` : ""}`}>{instructions.map((instruction) => <section className="routine-instruction" key={instruction.key}>
     <header><span aria-hidden="true">≡</span><strong>{instruction.name}</strong></header>
-    <p>{instruction.content}</p>
+    {instruction.content && <p>{instruction.content}</p>}
+    {Boolean(instruction.bullets?.some((bullet) => bullet.trim())) && <ul>{instruction.bullets!.map((bullet, index) => ({ bullet: bullet.trim(), index })).filter(({ bullet }) => bullet).map(({ bullet, index }) => <li key={`${instruction.key}-bullet-${index}`}>{bullet}</li>)}</ul>}
+    {Boolean(instruction.images?.length) && <div className="routine-instruction-images">{instruction.images!.map((image, index) => <InstructionImageView key={image.id} image={image} routineId={routineId} trackerKey={instruction.key} alt={`${instruction.name} image ${index + 1}`} />)}</div>}
   </section>)}</div>;
+}
+
+function InstructionImageView({ image, routineId, trackerKey, alt }: { image: InstructionImage; routineId?: number; trackerKey: string; alt: string }) {
+  const browserUrl = routineId ? `/api/instruction-image?${new URLSearchParams({ routineId: String(routineId), trackerKey, imageId: image.id })}` : "";
+  const [src, setSrc] = useState(isNativeApp() ? "" : browserUrl);
+  useEffect(() => {
+    let cancelled = false;
+    if (!isNativeApp() || !image.filePath) {
+      setSrc(browserUrl);
+      return;
+    }
+    readDevicePhoto(image.filePath, image.contentType).then((value) => { if (!cancelled) setSrc(value); }).catch(() => { if (!cancelled) setSrc(""); });
+    return () => { cancelled = true; };
+  }, [browserUrl, image.contentType, image.filePath]);
+  return src ? <img src={src} alt={alt} /> : <div className="instruction-image-placeholder" role="img" aria-label={alt}>Image attached</div>;
 }
 
 function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallbackUrl: string; alt: string }) {
@@ -1884,6 +1946,8 @@ function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallba
 
 function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetNote, onUploadPhoto, onRemovePhoto }: { routine: Routine; tracker: RoutineAmount; count: number; entry?: TrackerEntry; date: string; onChange: (count: number) => void; onSetNote: (value: string) => void; onUploadPhoto: (file: File) => void; onRemovePhoto: () => void }) {
   const kind = trackerKind(tracker);
+  const choosePhotoRef = useRef<HTMLInputElement>(null);
+  const takePhotoRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(entry?.value ?? "");
   const [numberDraft, setNumberDraft] = useState(count ? String(count) : "");
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -1936,7 +2000,8 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
 
   if (kind === "photo") {
     const photoUrl = `/api/tracker-photo?${new URLSearchParams({ routineId: String(routine.id), trackerKey: tracker.key, date, v: entry?.value ?? "" })}`;
-    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>{entry?.hasFile ? "Replace" : "Choose photo"}</span></label><label><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; }} /><span>Take photo</span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
+    const selectPhoto = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; };
+    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><input ref={choosePhotoRef} className="tracker-photo-input" type="file" accept="image/*" onChange={selectPhoto} /><button type="button" onClick={() => choosePhotoRef.current?.click()}>{entry?.hasFile ? "Replace" : "Choose photo"}</button><input ref={takePhotoRef} className="tracker-photo-input" type="file" accept="image/*" capture="environment" onChange={selectPhoto} /><button type="button" onClick={() => takePhotoRef.current?.click()}>Take photo</button>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
   }
 
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;
@@ -2452,7 +2517,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
         <DateRangeSettings startDate={routine.startDate} endDate={routine.endDate} />
       </section>
       <section className="wizard-step" hidden={step !== 1} aria-label="Tracking style">
-        <TrackingBuilder lists={lists} amounts={amounts} onListsChange={setLists} onAmountsChange={setAmounts} />
+        <TrackingBuilder lists={lists} amounts={amounts} onListsChange={setLists} onAmountsChange={setAmounts} routineId={routine.id} />
       </section>
       <section className="wizard-step" hidden={step !== 2} aria-label="Day-specific tracking">
         <DayPlanSettings scheduledDays={selectedDays} onScheduledDaysChange={setSelectedDays} lists={lists} amounts={amounts} variants={routine.dayVariants} />
@@ -2635,7 +2700,7 @@ function VerticalScrollIndicator<T extends HTMLElement>({ scrollerRef, label, cl
   </div>;
 }
 
-function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { lists: RoutineListDraft[]; amounts: RoutineAmount[]; onListsChange: (lists: RoutineListDraft[]) => void; onAmountsChange: (amounts: RoutineAmount[]) => void }) {
+function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange, routineId }: { lists: RoutineListDraft[]; amounts: RoutineAmount[]; onListsChange: (lists: RoutineListDraft[]) => void; onAmountsChange: (amounts: RoutineAmount[]) => void; routineId?: number }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapRef = useRef<HTMLDivElement>(null);
   const trackingMode = trackingModeFor(lists, amounts);
@@ -2702,22 +2767,41 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange }: { l
         const update = (next: Partial<RoutineAmount>) => onAmountsChange(amounts.map((item) => item.key === amount.key ? { ...item, ...next } : item));
         return <section className={`tracking-block tracking-amount-block tracking-kind-${kind}`} key={amount.key}>
           <header><span aria-hidden="true">{symbols[kind]}</span><strong>{trackerKindLabel(amount)}</strong><button type="button" onClick={() => onAmountsChange(amounts.filter((item) => item.key !== amount.key))} aria-label={`Remove ${amount.name || `tracker ${index + 1}`}`}><Trash2 aria-hidden="true" /></button></header>
-          <div className={`tracking-amount-fields${kind === "rating" || kind === "note" || kind === "instructions" || kind === "photo" || kind === "avoidance" ? " single" : ""}`}><label className="field"><span>Name</span><input value={amount.name} onChange={(event) => update({ name: event.target.value })} placeholder={placeholders[kind]} maxLength={24} required /></label>
+          <div className={`tracking-amount-fields${kind === "rating" || kind === "note" || kind === "instructions" || kind === "photo" || kind === "avoidance" ? " single" : ""}`}><label className="field"><span>{kind === "instructions" ? "Title" : "Name"}</span><input value={amount.name} onChange={(event) => update({ name: event.target.value })} placeholder={placeholders[kind]} maxLength={kind === "instructions" ? 80 : 24} required /></label>
           {kind === "amount" && <label className="field"><span>Amount</span><input type="number" min="2" max="12" value={amount.targetCount} onChange={(event) => update({ targetCount: Math.min(12, Math.max(2, Number(event.target.value) || 2)) })} required /></label>}
           {(kind === "duration" || kind === "timer") && <label className="field"><span>Goal minutes</span><input type="number" min="1" max="1440" value={amount.targetCount} onChange={(event) => update({ targetCount: Math.min(1440, Math.max(1, Number(event.target.value) || 1)), unit: "min" })} required /></label>}
           {kind === "number" && <label className="field tracking-unit-field"><span>Unit <small>Optional</small></span><input value={amount.unit ?? ""} onChange={(event) => update({ unit: event.target.value })} placeholder="pages" maxLength={16} /></label>}
           </div>
-          {kind === "instructions" && <label className="field tracking-instructions-field"><span>Instructions</span><textarea value={amount.content ?? ""} onChange={(event) => update({ content: event.target.value })} placeholder={"Example:\nToast one slice of bread\nAdd eggs and fruit\nRead before preparing breakfast"} maxLength={4000} required /></label>}
+          {kind === "instructions" && <InstructionEditor amount={amount} routineId={routineId} onUpdate={update} />}
           {kind === "rating" && <p className="tracking-type-note">A rating is complete after choosing 1–5 stars.</p>}
           {kind === "number" && <p className="tracking-type-note">Enter any amount for the day—there is no goal to reach.</p>}
           {kind === "note" && <p className="tracking-type-note">A saved note completes this tracker for the day.</p>}
-          {kind === "instructions" && <p className="tracking-type-note">Saved with the routine and shown every time you open it. This is not a daily entry.</p>}
+          {kind === "instructions" && <p className="tracking-type-note">Customize the title, text, bullets, and images. It stays with the routine and is not a daily entry.</p>}
           {kind === "photo" && <p className="tracking-type-note">Images are stored privately with the routine.</p>}
           {kind === "avoidance" && <p className="tracking-type-note">Check “I avoided this today” when you did not do the habit.</p>}
         </section>;
       })}
     </div>
   </fieldset>;
+}
+
+function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmount; routineId?: number; onUpdate: (next: Partial<RoutineAmount>) => void }) {
+  const chooseImagesRef = useRef<HTMLInputElement>(null);
+  const takeImageRef = useRef<HTMLInputElement>(null);
+  const [chosenNames, setChosenNames] = useState<string[]>([]);
+  const [cameraName, setCameraName] = useState("");
+  const remaining = Math.max(0, 6 - (amount.images?.length ?? 0));
+  return <div className="tracking-instructions-editor">
+    <label className="field tracking-instructions-field"><span>Text <small>Optional</small></span><textarea value={amount.content ?? ""} onChange={(event) => onUpdate({ content: event.target.value })} placeholder="Add a description, preparation notes, or anything you want to read." maxLength={4000} /></label>
+    <label className="field tracking-instructions-field tracking-bullets-field"><span>Bullet points <small>Optional</small></span><textarea value={(amount.bullets ?? []).join("\n")} onChange={(event) => onUpdate({ bullets: event.target.value.split(/\r?\n/).slice(0, 30) })} placeholder={"Add one item per line:\nToast one slice of bread\nAdd eggs and fruit\nDrink a glass of water"} maxLength={3000} /></label>
+    <div className="instruction-attachment-editor"><span>Images <small>Optional · up to 6</small></span><div className="instruction-attachment-actions">
+      <input ref={chooseImagesRef} className="instruction-image-input" type="file" name={`instruction-images-${amount.key}`} accept="image/*" multiple onChange={(event) => setChosenNames([...(event.currentTarget.files ?? [])].slice(0, remaining).map((file) => file.name))} />
+      <button type="button" disabled={!remaining} onClick={() => chooseImagesRef.current?.click()}>Add images</button>
+      <input ref={takeImageRef} className="instruction-image-input" type="file" name={`instruction-images-${amount.key}`} accept="image/*" capture="environment" onChange={(event) => setCameraName(event.currentTarget.files?.[0]?.name ?? "")} />
+      <button type="button" disabled={!remaining} onClick={() => takeImageRef.current?.click()}>Take photo</button>
+    </div>{Boolean(chosenNames.length || cameraName) && <small className="instruction-selected-files">Selected: {[...chosenNames, cameraName].filter(Boolean).join(", ")}</small>}</div>
+    {Boolean(amount.images?.length) && <div className="instruction-editor-images">{amount.images!.map((image, imageIndex) => <div key={image.id}><InstructionImageView image={image} routineId={routineId} trackerKey={amount.key} alt={`${amount.name || "Instruction"} image ${imageIndex + 1}`} /><button type="button" onClick={() => onUpdate({ images: amount.images?.filter((item) => item.id !== image.id) })} aria-label={`Remove image ${imageIndex + 1}`}>×</button></div>)}</div>}
+  </div>;
 }
 
 function DateRangeSettings({ startDate = "", endDate = "" }: { startDate?: string; endDate?: string }) {

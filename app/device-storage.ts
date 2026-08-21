@@ -94,6 +94,14 @@ export async function saveDevicePhoto(routineId: number, trackerKey: string, dat
   return { path, contentType: file.type || "image/jpeg" };
 }
 
+export async function saveDeviceInstructionImage(routineId: number, trackerKey: string, file: File) {
+  const safeTracker = trackerKey.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const id = crypto.randomUUID();
+  const path = `routine-photos/instructions/${routineId}-${safeTracker}-${id}.${photoExtension(file)}`;
+  await Filesystem.writeFile({ path, data: await fileToBase64(file), directory: Directory.Data, recursive: true });
+  return { id, filePath: path, contentType: file.type || "image/jpeg" };
+}
+
 export async function removeDevicePhoto(path?: string) {
   if (!path) return;
   try { await Filesystem.deleteFile({ path, directory: Directory.Data }); } catch { /* Already removed. */ }

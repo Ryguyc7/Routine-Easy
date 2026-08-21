@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { ensureDatabase, ownerKey } from "../../../db/storage";
+import { instructionImageKeys } from "../../../db/instruction-images";
 
 type RoutineRow = {
   id: number; name: string; emoji: string; color: string; time: string; days: string; trackingMode: string;
@@ -19,6 +20,14 @@ function record(value: unknown): Record<string, unknown> { return value && typeo
 function json(value: string, fallback: unknown) { try { return JSON.parse(value); } catch { return fallback; } }
 function cleanDate(value: unknown) { const date = String(value ?? ""); return DATE_PATTERN.test(date) ? date : ""; }
 function cleanKey(value: unknown, fallback: string) { return String(value ?? fallback).trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || fallback; }
+function backupAmounts(value: unknown) {
+  return array(value).map((item) => {
+    const tracker = record(item);
+    if (tracker.kind !== "instructions") return tracker;
+    const { images: _images, ...withoutImages } = tracker;
+    return withoutImages;
+  });
+}
 function cleanDayVariants(value: unknown) {
   const source = record(value);
   const clean: Record<string, DayVariant> = {};
@@ -55,7 +64,8 @@ export async function GET(request: Request) {
   const data = await ownerRows(owner);
   const itemIdsByRoutine = new Map<number, Set<number>>();
   for (const item of data.items) itemIdsByRoutine.set(item.routineId, new Set([...(itemIdsByRoutine.get(item.routineId) ?? []), item.id]));
-  const photosExcluded = data.trackerEntries.filter((entry) => Boolean(entry.fileKey)).length;
+  const instructionImagesExcluded = data.routines.reduce((total, routine) => total + array(json(routine.amountConfig, [])).reduce((count, item) => count + (record(item).kind === "instructions" ? array(record(item).images).length : 0), 0), 0);
+  const photosExcluded = data.trackerEntries.filter((entry) => Boolean(entry.fileKey)).length + instructionImagesExcluded;
   return Response.json({
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -72,7 +82,7 @@ export async function GET(request: Request) {
         trackingMode: routine.trackingMode,
         targetCount: routine.targetCount,
         unit: routine.unit,
-        amounts: json(routine.amountConfig, []),
+        amounts: backupAmounts(json(routine.amountConfig, [])),
         lists: json(routine.listConfig, []),
         dayVariants: json(routine.dayVariants, {}),
         startDate: routine.startDate,
@@ -107,7 +117,10 @@ function cleanRoutine(value: unknown, index: number) {
     const minimum = kind === "amount" ? 2 : 1;
     const targetCount = Math.min(maximum, Math.max(minimum, Math.round(Number(item.targetCount)) || (kind === "amount" ? 4 : kind === "timer" || kind === "duration" ? 30 : 1)));
     const defaultUnit = kind === "timer" || kind === "duration" ? "min" : kind === "rating" ? "stars" : "";
-    return { key, name: String(item.name ?? "Tracker").trim().slice(0, 24) || "Tracker", targetCount, kind, unit: String(item.unit ?? defaultUnit).trim().slice(0, 16), ...(kind === "instructions" ? { content: String(item.content ?? "").trim().slice(0, 4000) } : {}) };
+    const name = String(item.name ?? "Tracker").trim().slice(0, kind === "instructions" ? 80 : 24) || "Tracker";
+    const content = String(item.content ?? "").trim().slice(0, 4000);
+    const bullets = array(item.bullets).map((bullet) => String(bullet).trim().slice(0, 300)).filter(Boolean).slice(0, 30);
+    return { key, name, targetCount, kind, unit: String(item.unit ?? defaultUnit).trim().slice(0, 16), ...(kind === "instructions" && content ? { content } : {}), ...(kind === "instructions" && bullets.length ? { bullets } : {}) };
   });
   const listKeys = new Set<string>();
   const lists = array(source.lists).slice(0, 6).map((value, listIndex) => {
@@ -185,6 +198,8 @@ export async function PUT(request: Request) {
       if (statements.length) await env.DB.batch(statements);
     }
     const oldFiles = await env.DB.prepare("SELECT file_key AS fileKey FROM tracker_entries WHERE owner_key = ? AND file_key <> ''").bind(owner).all<{ fileKey: string }>();
+    const oldRoutines = await env.DB.prepare("SELECT id, amount_config AS amountConfig FROM routines WHERE owner_key = ?").bind(owner).all<{ id: number; amountConfig: string }>();
+    const oldInstructionFiles = (await Promise.all(oldRoutines.results.map((routine) => instructionImageKeys(owner, routine.id, array(json(routine.amountConfig, [])))))).flat();
     await env.DB.batch([
       env.DB.prepare("DELETE FROM item_completions WHERE owner_key = ?").bind(owner),
       env.DB.prepare("DELETE FROM routine_items WHERE owner_key = ?").bind(owner),
@@ -201,7 +216,7 @@ export async function PUT(request: Request) {
       env.DB.prepare("UPDATE tracker_entries SET owner_key = ? WHERE owner_key = ?").bind(owner, temporaryOwner),
     ]);
     const uploads = (env as unknown as { UPLOADS?: R2Bucket }).UPLOADS;
-    if (uploads && oldFiles.results.length) await uploads.delete(oldFiles.results.map((item) => item.fileKey));
+    if (uploads && (oldFiles.results.length || oldInstructionFiles.length)) await uploads.delete([...oldFiles.results.map((item) => item.fileKey), ...oldInstructionFiles]);
     return Response.json({ ok: true, routines: routines.length });
   } catch {
     await deleteOwner(temporaryOwner);
@@ -213,8 +228,10 @@ export async function DELETE(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
   const files = await env.DB.prepare("SELECT file_key AS fileKey FROM tracker_entries WHERE owner_key = ? AND file_key <> ''").bind(owner).all<{ fileKey: string }>();
+  const routines = await env.DB.prepare("SELECT id, amount_config AS amountConfig FROM routines WHERE owner_key = ?").bind(owner).all<{ id: number; amountConfig: string }>();
+  const instructionFiles = (await Promise.all(routines.results.map((routine) => instructionImageKeys(owner, routine.id, array(json(routine.amountConfig, [])))))).flat();
   await deleteOwner(owner);
   const uploads = (env as unknown as { UPLOADS?: R2Bucket }).UPLOADS;
-  if (uploads && files.results.length) await uploads.delete(files.results.map((item) => item.fileKey));
+  if (uploads && (files.results.length || instructionFiles.length)) await uploads.delete([...files.results.map((item) => item.fileKey), ...instructionFiles]);
   return Response.json({ ok: true });
 }
