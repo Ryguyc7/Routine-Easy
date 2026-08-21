@@ -1906,7 +1906,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
 
 function InstructionsPanel({ instructions, routineId, className = "" }: { instructions: RoutineAmount[]; routineId?: number; className?: string }) {
   return <div className={`routine-instructions${className ? ` ${className}` : ""}`}>{instructions.map((instruction) => <section className="routine-instruction" key={instruction.key}>
-    <header><span aria-hidden="true">≡</span><strong>{instruction.name}</strong></header>
+    <header><strong>{instruction.name}</strong></header>
     {instruction.content && <p>{instruction.content}</p>}
     {Boolean(instruction.bullets?.some((bullet) => bullet.trim())) && <ul>{instruction.bullets!.map((bullet, index) => ({ bullet: bullet.trim(), index })).filter(({ bullet }) => bullet).map(({ bullet, index }) => <li key={`${instruction.key}-bullet-${index}`}>{bullet}</li>)}</ul>}
     {Boolean(instruction.images?.length) && <div className="routine-instruction-images">{instruction.images!.map((image, index) => <InstructionImageView key={image.id} image={image} routineId={routineId} trackerKey={instruction.key} alt={`${instruction.name} image ${index + 1}`} />)}</div>}

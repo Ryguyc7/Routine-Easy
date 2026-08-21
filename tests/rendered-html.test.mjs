@@ -164,6 +164,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /Save information or steps to follow/);
   assert.match(page, /not a daily entry/);
   assert.match(page, /function InstructionsPanel/);
+  const instructionsPanelSource = page.slice(page.indexOf("function InstructionsPanel"), page.indexOf("function InstructionImageView"));
+  assert.doesNotMatch(instructionsPanelSource, /aria-hidden="true">≡/);
   assert.match(page, /Bullet points/);
   assert.match(page, /Add images/);
   assert.match(page, /instruction-images-\$\{amount\.key\}/);
@@ -223,6 +225,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(dataRoute, /"instructions"/);
   assert.match(dataRoute, /item\.content/);
   assert.match(fullPageBuilderCss, /\.routine-instruction \{/);
+  assert.match(fullPageBuilderCss, /\.routine-instruction \{[^}]*padding: 0;[^}]*border: 0;[^}]*background: transparent/);
   assert.match(fullPageBuilderCss, /\.tracking-instructions-field textarea \{[^}]*min-height: 132px/);
   assert.match(fullPageBuilderCss, /\.routine-instruction-images \{/);
   assert.match(fullPageBuilderCss, /\.instruction-attachment-actions \{/);
