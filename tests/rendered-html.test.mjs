@@ -218,8 +218,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /calendar-today-button/);
   assert.match(page, /calendar-detail-toolbar/);
   assert.match(page, /calendar-detail-card/);
-  assert.match(page, /Days scheduled/);
-  assert.match(page, /Routines shown/);
+  assert.doesNotMatch(page, /calendarScheduledDays|calendarRoutineCount|calendar-summary-stats|Days scheduled|Routines shown/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.calendar-page-matched \{ display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden/);
   assert.match(page, /calendar-month-heading/);
   assert.doesNotMatch(page, /calendar-today-row/);

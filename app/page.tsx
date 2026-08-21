@@ -1099,10 +1099,6 @@ export default function Home() {
     date,
     matches: routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, localDateKey(date)) && (selectedRoutine === "all" || selectedRoutine === routine.id)),
   } : null), [monthDays, routines, selectedRoutine]);
-  const { calendarScheduledDays, calendarRoutineCount } = useMemo(() => ({
-    calendarScheduledDays: calendarEntries.filter((entry) => entry && entry.matches.length > 0).length,
-    calendarRoutineCount: new Set(calendarEntries.flatMap((entry) => entry?.matches.map((routine) => routine.id) ?? [])).size,
-  }), [calendarEntries]);
 
   const splashOverlay = splashVisible ? <OnboardingSplash leaving={splashLeaving} /> : null;
 
@@ -1205,7 +1201,6 @@ export default function Home() {
                 </div>
                 <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight aria-hidden="true" /></button>
               </div>
-              <div className="history-stats calendar-summary-stats"><div><strong>{calendarScheduledDays}</strong><span>Days scheduled</span></div><div><strong>{calendarRoutineCount}</strong><span>Routines shown</span></div></div>
               <div className="history-month-calendar calendar-month-view">
                 <div className="history-weekday-row">{calendarDayNames.map((day) => <span key={day}>{day}</span>)}</div>
                 <div className="history-grid calendar-grid">
