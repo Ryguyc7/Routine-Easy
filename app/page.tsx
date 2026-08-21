@@ -522,7 +522,17 @@ export default function Home() {
   const nativeApp = isNativeApp();
 
   function selectBottomTab(nextTab: MainTab) {
-    if (nextTab === tab || bottomNavPhase !== "idle") return;
+    if (nextTab === tab) {
+      if (bottomNavPhase === "exiting") {
+        if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
+        setBottomNavPhase("entering");
+        bottomNavSwitchTimerRef.current = window.setTimeout(() => {
+          setBottomNavPhase("idle");
+          bottomNavSwitchTimerRef.current = undefined;
+        }, 380);
+      }
+      return;
+    }
     if (preferences.motion === "reduced") {
       startTransition(() => setTab(nextTab));
       return;
@@ -535,8 +545,8 @@ export default function Home() {
       bottomNavSwitchTimerRef.current = window.setTimeout(() => {
         setBottomNavPhase("idle");
         bottomNavSwitchTimerRef.current = undefined;
-      }, 540);
-    }, 210);
+      }, 380);
+    }, 120);
   }
 
   function animateBottomNavReturn() {
@@ -1655,7 +1665,7 @@ function BottomNavSurface({ tab, reducedMotion }: { tab: Tab; reducedMotion: boo
       <mask id={maskId} x="0" y="0" width="100%" height="100%" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
         <rect width="100%" height="100%" fill="#fff" />
         <use href={`#${notchId}`} x={center.percent} y="0" transform={`translate(${center.offset} 0)`} fill="#000">
-          {!reducedMotion && <animate attributeName="y" from="-48" to="0" dur="480ms" calcMode="spline" keyTimes="0;1" keySplines=".16 .88 .24 1" fill="freeze" />}
+          {!reducedMotion && <animate attributeName="y" from="-48" to="0" dur="340ms" calcMode="spline" keyTimes="0;1" keySplines=".16 .88 .24 1" fill="freeze" />}
         </use>
       </mask>
       <linearGradient id={sheenId} x1="0" y1="0" x2="0" y2="1">

@@ -1681,13 +1681,13 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
 
 /* Floating mobile navigation with a fully staged active-ball and pull-down cutout. */
 @keyframes bottom-nav-active-pop {
-  0% { opacity: 0; scale: 0; }
-  68% { opacity: 1; scale: 1.08; }
-  100% { opacity: 1; scale: 1; }
+  0% { opacity: 0; transform: translate(-50%, -50%) translateY(-27px) scale(0); }
+  68% { opacity: 1; transform: translate(-50%, -50%) translateY(-27px) scale(1.08); }
+  100% { opacity: 1; transform: translate(-50%, -50%) translateY(-27px) scale(1); }
 }
 @keyframes bottom-nav-active-out {
-  from { opacity: 1; scale: 1; }
-  to { opacity: 0; scale: 0; }
+  from { opacity: 1; transform: translate(-50%, -50%) translateY(-27px) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) translateY(-27px) scale(0); }
 }
 @keyframes bottom-nav-icon-lift {
   0% { opacity: 0; transform: translateY(-8px) scale(.56); }
@@ -1798,7 +1798,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     box-shadow: 0 10px 20px color-mix(in srgb, var(--nav-accent) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.28);
     transform: translate(-50%, -50%) translateY(-27px);
     transform-origin: center;
-    animation: bottom-nav-active-pop .48s cubic-bezier(.16,.88,.24,1) both;
+    animation: bottom-nav-active-pop .34s cubic-bezier(.16,.88,.24,1) both;
   }
   .bottom-nav .nav-label {
     position: absolute;
@@ -1823,7 +1823,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   .bottom-nav button.calendar-nav-button.active .nav-label {
     color: var(--nav-accent);
     font-weight: 750;
-    animation: bottom-nav-label-in .3s .18s ease-out both;
+    animation: bottom-nav-label-in .2s .1s ease-out both;
   }
   .bottom-nav button:nth-of-type(3).active .nav-label { color: #a96b00; }
   .bottom-nav .nav-icon {
@@ -1844,19 +1844,19 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     box-shadow: none;
     filter: none;
     transform: translateY(-27px);
-    animation: bottom-nav-icon-lift .44s .06s cubic-bezier(.16,.88,.24,1) both;
+    animation: bottom-nav-icon-lift .31s .03s cubic-bezier(.16,.88,.24,1) both;
   }
   .bottom-nav.nav-exiting button.active::before,
   .bottom-nav.nav-exiting button.calendar-nav-button.active::before {
-    animation: bottom-nav-active-out .2s cubic-bezier(.55,0,.85,.45) both;
+    animation: bottom-nav-active-out .115s cubic-bezier(.55,0,.85,.45) both;
   }
   .bottom-nav.nav-exiting button.active .nav-icon,
   .bottom-nav.nav-exiting button.calendar-nav-button.active .nav-icon {
-    animation: bottom-nav-icon-out .2s cubic-bezier(.55,0,.85,.45) both;
+    animation: bottom-nav-icon-out .115s cubic-bezier(.55,0,.85,.45) both;
   }
   .bottom-nav.nav-exiting button.active .nav-label,
   .bottom-nav.nav-exiting button.calendar-nav-button.active .nav-label {
-    animation: bottom-nav-label-out .16s ease-in both;
+    animation: bottom-nav-label-out .1s ease-in both;
   }
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon { color: #fff; }
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon svg { stroke: currentColor; }

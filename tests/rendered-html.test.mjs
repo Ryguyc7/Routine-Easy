@@ -290,7 +290,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /bottom-nav-notch-\$\{tab\}/);
   assert.match(page, /M 42 -8 L -42 -8 L -42 0 C -36 0 -34 2 -33 9/);
   assert.match(page, /<use href=\{`#\$\{notchId\}`\} x=\{center\.percent\} y="0" transform=\{`translate\(\$\{center\.offset\} 0\)`\} fill="#000">/);
-  assert.match(page, /<animate attributeName="y" from="-48" to="0" dur="480ms"/);
+  assert.match(page, /<animate attributeName="y" from="-48" to="0" dur="340ms"/);
   assert.match(page, /<linearGradient id=\{sheenId\}[\s\S]*?bottom-nav-sheen-bottom/);
   assert.match(page, /className="bottom-nav-surface-sheen"/);
   assert.match(page, /className="mobile-add premium-action"/);
@@ -460,6 +460,9 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(css, /html\[data-theme="dark"\] \.routine-builder-page \.add-routine-modal \.form-actions \{ background: transparent; box-shadow: none; \}/);
   assert.match(css, /\.routine-template-page \.template-dialog > \.template-dialog-header \{[^}]*height: calc\(68px \+ env\(safe-area-inset-top\)\);[^}]*grid-template-columns: 42px minmax\(0, 1fr\) 42px/);
   assert.match(page, /function animateBottomNavReturn/);
+  assert.match(page, /function selectBottomTab\(nextTab: MainTab\)/);
+  assert.doesNotMatch(page, /bottomNavPhase !== "idle"\) return/);
+  assert.match(page, /setBottomNavPhase\("exiting"\)[\s\S]*?\}, 120\);/);
   assert.match(page, /bottom-nav nav-\$\{bottomNavPhase\}\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \|\| historyDayEditorOpen \|\| tab === "settings" \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
   assert.match(page, /function openSettings\(\) \{\s*prepareCreationFlow\(\);/);
   assert.match(page, /function closeSettings\(\) \{\s*setTab\(settingsReturnTabRef\.current\);\s*animateBottomNavReturn\(\);/);
@@ -600,10 +603,10 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.bottom-nav-surface-fill \{ fill: #fff/);
   assert.match(css, /\.bottom-nav-surface-sheen \{ opacity: \.82/);
   assert.match(css, /drop-shadow\(0 0 \.75px rgba\(68,63,82,\.48\)\)/);
-  assert.match(css, /@keyframes bottom-nav-active-pop[\s\S]*?scale: 0[\s\S]*?scale: 1/);
-  assert.match(css, /@keyframes bottom-nav-active-out[\s\S]*?scale: 0/);
-  assert.match(css, /@keyframes bottom-nav-icon-lift[\s\S]*?translateY\(-27px\)[\s\S]*?animation: bottom-nav-icon-lift \.44s \.06s/);
-  assert.match(css, /\.bottom-nav\.nav-exiting button\.active::before[\s\S]*?bottom-nav-active-out \.2s/);
+  assert.match(css, /@keyframes bottom-nav-active-pop[\s\S]*?translate\(-50%, -50%\) translateY\(-27px\) scale\(0\)[\s\S]*?scale\(1\)/);
+  assert.match(css, /@keyframes bottom-nav-active-out[\s\S]*?translate\(-50%, -50%\) translateY\(-27px\) scale\(0\)/);
+  assert.match(css, /@keyframes bottom-nav-icon-lift[\s\S]*?translateY\(-27px\)[\s\S]*?animation: bottom-nav-icon-lift \.31s \.03s/);
+  assert.match(css, /\.bottom-nav\.nav-exiting button\.active::before[\s\S]*?bottom-nav-active-out \.115s/);
   assert.match(css, /\.bottom-nav \.nav-label \{[\s\S]*?top: 48px;[\s\S]*?color: currentColor;[\s\S]*?font-size: 9px/);
   assert.match(css, /\.bottom-nav button\.active \.nav-label,[\s\S]*?color: var\(--nav-accent\)/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button:nth-of-type\(2\) \{ --nav-accent: var\(--coral\)/);
