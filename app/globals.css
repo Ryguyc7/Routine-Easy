@@ -1679,17 +1679,32 @@ html[data-theme="dark"] .error-banner {
 }
 html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outline-color: #5a5461; }
 
-/* Floating mobile navigation with an instant-position, pull-down active cutout. */
+/* Floating mobile navigation with a fully staged active-ball and pull-down cutout. */
 @keyframes bottom-nav-active-pop {
-  from { opacity: .72; translate: 0 -7px; scale: .88; }
+  0% { opacity: 0; scale: 0; }
+  68% { opacity: 1; scale: 1.08; }
+  100% { opacity: 1; scale: 1; }
+}
+@keyframes bottom-nav-active-out {
+  from { opacity: 1; scale: 1; }
+  to { opacity: 0; scale: 0; }
 }
 @keyframes bottom-nav-icon-lift {
-  from { opacity: .72; transform: translateY(-12px) scale(.9); }
-  to { opacity: 1; transform: translateY(-27px) scale(1); }
+  0% { opacity: 0; transform: translateY(-8px) scale(.56); }
+  72% { opacity: 1; transform: translateY(-30px) scale(1.07); }
+  100% { opacity: 1; transform: translateY(-27px) scale(1); }
+}
+@keyframes bottom-nav-icon-out {
+  from { opacity: 1; transform: translateY(-27px) scale(1); }
+  to { opacity: 0; transform: translateY(-8px) scale(.56); }
 }
 @keyframes bottom-nav-label-in {
   from { opacity: 0; transform: translateX(-50%) translateY(3px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes bottom-nav-label-out {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to { opacity: 0; transform: translateX(-50%) translateY(3px); }
 }
 @keyframes bottom-nav-slide-away {
   from { opacity: 1; transform: translateY(0); }
@@ -1783,7 +1798,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     box-shadow: 0 10px 20px color-mix(in srgb, var(--nav-accent) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.28);
     transform: translate(-50%, -50%) translateY(-27px);
     transform-origin: center;
-    animation: bottom-nav-active-pop .22s cubic-bezier(.2,.9,.3,1);
+    animation: bottom-nav-active-pop .48s cubic-bezier(.16,.88,.24,1) both;
   }
   .bottom-nav .nav-label {
     position: absolute;
@@ -1808,7 +1823,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   .bottom-nav button.calendar-nav-button.active .nav-label {
     color: var(--nav-accent);
     font-weight: 750;
-    animation: bottom-nav-label-in .18s ease-out both;
+    animation: bottom-nav-label-in .3s .18s ease-out both;
   }
   .bottom-nav button:nth-of-type(3).active .nav-label { color: #a96b00; }
   .bottom-nav .nav-icon {
@@ -1829,7 +1844,19 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     box-shadow: none;
     filter: none;
     transform: translateY(-27px);
-    animation: bottom-nav-icon-lift .22s cubic-bezier(.2,.85,.3,1) both;
+    animation: bottom-nav-icon-lift .44s .06s cubic-bezier(.16,.88,.24,1) both;
+  }
+  .bottom-nav.nav-exiting button.active::before,
+  .bottom-nav.nav-exiting button.calendar-nav-button.active::before {
+    animation: bottom-nav-active-out .2s cubic-bezier(.55,0,.85,.45) both;
+  }
+  .bottom-nav.nav-exiting button.active .nav-icon,
+  .bottom-nav.nav-exiting button.calendar-nav-button.active .nav-icon {
+    animation: bottom-nav-icon-out .2s cubic-bezier(.55,0,.85,.45) both;
+  }
+  .bottom-nav.nav-exiting button.active .nav-label,
+  .bottom-nav.nav-exiting button.calendar-nav-button.active .nav-label {
+    animation: bottom-nav-label-out .16s ease-in both;
   }
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon { color: #fff; }
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon svg { stroke: currentColor; }
@@ -1888,6 +1915,27 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   html[data-theme="dark"] .bottom-nav button.active .nav-icon { color: #fff; background: transparent; }
   html[data-theme="dark"] .bottom-nav .date-nav-icon { background: #211e26; }
   html[data-theme="dark"] .bottom-nav .calendar-nav-button.active .date-nav-icon { color: #fff; border-color: rgba(255,255,255,.96); background: #fff; }
+}
+
+/* WKWebView performance: keep the splash animated, then reuse static rasterized
+   app blobs and opaque fixed chrome instead of repainting filters every frame. */
+@media (max-width: 760px) {
+  .native-app :is(.content > .app-background-blobs, .creation-background-blobs) .splash-blob > i,
+  .native-app :is(.content > .app-background-blobs, .creation-background-blobs) .splash-blob::before {
+    animation: none;
+    will-change: auto;
+  }
+  .native-app .mobile-header,
+  .native-app .settings-toolbar,
+  .native-app .routine-template-page .template-dialog > .template-dialog-header,
+  .native-app .history-edit-page .history-edit-sticky {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .native-app .mobile-header,
+  .native-app .settings-toolbar { background: #fffdfa; }
+  html[data-theme="dark"] .native-app .mobile-header,
+  html[data-theme="dark"] .native-app .settings-toolbar { background: #25222b; }
 }
 
 /* One exact page-back control; each screen supplies only its accent color. */

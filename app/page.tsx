@@ -38,6 +38,8 @@ type ItemCompletion = { itemId: number; date: string };
 type AmountCompletion = { routineId: number; amountKey: string; date: string; count: number };
 type TrackerEntry = { routineId: number; trackerKey: string; date: string; value: string; hasFile: boolean; filePath?: string; contentType?: string };
 type Tab = "today" | "calendar" | "routines" | "history" | "settings";
+type MainTab = Exclude<Tab, "settings">;
+type BottomNavPhase = "idle" | "exiting" | "entering";
 type TimeFormat = "12-hour" | "24-hour";
 type WeekStart = "sunday" | "monday";
 type MotionPreference = "full" | "reduced";
@@ -338,6 +340,7 @@ export default function Home() {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [historyDayEditorOpen, setHistoryDayEditorOpen] = useState(false);
   const [bottomNavReturning, setBottomNavReturning] = useState(false);
+  const [bottomNavPhase, setBottomNavPhase] = useState<BottomNavPhase>("idle");
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
@@ -355,7 +358,10 @@ export default function Home() {
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingDeviceSnapshotRef = useRef<DeviceSnapshot | null>(null);
+  const deviceSaveTimerRef = useRef<number | undefined>(undefined);
   const bottomNavReturnTimerRef = useRef<number | undefined>(undefined);
+  const bottomNavSwitchTimerRef = useRef<number | undefined>(undefined);
   const [today, setToday] = useState(() => new Date(2000, 0, 1, 12));
   const todayKey = localDateKey(today);
 
@@ -468,14 +474,41 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isNativeApp() || loading) return;
-    const snapshot: DeviceSnapshot = { version: 1, routines, completions, itemCompletions, amountCompletions, trackerEntries };
+  function flushDeviceSnapshotSave() {
+    const snapshot = pendingDeviceSnapshotRef.current;
+    if (!snapshot) return;
+    pendingDeviceSnapshotRef.current = null;
     deviceSaveQueueRef.current = deviceSaveQueueRef.current
       .catch(() => undefined)
       .then(() => saveDeviceSnapshot(snapshot))
       .catch(() => setError("Your latest change could not be saved on this device."));
+  }
+
+  useEffect(() => {
+    if (!isNativeApp() || loading) return;
+    pendingDeviceSnapshotRef.current = { version: 1, routines, completions, itemCompletions, amountCompletions, trackerEntries };
+    if (deviceSaveTimerRef.current) window.clearTimeout(deviceSaveTimerRef.current);
+    deviceSaveTimerRef.current = window.setTimeout(() => {
+      deviceSaveTimerRef.current = undefined;
+      flushDeviceSnapshotSave();
+    }, 180);
+    return () => {
+      if (deviceSaveTimerRef.current) window.clearTimeout(deviceSaveTimerRef.current);
+    };
   }, [routines, completions, itemCompletions, amountCompletions, trackerEntries, loading]);
+
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flushDeviceSnapshotSave();
+    };
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+      if (deviceSaveTimerRef.current) window.clearTimeout(deviceSaveTimerRef.current);
+      flushDeviceSnapshotSave();
+    };
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -486,6 +519,25 @@ export default function Home() {
   }, []);
 
   const darkTheme = preferences.theme === "dark" || (preferences.theme === "system" && systemDark);
+  const nativeApp = isNativeApp();
+
+  function selectBottomTab(nextTab: MainTab) {
+    if (nextTab === tab || bottomNavPhase !== "idle") return;
+    if (preferences.motion === "reduced") {
+      startTransition(() => setTab(nextTab));
+      return;
+    }
+    if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
+    setBottomNavPhase("exiting");
+    bottomNavSwitchTimerRef.current = window.setTimeout(() => {
+      startTransition(() => setTab(nextTab));
+      setBottomNavPhase("entering");
+      bottomNavSwitchTimerRef.current = window.setTimeout(() => {
+        setBottomNavPhase("idle");
+        bottomNavSwitchTimerRef.current = undefined;
+      }, 540);
+    }, 210);
+  }
 
   function animateBottomNavReturn() {
     if (bottomNavReturnTimerRef.current) window.clearTimeout(bottomNavReturnTimerRef.current);
@@ -495,7 +547,9 @@ export default function Home() {
 
   function prepareCreationFlow() {
     if (bottomNavReturnTimerRef.current) window.clearTimeout(bottomNavReturnTimerRef.current);
+    if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
     setBottomNavReturning(false);
+    setBottomNavPhase("idle");
   }
 
   function closeTemplatePicker() {
@@ -523,6 +577,7 @@ export default function Home() {
 
   useEffect(() => () => {
     if (bottomNavReturnTimerRef.current) window.clearTimeout(bottomNavReturnTimerRef.current);
+    if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
   }, []);
 
   function openAddFromHeader() {
@@ -1030,17 +1085,19 @@ export default function Home() {
   const viewingCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
   const calendarDayNames = preferences.weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
   const selectedCalendarRoutine = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
-  const calendarEntries = monthDays.map((date) => date ? {
+  const calendarEntries = useMemo(() => monthDays.map((date) => date ? {
     date,
     matches: routines.filter((routine) => routine.days.includes(date.getDay()) && routineActiveOnDate(routine, localDateKey(date)) && (selectedRoutine === "all" || selectedRoutine === routine.id)),
-  } : null);
-  const calendarScheduledDays = calendarEntries.filter((entry) => entry && entry.matches.length > 0).length;
-  const calendarRoutineCount = new Set(calendarEntries.flatMap((entry) => entry?.matches.map((routine) => routine.id) ?? [])).size;
+  } : null), [monthDays, routines, selectedRoutine]);
+  const { calendarScheduledDays, calendarRoutineCount } = useMemo(() => ({
+    calendarScheduledDays: calendarEntries.filter((entry) => entry && entry.matches.length > 0).length,
+    calendarRoutineCount: new Set(calendarEntries.flatMap((entry) => entry?.matches.map((routine) => routine.id) ?? [])).size,
+  }), [calendarEntries]);
 
   const splashOverlay = splashVisible ? <OnboardingSplash leaving={splashLeaving} /> : null;
 
   return (
-    <><main className={`app-shell${preferences.motion === "reduced" ? " reduce-motion" : ""}${darkTheme ? " theme-dark" : ""}${tab === "settings" ? " settings-view-open" : ""}`}>
+    <><main className={`app-shell${nativeApp ? " native-app" : ""}${preferences.motion === "reduced" ? " reduce-motion" : ""}${darkTheme ? " theme-dark" : ""}${tab === "settings" ? " settings-view-open" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="Routine EASY home">
           <img className="brand-logo" src="/routineez-checklist-glossy.png" alt="" />
@@ -1180,12 +1237,12 @@ export default function Home() {
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
-      <nav className={`bottom-nav${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
+      <nav className={`bottom-nav nav-${bottomNavPhase}${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
         <BottomNavSurface key={tab} tab={tab} reducedMotion={preferences.motion === "reduced"} />
-        <NavButton active={tab === "today"} onClick={() => setTab("today")} icon={CircleCheckBig} label="Today" />
-        <CalendarNavButton active={tab === "calendar"} onClick={() => setTab("calendar")} date={today} />
-        <NavButton active={tab === "routines"} onClick={() => setTab("routines")} icon={ListChecks} label="Routines" />
-        <NavButton active={tab === "history"} onClick={() => setTab("history")} icon={History} label="History" />
+        <NavButton active={tab === "today"} onClick={() => selectBottomTab("today")} icon={CircleCheckBig} label="Today" />
+        <CalendarNavButton active={tab === "calendar"} onClick={() => selectBottomTab("calendar")} date={today} />
+        <NavButton active={tab === "routines"} onClick={() => selectBottomTab("routines")} icon={ListChecks} label="Routines" />
+        <NavButton active={tab === "history"} onClick={() => selectBottomTab("history")} icon={History} label="History" />
       </nav>
     </main>{splashOverlay}</>
   );
@@ -1598,7 +1655,7 @@ function BottomNavSurface({ tab, reducedMotion }: { tab: Tab; reducedMotion: boo
       <mask id={maskId} x="0" y="0" width="100%" height="100%" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
         <rect width="100%" height="100%" fill="#fff" />
         <use href={`#${notchId}`} x={center.percent} y="0" transform={`translate(${center.offset} 0)`} fill="#000">
-          {!reducedMotion && <animate attributeName="y" from="-42" to="0" dur="220ms" calcMode="spline" keyTimes="0;1" keySplines=".2 .85 .3 1" fill="freeze" />}
+          {!reducedMotion && <animate attributeName="y" from="-48" to="0" dur="480ms" calcMode="spline" keyTimes="0;1" keySplines=".16 .88 .24 1" fill="freeze" />}
         </use>
       </mask>
       <linearGradient id={sheenId} x1="0" y1="0" x2="0" y2="1">
