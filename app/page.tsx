@@ -1191,7 +1191,7 @@ export default function Home() {
 
         {tab === "calendar" && (
           <div className="page calendar-page calendar-page-matched">
-            <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills">
+            <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills" accent={selectedCalendarRoutine?.color} multicolor={selectedRoutine === "all"}>
               <button className={selectedRoutine === "all" ? "active" : ""} aria-pressed={selectedRoutine === "all"} onClick={() => setSelectedRoutine("all")}>All routines</button>
               {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} aria-pressed={selectedRoutine === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
             </ScrollablePicker>
@@ -1318,7 +1318,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
   };
 
   return <div className={`page history-page${selected ? " history-page-detail" : ""}${!loading && !routines.length ? " history-page-empty" : ""}`}>
-    {routines.length > 0 && <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
+    {routines.length > 0 && <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills" accent={selected?.color} multicolor={effectiveSelection === "all"}>
       <button className={effectiveSelection === "all" ? "active" : ""} aria-pressed={effectiveSelection === "all"} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
       {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} aria-pressed={effectiveSelection === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
     </ScrollablePicker>}
@@ -2450,7 +2450,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
   </div>, document.body);
 }
 
-function ScrollablePicker({ label, children, className = "", scrollClassName = "", wrap = false }: { label: string; children: ReactNode; className?: string; scrollClassName?: string; wrap?: boolean }) {
+function ScrollablePicker({ label, children, className = "", scrollClassName = "", wrap = false, accent, multicolor = false }: { label: string; children: ReactNode; className?: string; scrollClassName?: string; wrap?: boolean; accent?: string; multicolor?: boolean }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLButtonElement>(null);
@@ -2523,7 +2523,7 @@ function ScrollablePicker({ label, children, className = "", scrollClassName = "
     };
   }, [wrap]);
 
-  return <div className={`picker-shell${className ? ` ${className}` : ""}`}>
+  return <div className={`picker-shell${multicolor ? " picker-multicolor" : ""}${className ? ` ${className}` : ""}`} style={accent ? { "--picker-accent": accent } as React.CSSProperties : undefined}>
     <div ref={scrollerRef} className={`picker-scroll${wrap ? " picker-wrap" : ""}${scrollClassName ? ` ${scrollClassName}` : ""}`} onScroll={wrap ? undefined : updateIndicator} tabIndex={0} role="group" aria-label={wrap ? `${label} choices.` : `${label} choices. Scroll horizontally for more.`}>{children}</div>
     {!wrap && scrollable && <div ref={trackRef} className="picker-scrollbar">
       <button ref={thumbRef} type="button" className={`picker-thumb${dragging ? " dragging" : ""}`} style={{ left: `calc(${thumb.left}% + 1px)`, width: `calc(${thumb.width}% - 2px)` }} aria-label={`Scroll ${label} choices`} onPointerDown={beginThumbDrag} onPointerMove={moveThumb} onPointerUp={endThumbDrag} onPointerCancel={endThumbDrag} onLostPointerCapture={() => setDragging(false)} onKeyDown={moveThumbWithKeyboard} />

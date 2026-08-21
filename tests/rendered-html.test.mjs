@@ -230,6 +230,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /@property --easy-ring-angle[\s\S]*?@keyframes easy-ring-orbit/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button:first-child\.active \{[\s\S]*?border: 3px solid transparent;[\s\S]*?linear-gradient\(#fff,#fff\) padding-box,[\s\S]*?conic-gradient\(from var\(--easy-ring-angle\), var\(--purple\) 0 25%, var\(--coral\) 25% 50%, var\(--gold\) 50% 75%, var\(--sky\) 75% 100%\) border-box;[\s\S]*?box-shadow: none;[\s\S]*?animation: easy-ring-orbit 4\.8s linear infinite/);
   assert.match(page, /scrollClassName="filter-pills"/);
+  assert.match(page, /accent=\{selectedCalendarRoutine\?\.color\} multicolor=\{selectedRoutine === "all"\}/);
+  assert.match(page, /accent=\{selected\?\.color\} multicolor=\{effectiveSelection === "all"\}/);
   assert.match(page, /Scroll horizontally for more/);
   assert.doesNotMatch(page, /scroller\.scrollBy|picker-scroll-hint/);
   assert.match(page, /picker-scrollbar/);
@@ -246,6 +248,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar \{[\s\S]*width: 100%; height: 16px/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-scrollbar::before \{[\s\S]*height: 3px[\s\S]*transform: translateY\(-50%\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-thumb::after \{[\s\S]*height: 5px[\s\S]*border-radius: 3px[\s\S]*background: var\(--picker-accent, var\(--mint\)\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /picker-shell\.picker-multicolor \.picker-thumb::after \{[\s\S]*linear-gradient\(90deg, var\(--purple\) 0 25%, var\(--coral\) 25% 50%, var\(--gold\) 50% 75%, var\(--sky\) 75% 100%\)/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.picker-thumb \{[^}]*transition:[^;}]*left/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.picker-scroll \{[^}]*scroll-behavior: auto;[^}]*scroll-snap-type: none/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.picker-scroll\.picker-wrap \{[^}]*display: grid;[^}]*overflow: visible/);

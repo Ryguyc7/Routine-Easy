@@ -686,6 +686,12 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .picker-scrollbar::before { content: ""; position: absolute; z-index: 0; left: 0; right: 0; top: 50%; height: 3px; border-radius: 999px; background: color-mix(in srgb, var(--picker-accent, var(--mint)) 10%, #d8d6dc); transform: translateY(-50%); }
 .picker-thumb { position: absolute; z-index: 1; top: 50%; bottom: auto; display: block; height: 16px; min-width: calc(22% - 2px); margin: 0; padding: 0; border: 0; border-radius: 0; appearance: none; background: transparent; box-shadow: none; transform: translateY(-50%); cursor: grab; touch-action: none; transition: width .16s ease; will-change: left, width; }
 .picker-thumb::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 5px; border-radius: 3px; background: var(--picker-accent, var(--mint)); transform: translateY(-50%); }
+.picker-shell.picker-multicolor .picker-scrollbar::before {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--purple) 14%, #d8d6dc) 0 25%, color-mix(in srgb, var(--coral) 14%, #d8d6dc) 25% 50%, color-mix(in srgb, var(--gold) 14%, #d8d6dc) 50% 75%, color-mix(in srgb, var(--sky) 14%, #d8d6dc) 75% 100%);
+}
+.picker-shell.picker-multicolor .picker-thumb::after {
+  background: linear-gradient(90deg, var(--purple) 0 25%, var(--coral) 25% 50%, var(--gold) 50% 75%, var(--sky) 75% 100%);
+}
 .picker-thumb.dragging { cursor: grabbing; transition: none; }
 .picker-thumb:focus-visible { outline: 2px solid color-mix(in srgb, var(--picker-accent, var(--mint)) 38%, transparent); outline-offset: 1px; border-radius: 4px; }
 .picker-scroll:focus-visible { outline: 2px solid color-mix(in srgb, var(--picker-accent, var(--mint)) 24%, transparent); outline-offset: 3px; border-radius: 9px; }
@@ -1573,6 +1579,9 @@ html[data-theme="dark"] :is(.tracking-block, .tracking-add-menu > button:hover) 
 }
 html[data-theme="dark"] .modal-scrollbar::before { background: color-mix(in srgb, var(--wizard-accent, var(--sky)) 10%, #4a464e); }
 html[data-theme="dark"] .picker-scrollbar::before { background: color-mix(in srgb, var(--picker-accent, var(--mint)) 10%, #4a464e); }
+html[data-theme="dark"] .picker-shell.picker-multicolor .picker-scrollbar::before {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--purple) 18%, #4a464e) 0 25%, color-mix(in srgb, var(--coral) 18%, #4a464e) 25% 50%, color-mix(in srgb, var(--gold) 18%, #4a464e) 50% 75%, color-mix(in srgb, var(--sky) 18%, #4a464e) 75% 100%);
+}
 html[data-theme="dark"] .toggle-track { background: #4b4751; box-shadow: inset 0 0 0 1px #5c5762; }
 html[data-theme="dark"] .toggle-track i { background: #c9c4ce; box-shadow: 0 2px 6px rgba(0,0,0,.32); }
 html[data-theme="dark"] :is(.choice-toggle, .day-plan-toggle) > input:checked + .toggle-track { background: var(--wizard-accent, var(--mint)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wizard-accent, var(--mint)) 72%, #fff); }
