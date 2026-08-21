@@ -1798,7 +1798,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     box-shadow: 0 10px 20px color-mix(in srgb, var(--nav-accent) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.28);
     transform: translate(-50%, -50%) translateY(-27px);
     transform-origin: center;
-    animation: bottom-nav-active-pop .34s cubic-bezier(.16,.88,.24,1) both;
+    animation: bottom-nav-active-pop .29s .025s cubic-bezier(.16,.88,.24,1) both;
   }
   .bottom-nav .nav-label {
     position: absolute;
@@ -1823,7 +1823,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   .bottom-nav button.calendar-nav-button.active .nav-label {
     color: var(--nav-accent);
     font-weight: 750;
-    animation: bottom-nav-label-in .2s .1s ease-out both;
+    animation: bottom-nav-label-in .18s .1s ease-out both;
   }
   .bottom-nav button:nth-of-type(3).active .nav-label { color: #a96b00; }
   .bottom-nav .nav-icon {
@@ -1844,19 +1844,19 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     box-shadow: none;
     filter: none;
     transform: translateY(-27px);
-    animation: bottom-nav-icon-lift .31s .03s cubic-bezier(.16,.88,.24,1) both;
+    animation: bottom-nav-icon-lift .27s .035s cubic-bezier(.16,.88,.24,1) both;
   }
   .bottom-nav.nav-exiting button.active::before,
   .bottom-nav.nav-exiting button.calendar-nav-button.active::before {
-    animation: bottom-nav-active-out .115s cubic-bezier(.55,0,.85,.45) both;
+    animation: bottom-nav-active-out .16s cubic-bezier(.45,0,.8,.45) both;
   }
   .bottom-nav.nav-exiting button.active .nav-icon,
   .bottom-nav.nav-exiting button.calendar-nav-button.active .nav-icon {
-    animation: bottom-nav-icon-out .115s cubic-bezier(.55,0,.85,.45) both;
+    animation: bottom-nav-icon-out .16s cubic-bezier(.45,0,.8,.45) both;
   }
   .bottom-nav.nav-exiting button.active .nav-label,
   .bottom-nav.nav-exiting button.calendar-nav-button.active .nav-label {
-    animation: bottom-nav-label-out .1s ease-in both;
+    animation: bottom-nav-label-out .13s ease-in both;
   }
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon { color: #fff; }
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon svg { stroke: currentColor; }

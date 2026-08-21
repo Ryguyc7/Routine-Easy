@@ -529,24 +529,24 @@ export default function Home() {
         bottomNavSwitchTimerRef.current = window.setTimeout(() => {
           setBottomNavPhase("idle");
           bottomNavSwitchTimerRef.current = undefined;
-        }, 380);
+        }, 330);
       }
       return;
     }
     if (preferences.motion === "reduced") {
-      startTransition(() => setTab(nextTab));
+      setTab(nextTab);
       return;
     }
     if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
     setBottomNavPhase("exiting");
     bottomNavSwitchTimerRef.current = window.setTimeout(() => {
-      startTransition(() => setTab(nextTab));
+      setTab(nextTab);
       setBottomNavPhase("entering");
       bottomNavSwitchTimerRef.current = window.setTimeout(() => {
         setBottomNavPhase("idle");
         bottomNavSwitchTimerRef.current = undefined;
-      }, 380);
-    }, 120);
+      }, 330);
+    }, 175);
   }
 
   function animateBottomNavReturn() {
@@ -1248,7 +1248,12 @@ export default function Home() {
       </section>
 
       <nav className={`bottom-nav nav-${bottomNavPhase}${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
-        <BottomNavSurface key={tab} tab={tab} reducedMotion={preferences.motion === "reduced"} />
+        <BottomNavSurface
+          key={`${tab}-${bottomNavPhase === "exiting" ? "closing" : "opening"}`}
+          tab={tab}
+          phase={bottomNavPhase}
+          reducedMotion={preferences.motion === "reduced"}
+        />
         <NavButton active={tab === "today"} onClick={() => selectBottomTab("today")} icon={CircleCheckBig} label="Today" />
         <CalendarNavButton active={tab === "calendar"} onClick={() => selectBottomTab("calendar")} date={today} />
         <NavButton active={tab === "routines"} onClick={() => selectBottomTab("routines")} icon={ListChecks} label="Routines" />
@@ -1647,7 +1652,7 @@ function EasyWord({ className }: { className: string }) {
   return <span className={className} aria-hidden="true"><span className="easy-e">E</span><span className="easy-a">A</span><span className="easy-s">S</span><span className="easy-y">Y</span></span>;
 }
 
-function BottomNavSurface({ tab, reducedMotion }: { tab: Tab; reducedMotion: boolean }) {
+function BottomNavSurface({ tab, phase, reducedMotion }: { tab: Tab; phase: BottomNavPhase; reducedMotion: boolean }) {
   const centers: Partial<Record<Tab, { percent: string; offset: number }>> = {
     today: { percent: "12.5%", offset: 9 },
     calendar: { percent: "37.5%", offset: 3 },
@@ -1658,14 +1663,27 @@ function BottomNavSurface({ tab, reducedMotion }: { tab: Tab; reducedMotion: boo
   const maskId = `bottom-nav-mask-${tab}`;
   const notchId = `bottom-nav-notch-${tab}`;
   const sheenId = `bottom-nav-sheen-${tab}`;
+  const closing = phase === "exiting";
+  const gapY = reducedMotion ? "0" : closing ? "0" : "-48";
 
   return <svg className="bottom-nav-surface" aria-hidden="true">
     <defs>
       <path id={notchId} d="M 42 -8 L -42 -8 L -42 0 C -36 0 -34 2 -33 9 C -30 29 -18 42 0 42 C 18 42 30 29 33 9 C 34 2 36 0 42 0 Z" />
       <mask id={maskId} x="0" y="0" width="100%" height="100%" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
         <rect width="100%" height="100%" fill="#fff" />
-        <use href={`#${notchId}`} x={center.percent} y="0" transform={`translate(${center.offset} 0)`} fill="#000">
-          {!reducedMotion && <animate attributeName="y" from="-48" to="0" dur="340ms" calcMode="spline" keyTimes="0;1" keySplines=".16 .88 .24 1" fill="freeze" />}
+        <use href={`#${notchId}`} x={center.percent} y={gapY} transform={`translate(${center.offset} 0)`} fill="#000">
+          {!reducedMotion && (
+            <animate
+              attributeName="y"
+              from={closing ? "0" : "-48"}
+              to={closing ? "-48" : "0"}
+              dur={closing ? "170ms" : "300ms"}
+              calcMode="spline"
+              keyTimes="0;1"
+              keySplines={closing ? ".45 0 .8 .45" : ".16 .88 .24 1"}
+              fill="freeze"
+            />
+          )}
         </use>
       </mask>
       <linearGradient id={sheenId} x1="0" y1="0" x2="0" y2="1">
