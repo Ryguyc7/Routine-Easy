@@ -1689,6 +1689,14 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   from { opacity: 1; transform: translate(-50%, -50%) translateY(-27px) scale(1); }
   to { opacity: 0; transform: translate(-50%, -50%) translateY(-27px) scale(0); }
 }
+@keyframes bottom-nav-notch-pull-down {
+  from { transform: translateY(-48px); }
+  to { transform: translateY(0); }
+}
+@keyframes bottom-nav-notch-pull-up {
+  from { transform: translateY(0); }
+  to { transform: translateY(-48px); }
+}
 @keyframes bottom-nav-icon-lift {
   0% { opacity: 0; transform: translateY(-8px) scale(.56); }
   72% { opacity: 1; transform: translateY(-30px) scale(1.07); }
@@ -1748,6 +1756,16 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   }
   .bottom-nav-surface-fill { fill: #fff; }
   .bottom-nav-surface-sheen { opacity: .82; }
+  .bottom-nav-notch-motion {
+    transform: translateY(0);
+    will-change: transform;
+  }
+  .bottom-nav-notch-opening {
+    animation: bottom-nav-notch-pull-down .36s cubic-bezier(.16,.88,.24,1) both;
+  }
+  .bottom-nav-notch-closing {
+    animation: bottom-nav-notch-pull-up .21s cubic-bezier(.45,0,.8,.45) both;
+  }
   .bottom-nav-sheen-top { stop-color: #fff; stop-opacity: .92; }
   .bottom-nav-sheen-middle { stop-color: #edf0f7; stop-opacity: .16; }
   .bottom-nav-sheen-bottom { stop-color: #7267a8; stop-opacity: .075; }
