@@ -87,6 +87,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(addRoutineSource, /step === 0 \? "Cancel" : "Back"/);
   const fullPageBuilderCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(fullPageBuilderCss, /\.routine-order-item\.reorder-dragging,[\s\S]*?outline: 3px solid/);
+  assert.match(fullPageBuilderCss, /\.routine-order-item\.reorder-dragging,[\s\S]*?transform: translateY\(-1px\)/);
+  assert.doesNotMatch(fullPageBuilderCss, /reorder-dragging[\s\S]{0,400}scale\(1\.018\)/);
   assert.match(fullPageBuilderCss, /\.splash-blob > i::after/);
   assert.match(fullPageBuilderCss, /splash-glow-breathe/);
   assert.match(fullPageBuilderCss, /The add flow is a full-screen page/);
