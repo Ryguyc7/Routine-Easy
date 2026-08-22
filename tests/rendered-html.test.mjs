@@ -173,6 +173,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function EnlargeablePhoto/);
   assert.match(page, /aria-label={`Enlarge \$\{alt\}`}/);
   assert.match(page, /className="photo-lightbox"/);
+  assert.match(page, /className="photo-lightbox-close"/);
+  assert.match(page, /<X aria-hidden="true" \/>/);
   assert.match(page, /uploadInstructionImages/);
   assert.match(deviceStorage, /saveDeviceInstructionImage/);
   assert.match(instructionImageRoute, /UPLOADS\.put/);

@@ -308,7 +308,8 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .enlargeable-photo:focus-visible { outline: 3px solid color-mix(in srgb, var(--routine, var(--instruction-accent, var(--sky))) 55%, transparent); outline-offset: 2px; }
 .photo-lightbox { position: fixed; z-index: 10000; inset: 0; display: grid; place-items: center; padding: max(54px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom)); background: rgba(12,10,16,.88); backdrop-filter: blur(12px); animation: photo-lightbox-in .18s ease-out; }
 .photo-lightbox > img { display: block; width: auto; height: auto; max-width: min(100%, 1100px); max-height: calc(100dvh - 90px); object-fit: contain; border-radius: 14px; box-shadow: 0 24px 70px rgba(0,0,0,.48); }
-.photo-lightbox-close { position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; color: #fff; background: rgba(255,255,255,.14); font-size: 27px; line-height: 1; cursor: pointer; backdrop-filter: blur(8px); }
+.photo-lightbox-close { position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; color: #fff; background: rgba(255,255,255,.14); cursor: pointer; backdrop-filter: blur(8px); }
+.photo-lightbox-close svg { display: block; width: 20px; height: 20px; margin: 0; stroke-width: 3; }
 .photo-lightbox-close:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
 @keyframes photo-lightbox-in { from { opacity: 0; } to { opacity: 1; } }
 .tracker-photo-picker { position: relative; display: block; overflow: hidden; border-radius: 9px; cursor: pointer; }

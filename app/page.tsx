@@ -2026,7 +2026,7 @@ function EnlargeablePhoto({ src, alt }: { src: string; alt: string }) {
   return <>
     <button type="button" className="enlargeable-photo" onClick={() => setOpen(true)} aria-label={`Enlarge ${alt}`}><img src={src} alt={alt} /><span aria-hidden="true">↗</span></button>
     {open && createPortal(<div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={`Enlarged ${alt}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)} aria-label="Close enlarged photo" autoFocus>×</button>
+      <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)} aria-label="Close enlarged photo" autoFocus><X aria-hidden="true" /></button>
       <img src={src} alt={alt} />
     </div>, document.body)}
   </>;
