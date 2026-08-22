@@ -257,7 +257,8 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .routine-instruction header { display: flex; align-items: center; gap: 7px; }
 .routine-instruction strong { color: var(--ink); font-size: 11px; }
 .routine-instruction p { margin: 0; color: #66636d; font-size: 10.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
-.routine-instruction ul { display: grid; gap: 5px; margin: 0; padding-left: 19px; color: #66636d; font-size: 10.5px; line-height: 1.45; }
+.routine-instruction ul { display: block; margin: 0; padding-left: 20px; color: #66636d; font-size: 10.5px; line-height: 1.45; list-style: disc outside; }
+.routine-instruction li { display: list-item; margin: 5px 0; }
 .routine-instruction li::marker { color: var(--instruction-accent); }
 .routine-instruction-document { display: grid; gap: 8px; }
 .routine-instruction-document p + p { margin-top: -2px; }
@@ -612,13 +613,18 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .instruction-rich-toolbar button:hover, .instruction-rich-image:hover > span { color: var(--wizard-accent); background: var(--wizard-soft); }
 .instruction-rich-toolbar button strong, .instruction-rich-toolbar button em { font-size: 13px; }
 .instruction-rich-toolbar button:nth-child(3) { font-size: 11px; letter-spacing: -1px; }
+.instruction-font-size { width: 68px; height: 29px; padding: 0 20px 0 8px; border: 0; border-radius: 8px; outline: 0; color: #68646f; background: transparent; font-size: 10px; font-weight: 750; cursor: pointer; }
+.instruction-font-size:hover, .instruction-font-size:focus { color: var(--wizard-accent); background: var(--wizard-soft); }
 .instruction-rich-image { position: relative; display: block; margin-left: auto; overflow: hidden; border-radius: 8px; cursor: pointer; }
 .instruction-rich-image input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .instruction-rich-image svg { width: 15px; height: 15px; }
 .instruction-rich-content { min-height: 180px; max-height: 460px; overflow-y: auto; padding: 12px 13px; outline: 0; color: var(--ink); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
 .instruction-rich-content:empty::before { color: #9b98a1; content: attr(data-placeholder); pointer-events: none; }
 .instruction-rich-content p { min-height: 1.2em; margin: 0 0 7px; }
-.instruction-rich-content ul, .instruction-rich-content ol { display: grid; gap: 3px; margin: 0 0 8px; padding-left: 20px; }
+.instruction-rich-content ul, .instruction-rich-content ol { display: block; margin: 0 0 8px; padding-left: 23px; }
+.instruction-rich-content ul { list-style: disc outside; }
+.instruction-rich-content ol { list-style: decimal outside; }
+.instruction-rich-content li { display: list-item; margin: 3px 0; padding-left: 1px; }
 .instruction-rich-content li::marker { color: var(--wizard-accent); }
 .instruction-rich-content figure { position: relative; width: 100%; margin: 10px 0; padding: 0; }
 .instruction-rich-content figure img { display: block; width: 100%; height: auto; max-height: 330px; object-fit: contain; border-radius: 10px; background: #f2eff4; }
@@ -1594,6 +1600,7 @@ html[data-theme="dark"] .instruction-editor-label { color: #cbc5d0; }
 html[data-theme="dark"] .instruction-rich-editor { border-color: #49434f; background: #211e26; }
 html[data-theme="dark"] .instruction-rich-toolbar { border-color: #49434f; background: #29252e; }
 html[data-theme="dark"] :is(.instruction-rich-toolbar button, .instruction-rich-image > span) { color: #bbb5c0; }
+html[data-theme="dark"] .instruction-font-size { color: #bbb5c0; }
 html[data-theme="dark"] .instruction-rich-content { color: #ece8ef; }
 html[data-theme="dark"] .instruction-rich-content figure img { background: #19161d; }
 html[data-theme="dark"] :is(.quantity-pill, .preview-quantity, .tracker-stepper button, .tracker-timer button, .tracker-avoidance, .preview-generic-tracker, .preview-stepper button) {
