@@ -2319,39 +2319,15 @@ html[data-theme="dark"] .settings-list .setting-card {
 }
 
 /* Direct routine ordering on the Today screen. */
-.routine-reorder-handle {
-  width: 34px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  color: color-mix(in srgb, var(--routine) 48%, #aaa6b2);
-  background: transparent;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.routine-reorder-handle:active { cursor: grabbing; }
-.routine-reorder-handle:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--routine) 72%, #fff);
-  outline-offset: -2px;
-}
-.routine-reorder-handle svg {
-  width: 18px;
-  height: 18px;
-  pointer-events: none;
-}
 .routine-order-item {
   transition: transform .2s cubic-bezier(.2,.8,.2,1), border-color .18s ease, opacity .18s ease, box-shadow .2s ease;
 }
+.routine-order-item .routine-swipe-surface { cursor: grab; }
+.routine-order-item .routine-swipe-surface:active { cursor: grabbing; }
 .routine-order-item.reorder-dragging,
 .routine-order-item.reorder-dragging:hover {
   z-index: 6;
-  opacity: .72;
+  opacity: .78;
   transform: scale(1.018);
   border-color: color-mix(in srgb, var(--routine) 58%, var(--line));
   box-shadow: 0 18px 38px color-mix(in srgb, var(--routine) 20%, rgba(22,18,31,.18));
@@ -2366,17 +2342,10 @@ body.reordering-routines .routine-order-item:not(.reorder-dragging) {
   transition-duration: .14s;
 }
 
-html[data-theme="dark"] .routine-reorder-handle {
-  color: color-mix(in srgb, var(--routine) 58%, #aaa5b1);
+@media (hover: none) {
+  .routine-order-item .routine-swipe-surface { cursor: default; }
 }
 
-@media (max-width: 760px) {
-  .routine-reorder-handle {
-    width: 31px;
-    height: 62px;
-    flex-basis: 31px;
-    border-radius: 11px;
-  }
-  .routine-reorder-handle svg { width: 19px; height: 19px; }
-  .routine-check-zone { flex-basis: 57px; }
+@media (prefers-reduced-motion: reduce) {
+  .routine-order-item { transition-duration: .01ms !important; }
 }

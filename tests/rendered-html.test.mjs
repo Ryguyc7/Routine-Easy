@@ -28,10 +28,12 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function reorderRoutineCollection/);
   assert.match(page, /function beginDirectRoutineDrag/);
   assert.match(page, /function moveDirectRoutineDrag/);
-  assert.match(page, /className="routine-reorder-handle"/);
-  assert.match(page, /Drag, or use the up and down arrow keys/);
+  assert.match(page, /function animateRoutineOrder/);
+  assert.match(page, /element\.animate/);
+  assert.match(page, /touchmove", holdCardStill, \{ passive: false \}/);
+  assert.match(page, /}, 210\)/);
   assert.match(page, /data-routine-order-id/);
-  assert.doesNotMatch(page, /Arrange your day|function RoutineArrangement|today-time-groups/);
+  assert.doesNotMatch(page, /routine-reorder-handle|GripVertical|Arrange your day|function RoutineArrangement|today-time-groups/);
   assert.doesNotMatch(page, /function OnboardingPage|routineez-onboarding-complete/);
   assert.match(page, /SPLASH_DURATION_MS = 2100/);
   assert.match(page, /splash-routine/);

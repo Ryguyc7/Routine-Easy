@@ -2,7 +2,7 @@
 
 import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, GripVertical, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -561,7 +561,7 @@ export default function Home() {
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const arrangementSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; active: boolean; changed: boolean; lastTarget: string; order: Routine[] } | null>(null);
+  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; armed: boolean; active: boolean; changed: boolean; lastTarget: string; order: Routine[] } | null>(null);
   const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingDeviceSnapshotRef = useRef<DeviceSnapshot | null>(null);
   const deviceSaveTimerRef = useRef<number | undefined>(undefined);
@@ -611,16 +611,34 @@ export default function Home() {
     });
   }
 
-  function beginDirectRoutineDrag(routineId: number, event: ReactPointerEvent<HTMLButtonElement>) {
-    if (event.button !== 0) return;
-    event.stopPropagation();
-    directRoutineDragRef.current = { routineId, pointerId: event.pointerId, startY: event.clientY, active: false, changed: false, lastTarget: "", order: routines };
-    event.currentTarget.setPointerCapture(event.pointerId);
+  function beginDirectRoutineDrag(routineId: number, pointerId: number, startY: number, armed: boolean) {
+    directRoutineDragRef.current = { routineId, pointerId, startY, armed, active: false, changed: false, lastTarget: "", order: routines };
   }
 
-  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+  function armDirectRoutineDrag(pointerId: number) {
     const drag = directRoutineDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (drag?.pointerId === pointerId) drag.armed = true;
+  }
+
+  function animateRoutineOrder(previousBounds: Map<number, DOMRect>, draggedId: number) {
+    if (preferences.motion === "reduced" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    window.requestAnimationFrame(() => {
+      document.querySelectorAll<HTMLElement>("[data-routine-order-id]").forEach((element) => {
+        const routineId = Number(element.dataset.routineOrderId);
+        if (routineId === draggedId) return;
+        const previous = previousBounds.get(routineId);
+        if (!previous) return;
+        const next = element.getBoundingClientRect();
+        const offset = previous.top - next.top;
+        if (Math.abs(offset) < 1) return;
+        element.animate([{ transform: `translateY(${offset}px)` }, { transform: "translateY(0)" }], { duration: 230, easing: "cubic-bezier(.2,.8,.2,1)" });
+      });
+    });
+  }
+
+  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = directRoutineDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !drag.armed) return;
     event.stopPropagation();
     if (!drag.active) {
       if (Math.abs(event.clientY - drag.startY) < 6) return;
@@ -640,17 +658,17 @@ export default function Home() {
     if (!Number.isInteger(targetId) || drag.lastTarget === targetKey) return;
     const next = reorderRoutineCollection(drag.order, drag.routineId, targetId, afterTarget);
     if (next === drag.order) return;
+    const previousBounds = new Map(Array.from(document.querySelectorAll<HTMLElement>("[data-routine-order-id]")).map((element) => [Number(element.dataset.routineOrderId), element.getBoundingClientRect()]));
     drag.order = next;
     drag.changed = true;
     drag.lastTarget = targetKey;
     setRoutines(next);
+    animateRoutineOrder(previousBounds, drag.routineId);
   }
 
-  function endDirectRoutineDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+  function endDirectRoutineDrag(pointerId: number) {
     const drag = directRoutineDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    event.stopPropagation();
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!drag || drag.pointerId !== pointerId) return;
     directRoutineDragRef.current = null;
     document.body.classList.remove("reordering-routines");
     setDirectDraggingRoutineId(null);
@@ -1480,6 +1498,7 @@ export default function Home() {
                   timeFormat={preferences.timeFormat}
                   reorderDragging={directDraggingRoutineId === routine.id}
                   onReorderStart={beginDirectRoutineDrag}
+                  onReorderArm={armDirectRoutineDrag}
                   onReorderMove={moveDirectRoutineDrag}
                   onReorderEnd={endDirectRoutineDrag}
                   onReorderKey={(direction) => shiftTodayRoutine(routine.id, direction)}
@@ -2000,7 +2019,7 @@ function CalendarNavButton({ active, onClick, date }: { active: boolean; onClick
   return <button className={`calendar-nav-button ${active ? "active" : ""}`} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon date-nav-icon" aria-hidden="true"><i>{date.toLocaleDateString("en-US", { month: "short" })}</i><strong>{date.getDate()}</strong></span><span className="nav-label">Calendar</span></button>;
 }
 
-function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat, reorderDragging, onReorderStart, onReorderMove, onReorderEnd, onReorderKey }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat; reorderDragging: boolean; onReorderStart: (routineId: number, event: ReactPointerEvent<HTMLButtonElement>) => void; onReorderMove: (event: ReactPointerEvent<HTMLButtonElement>) => void; onReorderEnd: (event: ReactPointerEvent<HTMLButtonElement>) => void; onReorderKey: (direction: -1 | 1) => void }) {
+function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat, reorderDragging, onReorderStart, onReorderArm, onReorderMove, onReorderEnd, onReorderKey }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat; reorderDragging: boolean; onReorderStart: (routineId: number, pointerId: number, startY: number, armed: boolean) => void; onReorderArm: (pointerId: number) => void; onReorderMove: (event: ReactPointerEvent<HTMLDivElement>) => void; onReorderEnd: (pointerId: number) => void; onReorderKey: (direction: -1 | 1) => void }) {
   const dayVariant = routine.dayVariants?.[new Date().getDay()];
   const activeTracking = routineTrackingForDay(routine, new Date().getDay());
   const { lists: activeLists, amounts: activeAmounts, instructions: activeInstructions, items: activeItems, mode: activeTrackingMode } = activeTracking;
@@ -2012,9 +2031,12 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   const dragStartRef = useRef({ x: 0, y: 0 });
   const dragXRef = useRef(0);
   const pointerActiveRef = useRef(false);
-  const gestureAxisRef = useRef<"pending" | "horizontal" | "vertical">("pending");
+  const gestureAxisRef = useRef<"pending" | "horizontal" | "vertical" | "reorder">("pending");
+  const reorderHoldTimerRef = useRef<number | undefined>(undefined);
+  const reorderReadyRef = useRef(false);
   const checkPointerRef = useRef({ active: false, pointerId: -1, x: 0, y: 0 });
   const expansionInnerRef = useRef<HTMLDivElement>(null);
+  const swipeSurfaceRef = useRef<HTMLDivElement>(null);
   const skippedRef = useRef(skipped);
   if (skippedRef.current !== skipped) skippedRef.current = skipped;
   useEffect(() => {
@@ -2026,6 +2048,18 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     observer.observe(content);
     return () => observer.disconnect();
   }, [hasDetails]);
+  useEffect(() => () => {
+    if (reorderHoldTimerRef.current) window.clearTimeout(reorderHoldTimerRef.current);
+  }, []);
+  useEffect(() => {
+    const surface = swipeSurfaceRef.current;
+    if (!surface) return;
+    const holdCardStill = (event: TouchEvent) => {
+      if (pointerActiveRef.current && reorderReadyRef.current) event.preventDefault();
+    };
+    surface.addEventListener("touchmove", holdCardStill, { passive: false });
+    return () => surface.removeEventListener("touchmove", holdCardStill);
+  }, []);
   const completedCount = activeItems.filter((item) => completedItemIds.has(item.id)).length;
   const todayVariant = typeof dayVariant === "string" ? dayVariant : dayVariant?.label ?? "";
   const progressParts = [
@@ -2076,51 +2110,99 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   };
   const beginSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     const target = event.target instanceof Element ? event.target : null;
-    if (event.button !== 0 || target?.closest(".routine-check-zone, .routine-skip-accessible, .routine-reorder-handle") || (expanded && !target?.closest(".routine-main"))) return;
+    if (event.button !== 0 || target?.closest(".routine-check-zone, .routine-skip-accessible") || (expanded && !target?.closest(".routine-main"))) return;
     pointerActiveRef.current = true;
     dragStartRef.current = { x: event.clientX, y: event.clientY };
     gestureAxisRef.current = "pending";
+    reorderReadyRef.current = event.pointerType === "mouse";
     setSwiping(false);
     event.currentTarget.setPointerCapture(event.pointerId);
+    onReorderStart(routine.id, event.pointerId, event.clientY, reorderReadyRef.current);
+    if (!reorderReadyRef.current) {
+      const pointerId = event.pointerId;
+      reorderHoldTimerRef.current = window.setTimeout(() => {
+        if (!pointerActiveRef.current || gestureAxisRef.current !== "pending") return;
+        reorderReadyRef.current = true;
+        onReorderArm(pointerId);
+      }, 210);
+    }
   };
   const moveSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!pointerActiveRef.current || gestureAxisRef.current === "vertical") return;
+    if (gestureAxisRef.current === "reorder") {
+      onReorderMove(event);
+      return;
+    }
     const deltaX = event.clientX - dragStartRef.current.x;
     const deltaY = event.clientY - dragStartRef.current.y;
     if (gestureAxisRef.current === "pending") {
       if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) return;
-      gestureAxisRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
-      if (gestureAxisRef.current === "vertical") return;
+      if (reorderHoldTimerRef.current) window.clearTimeout(reorderHoldTimerRef.current);
+      reorderHoldTimerRef.current = undefined;
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        gestureAxisRef.current = "horizontal";
+        onReorderEnd(event.pointerId);
+      } else if (reorderReadyRef.current) {
+        gestureAxisRef.current = "reorder";
+        onReorderMove(event);
+        return;
+      } else {
+        gestureAxisRef.current = "vertical";
+        onReorderEnd(event.pointerId);
+        return;
+      }
       setSwiping(true);
     }
     if (gestureAxisRef.current === "horizontal") updateDrag(deltaX * .86);
   };
   const finishSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!pointerActiveRef.current) return;
+    if (reorderHoldTimerRef.current) window.clearTimeout(reorderHoldTimerRef.current);
+    reorderHoldTimerRef.current = undefined;
     const gestureAxis = gestureAxisRef.current;
+    if (gestureAxis === "reorder") {
+      pointerActiveRef.current = false;
+      reorderReadyRef.current = false;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      gestureAxisRef.current = "pending";
+      setSwiping(false);
+      onReorderEnd(event.pointerId);
+      return;
+    }
     const completedSwipe = gestureAxis === "horizontal" && Math.abs(dragXRef.current) >= 70;
     const tapGesture = gestureAxis === "pending" || (gestureAxis === "horizontal" && Math.abs(dragXRef.current) < 18);
     pointerActiveRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     gestureAxisRef.current = "pending";
+    reorderReadyRef.current = false;
     setSwiping(false);
     updateDrag(0);
+    onReorderEnd(event.pointerId);
     if (completedSwipe) toggleSkip();
     else if (tapGesture) activateRoutine();
   };
   const cancelSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!pointerActiveRef.current) return;
+    if (reorderHoldTimerRef.current) window.clearTimeout(reorderHoldTimerRef.current);
+    reorderHoldTimerRef.current = undefined;
     pointerActiveRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     gestureAxisRef.current = "pending";
+    reorderReadyRef.current = false;
     setSwiping(false);
     updateDrag(0);
+    onReorderEnd(event.pointerId);
   };
   const swipeDirection = dragX > 0 ? "swiping-right" : dragX < 0 ? "swiping-left" : "";
   return <article data-routine-order-id={routine.id} className={`routine-row routine-order-item mode-${activeTrackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${reorderDragging ? "reorder-dragging" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="routine-swipe-underlay" aria-hidden="true"><span><SkipForward />{skipped ? "Undo skip" : "Skip today"}</span><span>{skipped ? "Undo skip" : "Skip today"}<SkipForward /></span></div>
-    <div className="routine-swipe-surface" style={{ transform: `translateX(${dragX}px)` }} onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={finishSwipe} onPointerCancel={cancelSwipe}>
+    <div ref={swipeSurfaceRef} className="routine-swipe-surface" style={{ transform: `translateX(${dragX}px)` }} onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={finishSwipe} onPointerCancel={cancelSwipe}>
       <div className="routine-main" role="button" tabIndex={0} onKeyDown={(event) => {
+        if (event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+          event.preventDefault();
+          onReorderKey(event.key === "ArrowUp" ? -1 : 1);
+          return;
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           activateRoutine();
@@ -2130,7 +2212,6 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
         <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
         {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
       </div>
-      <button type="button" className="routine-reorder-handle" onPointerDown={(event) => onReorderStart(routine.id, event)} onPointerMove={onReorderMove} onPointerUp={onReorderEnd} onPointerCancel={onReorderEnd} onLostPointerCapture={onReorderEnd} onKeyDown={(event) => { if (event.key === "ArrowUp" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); onReorderKey(event.key === "ArrowUp" ? -1 : 1); } }} aria-label={`Reorder ${routine.name}. Drag, or use the up and down arrow keys.`}><GripVertical aria-hidden="true" /></button>
       <button type="button" className="routine-check-zone" onPointerDown={beginCheckPointer} onPointerUp={finishCheckPointer} onPointerCancel={cancelCheckPointer} onLostPointerCapture={() => { checkPointerRef.current.active = false; }} onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
