@@ -2,7 +2,7 @@
 
 import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -261,6 +261,72 @@ function instructionImageFiles(form: FormData, tracker: RoutineAmount) {
   return form.getAll(`instruction-images-${tracker.key}`).filter((value): value is File => value instanceof File && value.size > 0 && (value.type.startsWith("image/") || /\.(?:jpe?g|png|webp|gif|heic|heif)$/i.test(value.name))).slice(0, remaining);
 }
 
+const MAX_BROWSER_IMAGE_UPLOAD_BYTES = 850_000;
+const MAX_BROWSER_IMAGE_DIMENSION = 1_600;
+
+function loadBrowserImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const source = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(source);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(source);
+      reject(new Error("This image format cannot be resized in this browser. Try a JPG or PNG image instead."));
+    };
+    image.src = source;
+  });
+}
+
+function browserCanvasBlob(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob>((resolve, reject) => canvas.toBlob(
+    (blob) => blob ? resolve(blob) : reject(new Error("This image could not be prepared for upload.")),
+    "image/jpeg",
+    quality,
+  ));
+}
+
+async function optimizeImageForBrowserUpload(file: File) {
+  if (file.size <= MAX_BROWSER_IMAGE_UPLOAD_BYTES) return file;
+  const image = await loadBrowserImage(file);
+  if (!image.naturalWidth || !image.naturalHeight) throw new Error("This image could not be read. Try another photo.");
+
+  const initialScale = Math.min(1, MAX_BROWSER_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+  let width = Math.max(1, Math.round(image.naturalWidth * initialScale));
+  let height = Math.max(1, Math.round(image.naturalHeight * initialScale));
+  let quality = .84;
+  let result: Blob | null = null;
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("This browser could not prepare the image for upload.");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    result = await browserCanvasBlob(canvas, quality);
+    canvas.width = 1;
+    canvas.height = 1;
+    if (result.size <= MAX_BROWSER_IMAGE_UPLOAD_BYTES) break;
+    if (quality > .58) quality -= .1;
+    else {
+      width = Math.max(1, Math.round(width * .78));
+      height = Math.max(1, Math.round(height * .78));
+      quality = .76;
+    }
+  }
+
+  if (!result || result.size > MAX_BROWSER_IMAGE_UPLOAD_BYTES) {
+    throw new Error("That photo is too large to upload. Try cropping it or choosing a smaller image.");
+  }
+  const baseName = file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "routine-photo";
+  return new File([result], `${baseName}.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
+}
+
 async function attachDeviceInstructionImages(routine: Routine, form: FormData) {
   const amounts = await Promise.all(routine.amounts.map(async (tracker) => {
     if (trackerKind(tracker) !== "instructions") return tracker;
@@ -274,12 +340,16 @@ async function attachDeviceInstructionImages(routine: Routine, form: FormData) {
 async function uploadInstructionImages(routineId: number, amounts: RoutineAmount[], form: FormData) {
   for (const tracker of amounts.filter((amount) => trackerKind(amount) === "instructions")) {
     for (const file of instructionImageFiles(form, tracker)) {
+      const preparedFile = await optimizeImageForBrowserUpload(file);
       const upload = new FormData();
       upload.set("routineId", String(routineId));
       upload.set("trackerKey", tracker.key);
-      upload.set("image", file);
+      upload.set("image", preparedFile);
       const response = await fetch("/api/instruction-image", { method: "POST", body: upload });
-      if (!response.ok) throw new Error("Instruction image upload failed");
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(response.status === 413 ? "That image is too large to upload." : result.error || "Instruction image upload failed");
+      }
     }
   }
 }
@@ -865,16 +935,17 @@ export default function Home() {
       updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
       return;
     }
-    const form = new FormData();
-    form.set("routineId", String(routineId));
-    form.set("trackerKey", tracker.key);
-    form.set("date", date);
-    form.set("photo", file);
     try {
+      const preparedFile = await optimizeImageForBrowserUpload(file);
+      const form = new FormData();
+      form.set("routineId", String(routineId));
+      form.set("trackerKey", tracker.key);
+      form.set("date", date);
+      form.set("photo", preparedFile);
       const response = await fetch("/api/tracker-photo", { method: "POST", body: form });
       if (!response.ok) {
         const result = await response.json().catch(() => ({})) as { error?: string };
-        throw new Error(result.error || "Upload failed");
+        throw new Error(response.status === 413 ? "That photo is too large to upload. Try cropping it or choosing a smaller image." : result.error || "Upload failed");
       }
       updateTrackerEntries((items) => [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: version, hasFile: true }]);
       updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
@@ -1934,7 +2005,31 @@ function InstructionImageView({ image, routineId, trackerKey, alt }: { image: In
     readDevicePhoto(image.filePath, image.contentType).then((value) => { if (!cancelled) setSrc(value); }).catch(() => { if (!cancelled) setSrc(""); });
     return () => { cancelled = true; };
   }, [browserUrl, image.contentType, image.filePath]);
-  return src ? <img src={src} alt={alt} /> : <div className="instruction-image-placeholder" role="img" aria-label={alt}>Image attached</div>;
+  return src ? <EnlargeablePhoto src={src} alt={alt} /> : <div className="instruction-image-placeholder" role="img" aria-label={alt}>Image attached</div>;
+}
+
+function EnlargeablePhoto({ src, alt }: { src: string; alt: string }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return <>
+    <button type="button" className="enlargeable-photo" onClick={() => setOpen(true)} aria-label={`Enlarge ${alt}`}><img src={src} alt={alt} /><span aria-hidden="true">↗</span></button>
+    {open && createPortal(<div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={`Enlarged ${alt}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+      <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)} aria-label="Close enlarged photo" autoFocus>×</button>
+      <img src={src} alt={alt} />
+    </div>, document.body)}
+  </>;
 }
 
 function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallbackUrl: string; alt: string }) {
@@ -1950,7 +2045,7 @@ function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallba
     return () => { cancelled = true; };
   }, [entry.filePath, entry.contentType, entry.value, fallbackUrl]);
 
-  return src ? <img src={src} alt={alt} /> : <div className="tracker-photo-loading" role="status">Loading photo…</div>;
+  return src ? <EnlargeablePhoto src={src} alt={alt} /> : <div className="tracker-photo-loading" role="status">Loading photo…</div>;
 }
 
 function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetNote, onUploadPhoto, onRemovePhoto }: { routine: Routine; tracker: RoutineAmount; count: number; entry?: TrackerEntry; date: string; onChange: (count: number) => void; onSetNote: (value: string) => void; onUploadPhoto: (file: File) => void; onRemovePhoto: () => void }) {
@@ -2008,7 +2103,8 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
   if (kind === "photo") {
     const photoUrl = `/api/tracker-photo?${new URLSearchParams({ routineId: String(routine.id), trackerKey: tracker.key, date, v: entry?.value ?? "" })}`;
     const selectPhoto = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; };
-    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label className="tracker-photo-picker"><input type="file" accept="image/*" onChange={selectPhoto} /><span>{entry?.hasFile ? "Replace" : "Choose photo"}</span></label><label className="tracker-photo-picker"><input type="file" accept="image/*" capture="environment" onChange={selectPhoto} /><span>Take photo</span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
+    const chooseLabel = entry?.hasFile ? "Replace photo" : "Choose photo";
+    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label className="tracker-photo-picker" title={chooseLabel}><input type="file" accept="image/*" onChange={selectPhoto} aria-label={chooseLabel} /><span><Upload aria-hidden="true" /></span></label><label className="tracker-photo-picker" title="Take photo"><input type="file" accept="image/*" capture="environment" onChange={selectPhoto} aria-label="Take photo" /><span><Camera aria-hidden="true" /></span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto} aria-label="Remove photo" title="Remove photo"><Trash2 aria-hidden="true" /></button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
   }
 
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;

@@ -170,6 +170,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /Add images/);
   assert.match(page, /instruction-images-\$\{amount\.key\}/);
   assert.match(page, /function InstructionImageView/);
+  assert.match(page, /function EnlargeablePhoto/);
+  assert.match(page, /aria-label={`Enlarge \$\{alt\}`}/);
+  assert.match(page, /className="photo-lightbox"/);
   assert.match(page, /uploadInstructionImages/);
   assert.match(deviceStorage, /saveDeviceInstructionImage/);
   assert.match(instructionImageRoute, /UPLOADS\.put/);
@@ -181,8 +184,17 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /Attach a daily progress image/);
   assert.match(page, /function TrackerControl/);
   assert.match(page, /className="tracker-photo-picker"/);
-  assert.match(page, /throw new Error\(result\.error \|\| "Upload failed"\)/);
+  assert.match(page, /aria-label="Remove photo"/);
+  assert.match(page, /<Camera aria-hidden="true"/);
+  assert.match(page, /<Trash2 aria-hidden="true"/);
+  assert.match(page, /function optimizeImageForBrowserUpload/);
+  assert.match(page, /MAX_BROWSER_IMAGE_UPLOAD_BYTES = 850_000/);
+  assert.match(page, /preparedFile = await optimizeImageForBrowserUpload\(file\)/);
+  assert.match(page, /response\.status === 413/);
+  assert.match(page, /result\.error \|\| "Upload failed"/);
   assert.match(fullPageBuilderCss, /\.tracker-photo-picker input \{[^}]*inset: 0;[^}]*width: 100%;[^}]*height: 100%/);
+  assert.match(fullPageBuilderCss, /\.tracker-photo img \{[^}]*width: 100%;[^}]*height: auto;[^}]*object-fit: contain/);
+  assert.match(fullPageBuilderCss, /\.photo-lightbox \{[^}]*position: fixed;[^}]*z-index: 10000/);
   assert.doesNotMatch(page, /Already included on every routine/);
   assert.match(page, /capture="environment"/);
   assert.match(page, /I avoided this today/);

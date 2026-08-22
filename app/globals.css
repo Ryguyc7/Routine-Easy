@@ -260,6 +260,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .routine-instruction ul { display: grid; gap: 5px; margin: 0; padding-left: 19px; color: #66636d; font-size: 10.5px; line-height: 1.45; }
 .routine-instruction li::marker { color: var(--instruction-accent); }
 .routine-instruction-images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.routine-instruction-images .enlargeable-photo { width: 100%; }
 .routine-instruction-images img, .instruction-image-placeholder { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; object-fit: cover; overflow: hidden; border-radius: 9px; color: #8a8690; background: color-mix(in srgb, var(--instruction-accent) 7%, #f4f1f5); font-size: 9px; }
 .quantity-tracker { min-width: 0; display: grid; grid-template-columns: minmax(62px, auto) minmax(0, 1fr); align-items: center; gap: 10px; }
 .quantity-name { overflow: hidden; color: #575762; font-size: 11px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
@@ -294,11 +295,22 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .tracker-note-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .tracker-note-heading strong { overflow: hidden; color: #575762; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .tracker-note-heading small { flex: 0 0 auto; color: #9a97a1; font-size: 8px; }
-.tracker-photo-actions :is(.tracker-photo-picker > span, button) { min-height: 31px; display: grid; place-items: center; padding: 0 10px; border: 0; border-radius: 9px; color: #fff; background: var(--routine); font-size: 9px; font-weight: 800; cursor: pointer; }
+.tracker-photo-actions :is(.tracker-photo-picker > span, button) { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 10px; color: #fff; background: var(--routine); cursor: pointer; }
+.tracker-photo-actions :is(.tracker-photo-picker > span, button) svg { width: 16px; height: 16px; stroke-width: 2.4; }
 .tracker-photo .tracker-photo-row { display: grid; grid-template-columns: minmax(62px, auto) minmax(0, 1fr); align-items: center; gap: 10px; }
 .tracker-photo-row > strong { overflow: hidden; color: #575762; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .tracker-photo-row .tracker-photo-actions { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
-.tracker-photo img { width: min(210px, 100%); max-height: 160px; justify-self: center; object-fit: cover; border-radius: 11px; box-shadow: 0 6px 18px rgba(37,30,54,.12); }
+.tracker-photo .enlargeable-photo { width: 100%; justify-self: stretch; }
+.tracker-photo img { display: block; width: 100%; height: auto; max-height: none; object-fit: contain; border-radius: 11px; box-shadow: 0 6px 18px rgba(37,30,54,.12); }
+.tracker-photo .enlargeable-photo img { width: 100%; height: auto; }
+.enlargeable-photo { position: relative; display: block; min-width: 0; padding: 0; overflow: hidden; border: 0; border-radius: 11px; background: transparent; cursor: zoom-in; }
+.enlargeable-photo > span { position: absolute; right: 7px; bottom: 7px; width: 23px; height: 23px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.72); border-radius: 8px; color: #fff; background: rgba(20,18,25,.48); box-shadow: 0 3px 10px rgba(0,0,0,.2); font-size: 12px; font-weight: 850; backdrop-filter: blur(5px); pointer-events: none; }
+.enlargeable-photo:focus-visible { outline: 3px solid color-mix(in srgb, var(--routine, var(--instruction-accent, var(--sky))) 55%, transparent); outline-offset: 2px; }
+.photo-lightbox { position: fixed; z-index: 10000; inset: 0; display: grid; place-items: center; padding: max(54px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom)); background: rgba(12,10,16,.88); backdrop-filter: blur(12px); animation: photo-lightbox-in .18s ease-out; }
+.photo-lightbox > img { display: block; width: auto; height: auto; max-width: min(100%, 1100px); max-height: calc(100dvh - 90px); object-fit: contain; border-radius: 14px; box-shadow: 0 24px 70px rgba(0,0,0,.48); }
+.photo-lightbox-close { position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; color: #fff; background: rgba(255,255,255,.14); font-size: 27px; line-height: 1; cursor: pointer; backdrop-filter: blur(8px); }
+.photo-lightbox-close:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+@keyframes photo-lightbox-in { from { opacity: 0; } to { opacity: 1; } }
 .tracker-photo-picker { position: relative; display: block; overflow: hidden; border-radius: 9px; cursor: pointer; }
 .tracker-photo-picker input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .tracker-photo .tracker-remove-photo { color: #b84d60; background: #fff0f2; }
