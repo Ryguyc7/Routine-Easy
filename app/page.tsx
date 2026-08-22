@@ -8,6 +8,9 @@ import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
 type InstructionImage = { id: string; contentType?: string; filePath?: string };
+type InstructionRun = { text: string; bold?: boolean; italic?: boolean };
+type InstructionBlock = { type: "paragraph" | "bullet"; runs: InstructionRun[] } | { type: "image"; imageId: string };
+type InstructionDocument = { version: 1; blocks: InstructionBlock[] };
 type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string; content?: string; bullets?: string[]; images?: InstructionImage[] };
 type RoutineList = { key: string; name: string };
 type RoutineListDraft = RoutineList & { items: string };
@@ -217,6 +220,62 @@ function trackerKindLabel(tracker: RoutineAmount) {
   return labels[trackerKind(tracker)];
 }
 
+const pendingInstructionFiles = new Map<string, File>();
+const INSTRUCTION_IMAGE_ID = /^(?:pending-)?[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function cleanInstructionRuns(value: unknown): InstructionRun[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const run = entry as Record<string, unknown>;
+    const text = String(run.text ?? "").slice(0, 3000);
+    return text ? [{ text, ...(run.bold ? { bold: true } : {}), ...(run.italic ? { italic: true } : {}) }] : [];
+  }).slice(0, 120);
+}
+
+function parseInstructionDocument(tracker: RoutineAmount): InstructionDocument {
+  if (tracker.content) {
+    try {
+      const parsed = JSON.parse(tracker.content) as { version?: unknown; blocks?: unknown };
+      if (parsed.version === 1 && Array.isArray(parsed.blocks)) {
+        const blocks = parsed.blocks.flatMap((entry): InstructionBlock[] => {
+          if (!entry || typeof entry !== "object") return [];
+          const block = entry as Record<string, unknown>;
+          if (block.type === "image") {
+            const imageId = String(block.imageId ?? "").toLowerCase();
+            return INSTRUCTION_IMAGE_ID.test(imageId) ? [{ type: "image", imageId }] : [];
+          }
+          if (block.type !== "paragraph" && block.type !== "bullet") return [];
+          const runs = cleanInstructionRuns(block.runs);
+          return runs.length ? [{ type: block.type, runs }] : [];
+        }).slice(0, 100);
+        return { version: 1, blocks };
+      }
+    } catch { /* Legacy plain text is converted below. */ }
+  }
+  const blocks: InstructionBlock[] = [];
+  for (const line of String(tracker.content ?? "").split(/\r?\n/)) {
+    const text = line.trim();
+    if (!text) continue;
+    const bullet = /^[-•]\s+/.test(text);
+    blocks.push({ type: bullet ? "bullet" : "paragraph", runs: [{ text: bullet ? text.replace(/^[-•]\s+/, "") : text }] });
+  }
+  for (const bullet of tracker.bullets ?? []) {
+    const text = bullet.trim();
+    if (text) blocks.push({ type: "bullet", runs: [{ text }] });
+  }
+  for (const image of tracker.images ?? []) blocks.push({ type: "image", imageId: image.id });
+  return { version: 1, blocks };
+}
+
+function instructionDocumentValue(document: InstructionDocument) {
+  return JSON.stringify(document);
+}
+
+function pendingImageIds(tracker: RoutineAmount) {
+  return parseInstructionDocument(tracker).blocks.flatMap((block) => block.type === "image" && block.imageId.startsWith("pending-") ? [block.imageId] : []);
+}
+
 function readTrackingLists(form: FormData) {
   try {
     const lists = JSON.parse(String(form.get("lists") ?? "[]")) as RoutineListDraft[];
@@ -254,11 +313,6 @@ function routineFromForm(form: FormData, id: number, existing: Routine | undefin
     endDate: String(form.get("endDate") ?? ""),
     items,
   };
-}
-
-function instructionImageFiles(form: FormData, tracker: RoutineAmount) {
-  const remaining = Math.max(0, 6 - (tracker.images?.length ?? 0));
-  return form.getAll(`instruction-images-${tracker.key}`).filter((value): value is File => value instanceof File && value.size > 0 && (value.type.startsWith("image/") || /\.(?:jpe?g|png|webp|gif|heic|heif)$/i.test(value.name))).slice(0, remaining);
 }
 
 const MAX_BROWSER_IMAGE_UPLOAD_BYTES = 850_000;
@@ -327,29 +381,41 @@ async function optimizeImageForBrowserUpload(file: File) {
   return new File([result], `${baseName}.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
 }
 
-async function attachDeviceInstructionImages(routine: Routine, form: FormData) {
+async function attachDeviceInstructionImages(routine: Routine) {
   const amounts = await Promise.all(routine.amounts.map(async (tracker) => {
     if (trackerKind(tracker) !== "instructions") return tracker;
+    let document = parseInstructionDocument(tracker);
     const saved = [] as InstructionImage[];
-    for (const file of instructionImageFiles(form, tracker)) saved.push(await saveDeviceInstructionImage(routine.id, tracker.key, file));
-    return saved.length ? { ...tracker, images: [...(tracker.images ?? []), ...saved] } : tracker;
+    for (const pendingId of pendingImageIds(tracker)) {
+      const file = pendingInstructionFiles.get(pendingId);
+      if (!file) continue;
+      const image = await saveDeviceInstructionImage(routine.id, tracker.key, file);
+      saved.push(image);
+      document = { ...document, blocks: document.blocks.map((block) => block.type === "image" && block.imageId === pendingId ? { type: "image", imageId: image.id } : block) };
+      pendingInstructionFiles.delete(pendingId);
+    }
+    return { ...tracker, content: instructionDocumentValue(document), bullets: [], images: [...(tracker.images ?? []), ...saved] };
   }));
   return { ...routine, amounts };
 }
 
-async function uploadInstructionImages(routineId: number, amounts: RoutineAmount[], form: FormData) {
+async function uploadInstructionImages(routineId: number, amounts: RoutineAmount[]) {
   for (const tracker of amounts.filter((amount) => trackerKind(amount) === "instructions")) {
-    for (const file of instructionImageFiles(form, tracker)) {
+    for (const pendingId of pendingImageIds(tracker)) {
+      const file = pendingInstructionFiles.get(pendingId);
+      if (!file) continue;
       const preparedFile = await optimizeImageForBrowserUpload(file);
       const upload = new FormData();
       upload.set("routineId", String(routineId));
       upload.set("trackerKey", tracker.key);
+      upload.set("pendingId", pendingId);
       upload.set("image", preparedFile);
       const response = await fetch("/api/instruction-image", { method: "POST", body: upload });
       if (!response.ok) {
         const result = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(response.status === 413 ? "That image is too large to upload." : result.error || "Instruction image upload failed");
       }
+      pendingInstructionFiles.delete(pendingId);
     }
   }
 }
@@ -1056,7 +1122,7 @@ export default function Home() {
     if (isNativeApp()) {
       const id = Math.max(0, ...routines.map((routine) => routine.id)) + 1;
       const nextItemId = Math.max(0, ...routines.flatMap((routine) => routine.items.map((item) => item.id))) + 1;
-      const routine = await attachDeviceInstructionImages(routineFromForm(form, id, undefined, nextItemId), form);
+      const routine = await attachDeviceInstructionImages(routineFromForm(form, id, undefined, nextItemId));
       setRoutines((items) => [...items, routine]);
       setShowAdd(false);
       setSelectedTemplate(null);
@@ -1085,7 +1151,7 @@ export default function Home() {
     if (response.ok) {
       const data = await response.json();
       let imageUploadFailed = false;
-      try { await uploadInstructionImages(data.routine.id, amounts, form); } catch { imageUploadFailed = true; }
+      try { await uploadInstructionImages(data.routine.id, amounts); } catch { imageUploadFailed = true; }
       await loadData();
       setShowAdd(false);
       setSelectedTemplate(null);
@@ -1165,7 +1231,7 @@ export default function Home() {
     setSavingList(true);
     if (isNativeApp()) {
       const nextItemId = Math.max(0, ...routines.flatMap((item) => item.items.map((entry) => entry.id))) + 1;
-      const updated = await attachDeviceInstructionImages(routineFromForm(form, routine.id, routine, nextItemId), form);
+      const updated = await attachDeviceInstructionImages(routineFromForm(form, routine.id, routine, nextItemId));
       const nextItemIds = new Set(updated.items.map((item) => item.id));
       const removedItemIds = new Set(routine.items.filter((item) => !nextItemIds.has(item.id)).map((item) => item.id));
       const nextImagePaths = new Set(updated.amounts.flatMap((amount) => amount.images ?? []).map((image) => image.filePath).filter(Boolean));
@@ -1199,7 +1265,7 @@ export default function Home() {
     });
     if (response.ok) {
       let imageUploadFailed = false;
-      try { await uploadInstructionImages(routine.id, amounts, form); } catch { imageUploadFailed = true; }
+      try { await uploadInstructionImages(routine.id, amounts); } catch { imageUploadFailed = true; }
       await loadData();
       setEditingRoutineId(null);
       animateBottomNavReturn();
@@ -1987,10 +2053,38 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
 function InstructionsPanel({ instructions, routineId, className = "" }: { instructions: RoutineAmount[]; routineId?: number; className?: string }) {
   return <div className={`routine-instructions${className ? ` ${className}` : ""}`}>{instructions.map((instruction) => <section className="routine-instruction" key={instruction.key}>
     <header><strong>{instruction.name}</strong></header>
-    {instruction.content && <p>{instruction.content}</p>}
-    {Boolean(instruction.bullets?.some((bullet) => bullet.trim())) && <ul>{instruction.bullets!.map((bullet, index) => ({ bullet: bullet.trim(), index })).filter(({ bullet }) => bullet).map(({ bullet, index }) => <li key={`${instruction.key}-bullet-${index}`}>{bullet}</li>)}</ul>}
-    {Boolean(instruction.images?.length) && <div className="routine-instruction-images">{instruction.images!.map((image, index) => <InstructionImageView key={image.id} image={image} routineId={routineId} trackerKey={instruction.key} alt={`${instruction.name} image ${index + 1}`} />)}</div>}
+    <InstructionDocumentBody instruction={instruction} routineId={routineId} />
   </section>)}</div>;
+}
+
+function InstructionRunsView({ runs }: { runs: InstructionRun[] }) {
+  return <>{runs.map((run, index) => {
+    let node: ReactNode = run.text;
+    if (run.italic) node = <em>{node}</em>;
+    if (run.bold) node = <strong>{node}</strong>;
+    return <span key={index}>{node}</span>;
+  })}</>;
+}
+
+function InstructionDocumentBody({ instruction, routineId }: { instruction: RoutineAmount; routineId?: number }) {
+  const document = parseInstructionDocument(instruction);
+  const images = new Map((instruction.images ?? []).map((image) => [image.id, image]));
+  const content: ReactNode[] = [];
+  for (let index = 0; index < document.blocks.length;) {
+    const block = document.blocks[index];
+    if (block.type === "bullet") {
+      const bullets: Extract<InstructionBlock, { type: "bullet" }>[] = [];
+      while (index < document.blocks.length && document.blocks[index].type === "bullet") bullets.push(document.blocks[index++] as Extract<InstructionBlock, { type: "bullet" }>);
+      content.push(<ul key={`bullets-${index}`}>{bullets.map((item, bulletIndex) => <li key={bulletIndex}><InstructionRunsView runs={item.runs} /></li>)}</ul>);
+      continue;
+    }
+    if (block.type === "image") {
+      const image = images.get(block.imageId);
+      if (image) content.push(<div className="routine-instruction-inline-image" key={block.imageId}><InstructionImageView image={image} routineId={routineId} trackerKey={instruction.key} alt={`${instruction.name} image`} /></div>);
+    } else content.push(<p key={`paragraph-${index}`}><InstructionRunsView runs={block.runs} /></p>);
+    index += 1;
+  }
+  return <div className="routine-instruction-document">{content}</div>;
 }
 
 function InstructionImageView({ image, routineId, trackerKey, alt }: { image: InstructionImage; routineId?: number; trackerKey: string; alt: string }) {
@@ -2879,7 +2973,7 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange, routi
           {kind === "rating" && <p className="tracking-type-note">A rating is complete after choosing 1–5 stars.</p>}
           {kind === "number" && <p className="tracking-type-note">Enter any amount for the day—there is no goal to reach.</p>}
           {kind === "note" && <p className="tracking-type-note">A saved note completes this tracker for the day.</p>}
-          {kind === "instructions" && <p className="tracking-type-note">Customize the title, text, bullets, and images. It stays with the routine and is not a daily entry.</p>}
+          {kind === "instructions" && <p className="tracking-type-note">Use the toolbar to format the instructions and place images exactly where you want them. It stays with the routine and is not a daily entry.</p>}
           {kind === "photo" && <p className="tracking-type-note">Images are stored privately with the routine.</p>}
           {kind === "avoidance" && <p className="tracking-type-note">Check “I avoided this today” when you did not do the habit.</p>}
         </section>;
@@ -2888,18 +2982,185 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange, routi
   </fieldset>;
 }
 
+function appendInstructionRuns(parent: HTMLElement, runs: InstructionRun[]) {
+  for (const run of runs) {
+    let node: Node = document.createTextNode(run.text);
+    if (run.italic) { const italic = document.createElement("em"); italic.append(node); node = italic; }
+    if (run.bold) { const bold = document.createElement("strong"); bold.append(node); node = bold; }
+    parent.append(node);
+  }
+}
+
+function instructionEditorFigure(imageId: string, source: string, alt: string) {
+  const figure = document.createElement("figure");
+  figure.dataset.imageId = imageId;
+  figure.contentEditable = "false";
+  const image = document.createElement("img");
+  image.src = source;
+  image.alt = alt;
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.dataset.removeInstructionImage = "true";
+  remove.setAttribute("aria-label", "Remove image");
+  remove.textContent = "×";
+  figure.append(image, remove);
+  return figure;
+}
+
+function instructionRunsFromNode(root: Node): InstructionRun[] {
+  const runs: InstructionRun[] = [];
+  const visit = (node: Node, bold = false, italic = false) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent ?? "";
+      if (!text) return;
+      const previous = runs.at(-1);
+      if (previous && Boolean(previous.bold) === bold && Boolean(previous.italic) === italic) previous.text += text;
+      else runs.push({ text, ...(bold ? { bold: true } : {}), ...(italic ? { italic: true } : {}) });
+      return;
+    }
+    if (!(node instanceof HTMLElement)) return;
+    if (node.tagName === "BR") { runs.push({ text: "\n", ...(bold ? { bold: true } : {}), ...(italic ? { italic: true } : {}) }); return; }
+    const weight = node.style.fontWeight;
+    const nextBold = bold || node.tagName === "B" || node.tagName === "STRONG" || weight === "bold" || Number(weight) >= 600;
+    const nextItalic = italic || node.tagName === "I" || node.tagName === "EM" || node.style.fontStyle === "italic";
+    node.childNodes.forEach((child) => visit(child, nextBold, nextItalic));
+  };
+  root.childNodes.forEach((child) => visit(child));
+  return runs;
+}
+
+function serializeInstructionEditor(editor: HTMLElement): InstructionDocument {
+  const blocks: InstructionBlock[] = [];
+  const addTextBlock = (node: Node, type: "paragraph" | "bullet") => {
+    const runs = instructionRunsFromNode(node);
+    if (runs.map((run) => run.text).join("").trim()) blocks.push({ type, runs });
+  };
+  editor.childNodes.forEach((node) => {
+    if (node instanceof HTMLElement && node.matches("figure[data-image-id]")) {
+      const imageId = node.dataset.imageId ?? "";
+      if (INSTRUCTION_IMAGE_ID.test(imageId)) blocks.push({ type: "image", imageId });
+    } else if (node instanceof HTMLElement && (node.tagName === "UL" || node.tagName === "OL")) {
+      node.querySelectorAll(":scope > li").forEach((item) => addTextBlock(item, "bullet"));
+    } else addTextBlock(node, "paragraph");
+  });
+  return { version: 1, blocks: blocks.slice(0, 100) };
+}
+
 function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmount; routineId?: number; onUpdate: (next: Partial<RoutineAmount>) => void }) {
-  const [chosenNames, setChosenNames] = useState<string[]>([]);
-  const [cameraName, setCameraName] = useState("");
-  const remaining = Math.max(0, 6 - (amount.images?.length ?? 0));
+  const editorRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+  const objectUrlsRef = useRef<string[]>([]);
+
+  const syncDocument = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const nextDocument = serializeInstructionEditor(editor);
+    const usedIds = new Set(nextDocument.blocks.flatMap((block) => block.type === "image" ? [block.imageId] : []));
+    for (const pendingId of pendingImageIds(amount)) if (!usedIds.has(pendingId)) pendingInstructionFiles.delete(pendingId);
+    onUpdate({ content: instructionDocumentValue(nextDocument), bullets: [], images: (amount.images ?? []).filter((image) => usedIds.has(image.id)) });
+  };
+
+  const saveSelection = () => {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+    if (!editor || !selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (editor.contains(range.commonAncestorContainer)) savedRangeRef.current = range.cloneRange();
+  };
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.replaceChildren();
+    const instructionDocument = parseInstructionDocument(amount);
+    const images = new Map((amount.images ?? []).map((image) => [image.id, image]));
+    const addFigure = (imageId: string) => {
+      const storedImage = images.get(imageId);
+      const pendingFile = pendingInstructionFiles.get(imageId);
+      const browserSource = storedImage && routineId ? `/api/instruction-image?${new URLSearchParams({ routineId: String(routineId), trackerKey: amount.key, imageId })}` : "";
+      const source = pendingFile ? URL.createObjectURL(pendingFile) : isNativeApp() ? "" : browserSource;
+      if (pendingFile) objectUrlsRef.current.push(source);
+      const figure = instructionEditorFigure(imageId, source, `${amount.name || "Instruction"} image`);
+      editor.append(figure);
+      if (storedImage?.filePath && isNativeApp()) void readDevicePhoto(storedImage.filePath, storedImage.contentType).then((value) => {
+        const image = figure.querySelector("img");
+        if (image?.isConnected) image.src = value;
+      });
+    };
+    for (const block of instructionDocument.blocks) {
+      if (block.type === "image") { addFigure(block.imageId); continue; }
+      const element = document.createElement(block.type === "bullet" ? "li" : "p");
+      appendInstructionRuns(element, block.runs);
+      if (block.type === "bullet") {
+        let list = editor.lastElementChild?.tagName === "UL" ? editor.lastElementChild as HTMLUListElement : null;
+        if (!list) { list = document.createElement("ul"); editor.append(list); }
+        list.append(element);
+      } else editor.append(element);
+    }
+    return () => {
+      for (const url of objectUrlsRef.current) URL.revokeObjectURL(url);
+      objectUrlsRef.current = [];
+    };
+  }, [amount.key, routineId]);
+
+  const applyFormat = (command: "bold" | "italic" | "insertUnorderedList") => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(command);
+    saveSelection();
+    syncDocument();
+  };
+
+  const insertImage = (file?: File) => {
+    const editor = editorRef.current;
+    if (!editor || !file) return;
+    const current = serializeInstructionEditor(editor);
+    if (current.blocks.filter((block) => block.type === "image").length >= 6) return;
+    const pendingId = `pending-${crypto.randomUUID()}`;
+    pendingInstructionFiles.set(pendingId, file);
+    const source = URL.createObjectURL(file);
+    objectUrlsRef.current.push(source);
+    const figure = instructionEditorFigure(pendingId, source, file.name || "Inserted instruction image");
+    const selection = window.getSelection();
+    const savedRange = savedRangeRef.current;
+    const rangeElement = savedRange?.commonAncestorContainer instanceof Element ? savedRange.commonAncestorContainer : savedRange?.commonAncestorContainer.parentElement;
+    const currentBlock = rangeElement?.closest("p, ul, ol, div");
+    if (currentBlock && currentBlock !== editor && editor.contains(currentBlock)) currentBlock.after(figure);
+    else editor.append(figure);
+    const paragraph = document.createElement("p");
+    paragraph.append(document.createElement("br"));
+    figure.after(paragraph);
+    syncDocument();
+    editor.focus();
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(paragraph);
+    nextRange.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(nextRange);
+    savedRangeRef.current = nextRange.cloneRange();
+  };
+
   return <div className="tracking-instructions-editor">
-    <label className="field tracking-instructions-field"><span>Text <small>Optional</small></span><textarea value={amount.content ?? ""} onChange={(event) => onUpdate({ content: event.target.value })} placeholder="Add a description, preparation notes, or anything you want to read." maxLength={4000} /></label>
-    <label className="field tracking-instructions-field tracking-bullets-field"><span>Bullet points <small>Optional</small></span><textarea value={(amount.bullets ?? []).join("\n")} onChange={(event) => onUpdate({ bullets: event.target.value.split(/\r?\n/).slice(0, 30) })} placeholder={"Add one item per line:\nToast one slice of bread\nAdd eggs and fruit\nDrink a glass of water"} maxLength={3000} /></label>
-    <div className="instruction-attachment-editor"><span>Images <small>Optional · up to 6</small></span><div className="instruction-attachment-actions">
-      <label className={`instruction-image-picker${remaining ? "" : " disabled"}`}><input type="file" name={`instruction-images-${amount.key}`} accept="image/*" multiple disabled={!remaining} onChange={(event) => setChosenNames([...(event.currentTarget.files ?? [])].slice(0, remaining).map((file) => file.name))} /><span>Add images</span></label>
-      <label className={`instruction-image-picker${remaining ? "" : " disabled"}`}><input type="file" name={`instruction-images-${amount.key}`} accept="image/*" capture="environment" disabled={!remaining} onChange={(event) => setCameraName(event.currentTarget.files?.[0]?.name ?? "")} /><span>Take photo</span></label>
-    </div>{Boolean(chosenNames.length || cameraName) && <small className="instruction-selected-files">Selected: {[...chosenNames, cameraName].filter(Boolean).join(", ")}</small>}</div>
-    {Boolean(amount.images?.length) && <div className="instruction-editor-images">{amount.images!.map((image, imageIndex) => <div key={image.id}><InstructionImageView image={image} routineId={routineId} trackerKey={amount.key} alt={`${amount.name || "Instruction"} image ${imageIndex + 1}`} /><button type="button" onClick={() => onUpdate({ images: amount.images?.filter((item) => item.id !== image.id) })} aria-label={`Remove image ${imageIndex + 1}`}>×</button></div>)}</div>}
+    <span className="instruction-editor-label">Instructions <small>Optional</small></span>
+    <div className="instruction-rich-editor">
+      <div className="instruction-rich-toolbar" role="toolbar" aria-label="Instruction formatting">
+        <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyFormat("bold")} aria-label="Bold"><strong>B</strong></button>
+        <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyFormat("italic")} aria-label="Italic"><em>I</em></button>
+        <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyFormat("insertUnorderedList")} aria-label="Bullet list"><span aria-hidden="true">•≡</span></button>
+        <label className="instruction-rich-image" title="Insert image"><input type="file" accept="image/*" onPointerDown={saveSelection} onChange={(event) => { insertImage(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} aria-label="Insert image" /><span><Upload aria-hidden="true" /></span></label>
+      </div>
+      <div ref={editorRef} className="instruction-rich-content" contentEditable role="textbox" aria-multiline="true" aria-label="Instruction content" data-placeholder="Write instructions, format text, or insert an image…" onInput={syncDocument} onKeyUp={saveSelection} onMouseUp={saveSelection} onBlur={saveSelection} onClick={(event) => {
+        const remove = event.target instanceof Element ? event.target.closest("[data-remove-instruction-image]") : null;
+        const figure = remove?.closest("figure[data-image-id]") as HTMLElement | null;
+        if (!figure) return;
+        event.preventDefault();
+        const pendingId = figure.dataset.imageId;
+        if (pendingId?.startsWith("pending-")) pendingInstructionFiles.delete(pendingId);
+        figure.remove();
+        syncDocument();
+      }} suppressContentEditableWarning />
+    </div>
   </div>;
 }
 

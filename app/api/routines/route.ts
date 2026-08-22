@@ -66,6 +66,36 @@ function cleanInstructionImages(value: unknown) {
   }).slice(0, 6);
 }
 
+function cleanInstructionContent(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw) as { version?: unknown; blocks?: unknown };
+    if (parsed.version !== 1 || !Array.isArray(parsed.blocks)) throw new Error("legacy");
+    let characters = 0;
+    const blocks = parsed.blocks.flatMap((entry) => {
+      if (!entry || typeof entry !== "object") return [];
+      const block = entry as Record<string, unknown>;
+      if (block.type === "image") {
+        const imageId = String(block.imageId ?? "").trim().toLowerCase();
+        return /^(?:pending-)?[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(imageId) ? [{ type: "image", imageId }] : [];
+      }
+      if (block.type !== "paragraph" && block.type !== "bullet" || !Array.isArray(block.runs)) return [];
+      const runs = block.runs.flatMap((entry) => {
+        if (!entry || typeof entry !== "object" || characters >= 6000) return [];
+        const run = entry as Record<string, unknown>;
+        const text = String(run.text ?? "").slice(0, Math.max(0, 6000 - characters));
+        characters += text.length;
+        return text ? [{ text, ...(run.bold ? { bold: true } : {}), ...(run.italic ? { italic: true } : {}) }] : [];
+      }).slice(0, 120);
+      return runs.length ? [{ type: block.type, runs }] : [];
+    }).slice(0, 100);
+    return JSON.stringify({ version: 1, blocks });
+  } catch {
+    return raw.slice(0, 4000);
+  }
+}
+
 function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetCount: number; unit: string }) {
   const source = Array.isArray(amounts) ? amounts : [];
   const clean: RoutineAmount[] = [];
@@ -81,7 +111,7 @@ function cleanAmounts(amounts: unknown, mode: TrackingMode, fallback?: { targetC
     if (!usesQuantity(mode) && kind !== "instructions") continue;
     const name = String(record.name ?? "").trim().slice(0, kind === "instructions" ? 80 : 24);
     if (kind === "instructions") {
-      const content = String(record.content ?? "").trim().slice(0, 4000);
+      const content = cleanInstructionContent(record.content);
       const bullets = (Array.isArray(record.bullets) ? record.bullets : []).map((bullet) => String(bullet).trim().slice(0, 300)).filter(Boolean).slice(0, 30);
       const images = cleanInstructionImages(record.images);
       if (name) clean.push({ key, name, targetCount: 1, kind, unit: "", ...(content ? { content } : {}), ...(bullets.length ? { bullets } : {}), ...(images.length ? { images } : {}) });

@@ -4,7 +4,7 @@ import { ensureDatabase, ownerKey } from "../../../db/storage";
 
 type UploadEnv = { DB: D1Database; UPLOADS: R2Bucket };
 type InstructionImage = { id: string; contentType?: string };
-type TrackerConfig = { key: string; kind?: string; images?: InstructionImage[] };
+type TrackerConfig = { key: string; kind?: string; content?: string; images?: InstructionImage[] };
 const runtime = env as unknown as UploadEnv;
 const IMAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -37,12 +37,28 @@ function validRoutineTracker(routineId: number, trackerKey: string) {
   return Number.isInteger(routineId) && routineId > 0 && /^[a-zA-Z0-9_-]{1,40}$/.test(trackerKey);
 }
 
+function replacePendingImage(content: string | undefined, pendingId: string, imageId: string) {
+  if (!content || !pendingId) return content;
+  try {
+    const document = JSON.parse(content) as { version?: unknown; blocks?: Array<Record<string, unknown>> };
+    if (document.version !== 1 || !Array.isArray(document.blocks)) return content;
+    let replaced = false;
+    document.blocks = document.blocks.map((block) => {
+      if (block.type !== "image" || block.imageId !== pendingId) return block;
+      replaced = true;
+      return { ...block, imageId };
+    });
+    return replaced ? JSON.stringify(document) : content;
+  } catch { return content; }
+}
+
 export async function POST(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
   const form = await request.formData();
   const routineId = Number(form.get("routineId"));
   const trackerKey = String(form.get("trackerKey") ?? "").trim();
+  const pendingId = String(form.get("pendingId") ?? "").trim().toLowerCase();
   const file = form.get("image");
   const contentType = file instanceof File ? imageContentType(file) : "";
   if (!validRoutineTracker(routineId, trackerKey) || !(file instanceof File) || !contentType || file.size <= 0 || file.size > 20 * 1024 * 1024) {
@@ -56,7 +72,7 @@ export async function POST(request: Request) {
   const image: InstructionImage = { id: crypto.randomUUID(), contentType };
   const objectKey = await instructionImageObjectKey(owner, routineId, trackerKey, image.id);
   await runtime.UPLOADS.put(objectKey, file.stream(), { httpMetadata: { contentType: image.contentType } });
-  match.trackers[match.trackerIndex] = { ...tracker, images: [...(tracker.images ?? []), image] };
+  match.trackers[match.trackerIndex] = { ...tracker, content: replacePendingImage(tracker.content, pendingId, image.id), images: [...(tracker.images ?? []), image] };
   try {
     await runtime.DB.prepare("UPDATE routines SET amount_config = ? WHERE owner_key = ? AND id = ?").bind(JSON.stringify(match.trackers), owner, routineId).run();
   } catch (error) {
