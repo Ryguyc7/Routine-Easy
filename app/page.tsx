@@ -561,7 +561,7 @@ export default function Home() {
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const arrangementSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; latestY: number; frameId: number | null; armed: boolean; active: boolean; changed: boolean; lastTarget: string; order: Routine[] } | null>(null);
+  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; latestY: number; frameId: number | null; armed: boolean; active: boolean; changed: boolean; lastTarget: string; order: Routine[]; cleanup: (() => void) | null } | null>(null);
   const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingDeviceSnapshotRef = useRef<DeviceSnapshot | null>(null);
   const deviceSaveTimerRef = useRef<number | undefined>(undefined);
@@ -612,7 +612,46 @@ export default function Home() {
   }
 
   function beginDirectRoutineDrag(routineId: number, pointerId: number, startY: number, armed: boolean) {
-    directRoutineDragRef.current = { routineId, pointerId, startY, latestY: startY, frameId: null, armed, active: false, changed: false, lastTarget: "", order: routines };
+    const existingDrag = directRoutineDragRef.current;
+    if (existingDrag) endDirectRoutineDrag(existingDrag.pointerId);
+    const drag: NonNullable<typeof directRoutineDragRef.current> = { routineId, pointerId, startY, latestY: startY, frameId: null, armed, active: false, changed: false, lastTarget: "", order: routines, cleanup: null };
+    directRoutineDragRef.current = drag;
+    attachDirectRoutineDragListeners(drag);
+  }
+
+  function attachDirectRoutineDragListeners(drag: NonNullable<typeof directRoutineDragRef.current>) {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      if (moveDirectRoutineDragPoint(event.pointerId, event.clientY)) event.preventDefault();
+    };
+    const handlePointerEnd = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") endDirectRoutineDrag(event.pointerId);
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      if (directRoutineDragRef.current !== drag || !drag.armed) return;
+      const touch = event.touches[0];
+      if (!touch) return;
+      event.preventDefault();
+      moveDirectRoutineDragPoint(drag.pointerId, touch.clientY);
+    };
+    const handleTouchEnd = () => endDirectRoutineDrag(drag.pointerId);
+    const handleWindowBlur = () => endDirectRoutineDrag(drag.pointerId);
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+    window.addEventListener("touchcancel", handleTouchEnd);
+    window.addEventListener("blur", handleWindowBlur);
+    drag.cleanup = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchEnd);
+      window.removeEventListener("blur", handleWindowBlur);
+    };
   }
 
   function activateDirectRoutineDrag(drag: NonNullable<typeof directRoutineDragRef.current>) {
@@ -712,23 +751,30 @@ export default function Home() {
     });
   }
 
-  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLDivElement>) {
+  function moveDirectRoutineDragPoint(pointerId: number, clientY: number) {
     const drag = directRoutineDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !drag.armed) return;
-    event.stopPropagation();
-    event.preventDefault();
+    if (!drag || drag.pointerId !== pointerId || !drag.armed) return false;
     if (!drag.active) {
-      if (Math.abs(event.clientY - drag.startY) < 5) return;
+      if (Math.abs(clientY - drag.startY) < 5) return false;
       activateDirectRoutineDrag(drag);
     }
-    drag.latestY = event.clientY;
+    drag.latestY = clientY;
     scheduleDirectRoutineDragFrame(drag);
+    return true;
+  }
+
+  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!moveDirectRoutineDragPoint(event.pointerId, event.clientY)) return;
+    event.stopPropagation();
+    event.preventDefault();
   }
 
   function endDirectRoutineDrag(pointerId: number) {
     const drag = directRoutineDragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
     directRoutineDragRef.current = null;
+    drag.cleanup?.();
+    drag.cleanup = null;
     if (drag.frameId !== null) window.cancelAnimationFrame(drag.frameId);
     document.body.classList.remove("reordering-routines");
     setDirectDraggingRoutineId(null);
@@ -2247,13 +2293,14 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     if (!pointerActiveRef.current) return;
     if (reorderHoldTimerRef.current) window.clearTimeout(reorderHoldTimerRef.current);
     reorderHoldTimerRef.current = undefined;
+    const touchDragContinues = event.pointerType === "touch" && gestureAxisRef.current === "reorder";
     pointerActiveRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     gestureAxisRef.current = "pending";
     reorderReadyRef.current = false;
     setSwiping(false);
     updateDrag(0);
-    onReorderEnd(event.pointerId);
+    if (!touchDragContinues) onReorderEnd(event.pointerId);
   };
   const swipeDirection = dragX > 0 ? "swiping-right" : dragX < 0 ? "swiping-left" : "";
   return <article data-routine-order-id={routine.id} className={`routine-row routine-order-item mode-${activeTrackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${reorderDragging ? "reorder-dragging" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>

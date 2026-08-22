@@ -32,6 +32,10 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function routineOrderLayout/);
   assert.match(page, /function processDirectRoutineDrag/);
   assert.match(page, /function scheduleDirectRoutineDragFrame/);
+  assert.match(page, /function attachDirectRoutineDragListeners/);
+  assert.match(page, /window\.addEventListener\("pointermove", handlePointerMove, \{ passive: false \}\)/);
+  assert.match(page, /window\.addEventListener\("touchmove", handleTouchMove, \{ passive: false \}\)/);
+  assert.match(page, /const touchDragContinues = event\.pointerType === "touch"/);
   assert.match(page, /rowBelowPointer = rows\.find/);
   assert.match(page, /element\.getAnimations\(\)\.forEach\(\(animation\) => animation\.cancel\(\)\)/);
   assert.match(page, /scrollArea\.scrollTop \+= scrollSpeed/);
