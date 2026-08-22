@@ -8,6 +8,13 @@ type TrackerConfig = { key: string; kind?: string; images?: InstructionImage[] }
 const runtime = env as unknown as UploadEnv;
 const IMAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
+function imageContentType(file: File) {
+  if (/^image\/(?:jpeg|png|webp|gif|heic|heif)$/i.test(file.type)) return file.type.toLowerCase();
+  const match = file.name.toLowerCase().match(/\.(jpe?g|png|webp|gif|heic|heif)$/);
+  if (!match) return "";
+  return match[1] === "jpg" || match[1] === "jpeg" ? "image/jpeg" : match[1] === "heif" ? "image/heif" : `image/${match[1]}`;
+}
+
 async function findInstructionTracker(owner: string, routineId: number, trackerKey: string) {
   const routine = await runtime.DB.prepare("SELECT amount_config AS amountConfig FROM routines WHERE owner_key = ? AND id = ?")
     .bind(owner, routineId).first<{ amountConfig: string }>();
@@ -37,15 +44,16 @@ export async function POST(request: Request) {
   const routineId = Number(form.get("routineId"));
   const trackerKey = String(form.get("trackerKey") ?? "").trim();
   const file = form.get("image");
-  if (!validRoutineTracker(routineId, trackerKey) || !(file instanceof File) || !file.type.startsWith("image/") || file.size <= 0 || file.size > 8 * 1024 * 1024) {
-    return Response.json({ error: "Choose an image up to 8 MB" }, { status: 400 });
+  const contentType = file instanceof File ? imageContentType(file) : "";
+  if (!validRoutineTracker(routineId, trackerKey) || !(file instanceof File) || !contentType || file.size <= 0 || file.size > 20 * 1024 * 1024) {
+    return Response.json({ error: "Choose a JPG, PNG, WebP, GIF, or HEIC image up to 20 MB" }, { status: 400 });
   }
   const match = await findInstructionTracker(owner, routineId, trackerKey);
   if (!match) return Response.json({ error: "Instructions section not found" }, { status: 404 });
   const tracker = match.trackers[match.trackerIndex];
   if ((tracker.images?.length ?? 0) >= 6) return Response.json({ error: "Instructions can include up to 6 images" }, { status: 400 });
 
-  const image: InstructionImage = { id: crypto.randomUUID(), contentType: file.type || "image/jpeg" };
+  const image: InstructionImage = { id: crypto.randomUUID(), contentType };
   const objectKey = await instructionImageObjectKey(owner, routineId, trackerKey, image.id);
   await runtime.UPLOADS.put(objectKey, file.stream(), { httpMetadata: { contentType: image.contentType } });
   match.trackers[match.trackerIndex] = { ...tracker, images: [...(tracker.images ?? []), image] };

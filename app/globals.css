@@ -294,12 +294,13 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .tracker-note-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .tracker-note-heading strong { overflow: hidden; color: #575762; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .tracker-note-heading small { flex: 0 0 auto; color: #9a97a1; font-size: 8px; }
-.tracker-photo-actions > button { min-height: 31px; display: grid; place-items: center; padding: 0 10px; border: 0; border-radius: 9px; color: #fff; background: var(--routine); font-size: 9px; font-weight: 800; cursor: pointer; }
+.tracker-photo-actions :is(.tracker-photo-picker > span, button) { min-height: 31px; display: grid; place-items: center; padding: 0 10px; border: 0; border-radius: 9px; color: #fff; background: var(--routine); font-size: 9px; font-weight: 800; cursor: pointer; }
 .tracker-photo .tracker-photo-row { display: grid; grid-template-columns: minmax(62px, auto) minmax(0, 1fr); align-items: center; gap: 10px; }
 .tracker-photo-row > strong { overflow: hidden; color: #575762; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .tracker-photo-row .tracker-photo-actions { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .tracker-photo img { width: min(210px, 100%); max-height: 160px; justify-self: center; object-fit: cover; border-radius: 11px; box-shadow: 0 6px 18px rgba(37,30,54,.12); }
-.tracker-photo-input { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.tracker-photo-picker { position: relative; display: block; overflow: hidden; border-radius: 9px; cursor: pointer; }
+.tracker-photo-picker input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .tracker-photo .tracker-remove-photo { color: #b84d60; background: #fff0f2; }
 .routine-row.mode-quantity.completed { opacity: 1; }
 .routine-row.mode-quantity.completed .routine-info strong { text-decoration: none; }
@@ -590,9 +591,10 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .instruction-attachment-editor > span { color: #65626d; font-size: 9px; font-weight: 780; }
 .instruction-attachment-editor > span small { color: #99959f; font-size: 8px; font-weight: 650; }
 .instruction-attachment-actions { display: flex; flex-wrap: wrap; gap: 7px; }
-.instruction-image-input { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.instruction-attachment-actions > button { min-height: 34px; display: grid; place-items: center; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--wizard-accent) 30%, #ddd8e1); border-radius: 10px; color: var(--wizard-accent); background: color-mix(in srgb, var(--wizard-accent) 7%, #fff); font-size: 9px; font-weight: 800; cursor: pointer; }
-.instruction-attachment-actions > button:disabled { opacity: .45; cursor: default; }
+.instruction-image-picker { position: relative; display: block; overflow: hidden; border-radius: 10px; cursor: pointer; }
+.instruction-image-picker input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.instruction-image-picker > span { min-height: 34px; display: grid; place-items: center; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--wizard-accent) 30%, #ddd8e1); border-radius: 10px; color: var(--wizard-accent); background: color-mix(in srgb, var(--wizard-accent) 7%, #fff); font-size: 9px; font-weight: 800; }
+.instruction-image-picker.disabled { opacity: .45; cursor: default; }
 .instruction-selected-files { overflow: hidden; color: #85818c; font-size: 8.5px; line-height: 1.4; text-overflow: ellipsis; }
 .instruction-editor-images { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .instruction-editor-images > div { position: relative; min-width: 0; }
@@ -1566,7 +1568,7 @@ html[data-theme="dark"] .routine-instruction { border: 0; background: transparen
 html[data-theme="dark"] :is(.routine-instruction p, .routine-instruction ul) { color: #c0bac6; }
 html[data-theme="dark"] :is(.routine-instruction-images .instruction-image-placeholder, .instruction-editor-images .instruction-image-placeholder) { color: #aaa3b0; background: #2c2832; }
 html[data-theme="dark"] .instruction-attachment-editor > span { color: #c8c2cd; }
-html[data-theme="dark"] .instruction-attachment-actions > button { border-color: color-mix(in srgb, var(--wizard-accent) 38%, #4a4550); background: color-mix(in srgb, var(--wizard-accent) 10%, #25212a); }
+html[data-theme="dark"] .instruction-image-picker > span { border-color: color-mix(in srgb, var(--wizard-accent) 38%, #4a4550); background: color-mix(in srgb, var(--wizard-accent) 10%, #25212a); }
 html[data-theme="dark"] :is(.quantity-pill, .preview-quantity, .tracker-stepper button, .tracker-timer button, .tracker-avoidance, .preview-generic-tracker, .preview-stepper button) {
   border-color: color-mix(in srgb, var(--routine, var(--preview)) 45%, #4a4550);
   background: color-mix(in srgb, var(--routine, var(--preview)) 8%, #211e26);

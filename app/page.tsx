@@ -258,7 +258,7 @@ function routineFromForm(form: FormData, id: number, existing: Routine | undefin
 
 function instructionImageFiles(form: FormData, tracker: RoutineAmount) {
   const remaining = Math.max(0, 6 - (tracker.images?.length ?? 0));
-  return form.getAll(`instruction-images-${tracker.key}`).filter((value): value is File => value instanceof File && value.size > 0 && value.type.startsWith("image/")).slice(0, remaining);
+  return form.getAll(`instruction-images-${tracker.key}`).filter((value): value is File => value instanceof File && value.size > 0 && (value.type.startsWith("image/") || /\.(?:jpe?g|png|webp|gif|heic|heif)$/i.test(value.name))).slice(0, remaining);
 }
 
 async function attachDeviceInstructionImages(routine: Routine, form: FormData) {
@@ -865,14 +865,23 @@ export default function Home() {
       updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
       return;
     }
-    updateTrackerEntries((items) => [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: version, hasFile: true }]);
-    updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
     const form = new FormData();
     form.set("routineId", String(routineId));
     form.set("trackerKey", tracker.key);
     form.set("date", date);
     form.set("photo", file);
-    await queueRoutineMutation(routineId, () => fetch("/api/tracker-photo", { method: "POST", body: form }));
+    try {
+      const response = await fetch("/api/tracker-photo", { method: "POST", body: form });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(result.error || "Upload failed");
+      }
+      updateTrackerEntries((items) => [...items.filter((item) => !(item.routineId === routineId && item.trackerKey === tracker.key && item.date === date)), { routineId, trackerKey: tracker.key, date, value: version, hasFile: true }]);
+      updateAmountCompletions((items) => [...items.filter((item) => !(item.routineId === routineId && item.amountKey === tracker.key && item.date === date)), { routineId, amountKey: tracker.key, date, count: 1 }]);
+      setError("");
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "That photo could not be uploaded. Please try another image.");
+    }
   }
 
   async function removeTrackerPhoto(routineId: number, tracker: RoutineAmount, date = todayKey) {
@@ -1946,8 +1955,6 @@ function TrackerPhoto({ entry, fallbackUrl, alt }: { entry: TrackerEntry; fallba
 
 function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetNote, onUploadPhoto, onRemovePhoto }: { routine: Routine; tracker: RoutineAmount; count: number; entry?: TrackerEntry; date: string; onChange: (count: number) => void; onSetNote: (value: string) => void; onUploadPhoto: (file: File) => void; onRemovePhoto: () => void }) {
   const kind = trackerKind(tracker);
-  const choosePhotoRef = useRef<HTMLInputElement>(null);
-  const takePhotoRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(entry?.value ?? "");
   const [numberDraft, setNumberDraft] = useState(count ? String(count) : "");
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -2001,7 +2008,7 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
   if (kind === "photo") {
     const photoUrl = `/api/tracker-photo?${new URLSearchParams({ routineId: String(routine.id), trackerKey: tracker.key, date, v: entry?.value ?? "" })}`;
     const selectPhoto = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) onUploadPhoto(file); event.currentTarget.value = ""; };
-    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><input ref={choosePhotoRef} className="tracker-photo-input" type="file" accept="image/*" onChange={selectPhoto} /><button type="button" onClick={() => choosePhotoRef.current?.click()}>{entry?.hasFile ? "Replace" : "Choose photo"}</button><input ref={takePhotoRef} className="tracker-photo-input" type="file" accept="image/*" capture="environment" onChange={selectPhoto} /><button type="button" onClick={() => takePhotoRef.current?.click()}>Take photo</button>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
+    return <div className="tracker-wide-control tracker-photo"><div className="tracker-photo-row"><strong>{tracker.name}</strong><div className="tracker-photo-actions"><label className="tracker-photo-picker"><input type="file" accept="image/*" onChange={selectPhoto} /><span>{entry?.hasFile ? "Replace" : "Choose photo"}</span></label><label className="tracker-photo-picker"><input type="file" accept="image/*" capture="environment" onChange={selectPhoto} /><span>Take photo</span></label>{entry?.hasFile && <button type="button" className="tracker-remove-photo" onClick={onRemovePhoto}>Remove</button>}</div></div>{entry?.hasFile && <TrackerPhoto entry={entry} fallbackUrl={photoUrl} alt={`${tracker.name} for ${date}`} />}</div>;
   }
 
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;
@@ -2786,8 +2793,6 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange, routi
 }
 
 function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmount; routineId?: number; onUpdate: (next: Partial<RoutineAmount>) => void }) {
-  const chooseImagesRef = useRef<HTMLInputElement>(null);
-  const takeImageRef = useRef<HTMLInputElement>(null);
   const [chosenNames, setChosenNames] = useState<string[]>([]);
   const [cameraName, setCameraName] = useState("");
   const remaining = Math.max(0, 6 - (amount.images?.length ?? 0));
@@ -2795,10 +2800,8 @@ function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmo
     <label className="field tracking-instructions-field"><span>Text <small>Optional</small></span><textarea value={amount.content ?? ""} onChange={(event) => onUpdate({ content: event.target.value })} placeholder="Add a description, preparation notes, or anything you want to read." maxLength={4000} /></label>
     <label className="field tracking-instructions-field tracking-bullets-field"><span>Bullet points <small>Optional</small></span><textarea value={(amount.bullets ?? []).join("\n")} onChange={(event) => onUpdate({ bullets: event.target.value.split(/\r?\n/).slice(0, 30) })} placeholder={"Add one item per line:\nToast one slice of bread\nAdd eggs and fruit\nDrink a glass of water"} maxLength={3000} /></label>
     <div className="instruction-attachment-editor"><span>Images <small>Optional · up to 6</small></span><div className="instruction-attachment-actions">
-      <input ref={chooseImagesRef} className="instruction-image-input" type="file" name={`instruction-images-${amount.key}`} accept="image/*" multiple onChange={(event) => setChosenNames([...(event.currentTarget.files ?? [])].slice(0, remaining).map((file) => file.name))} />
-      <button type="button" disabled={!remaining} onClick={() => chooseImagesRef.current?.click()}>Add images</button>
-      <input ref={takeImageRef} className="instruction-image-input" type="file" name={`instruction-images-${amount.key}`} accept="image/*" capture="environment" onChange={(event) => setCameraName(event.currentTarget.files?.[0]?.name ?? "")} />
-      <button type="button" disabled={!remaining} onClick={() => takeImageRef.current?.click()}>Take photo</button>
+      <label className={`instruction-image-picker${remaining ? "" : " disabled"}`}><input type="file" name={`instruction-images-${amount.key}`} accept="image/*" multiple disabled={!remaining} onChange={(event) => setChosenNames([...(event.currentTarget.files ?? [])].slice(0, remaining).map((file) => file.name))} /><span>Add images</span></label>
+      <label className={`instruction-image-picker${remaining ? "" : " disabled"}`}><input type="file" name={`instruction-images-${amount.key}`} accept="image/*" capture="environment" disabled={!remaining} onChange={(event) => setCameraName(event.currentTarget.files?.[0]?.name ?? "")} /><span>Take photo</span></label>
     </div>{Boolean(chosenNames.length || cameraName) && <small className="instruction-selected-files">Selected: {[...chosenNames, cameraName].filter(Boolean).join(", ")}</small>}</div>
     {Boolean(amount.images?.length) && <div className="instruction-editor-images">{amount.images!.map((image, imageIndex) => <div key={image.id}><InstructionImageView image={image} routineId={routineId} trackerKey={amount.key} alt={`${amount.name || "Instruction"} image ${imageIndex + 1}`} /><button type="button" onClick={() => onUpdate({ images: amount.images?.filter((item) => item.id !== image.id) })} aria-label={`Remove image ${imageIndex + 1}`}>×</button></div>)}</div>}
   </div>;

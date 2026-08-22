@@ -174,13 +174,15 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(deviceStorage, /saveDeviceInstructionImage/);
   assert.match(instructionImageRoute, /UPLOADS\.put/);
   assert.match(instructionImageRoute, /Instructions can include up to 6 images/);
+  assert.match(instructionImageRoute, /20 \* 1024 \* 1024/);
   assert.match(instructionImageRoute, /export async function GET/);
   assert.match(page, /activeInstructions\.length > 0/);
   assert.match(page, /trackerKind\(tracker\) !== "instructions"/);
   assert.match(page, /Attach a daily progress image/);
   assert.match(page, /function TrackerControl/);
-  assert.match(page, /choosePhotoRef\.current\?\.click\(\)/);
-  assert.match(page, /takePhotoRef\.current\?\.click\(\)/);
+  assert.match(page, /className="tracker-photo-picker"/);
+  assert.match(page, /throw new Error\(result\.error \|\| "Upload failed"\)/);
+  assert.match(fullPageBuilderCss, /\.tracker-photo-picker input \{[^}]*inset: 0;[^}]*width: 100%;[^}]*height: 100%/);
   assert.doesNotMatch(page, /Already included on every routine/);
   assert.match(page, /capture="environment"/);
   assert.match(page, /I avoided this today/);

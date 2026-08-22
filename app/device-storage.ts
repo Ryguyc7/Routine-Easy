@@ -81,17 +81,24 @@ function fileToBase64(file: File) {
 }
 
 function photoExtension(file: File) {
-  if (file.type === "image/png") return "png";
-  if (file.type === "image/webp") return "webp";
-  if (file.type === "image/heic" || file.type === "image/heif") return "heic";
+  if (file.type === "image/png" || /\.png$/i.test(file.name)) return "png";
+  if (file.type === "image/webp" || /\.webp$/i.test(file.name)) return "webp";
+  if (file.type === "image/gif" || /\.gif$/i.test(file.name)) return "gif";
+  if (file.type === "image/heic" || file.type === "image/heif" || /\.(?:heic|heif)$/i.test(file.name)) return "heic";
   return "jpg";
+}
+
+function photoContentType(file: File) {
+  if (file.type.startsWith("image/")) return file.type;
+  const extension = photoExtension(file);
+  return extension === "jpg" ? "image/jpeg" : extension === "heic" ? "image/heic" : `image/${extension}`;
 }
 
 export async function saveDevicePhoto(routineId: number, trackerKey: string, date: string, file: File) {
   const safeTracker = trackerKey.replace(/[^a-zA-Z0-9_-]/g, "-");
   const path = `routine-photos/${routineId}-${safeTracker}-${date}-${Date.now()}.${photoExtension(file)}`;
   await Filesystem.writeFile({ path, data: await fileToBase64(file), directory: Directory.Data, recursive: true });
-  return { path, contentType: file.type || "image/jpeg" };
+  return { path, contentType: photoContentType(file) };
 }
 
 export async function saveDeviceInstructionImage(routineId: number, trackerKey: string, file: File) {
@@ -99,7 +106,7 @@ export async function saveDeviceInstructionImage(routineId: number, trackerKey: 
   const id = crypto.randomUUID();
   const path = `routine-photos/instructions/${routineId}-${safeTracker}-${id}.${photoExtension(file)}`;
   await Filesystem.writeFile({ path, data: await fileToBase64(file), directory: Directory.Data, recursive: true });
-  return { id, filePath: path, contentType: file.type || "image/jpeg" };
+  return { id, filePath: path, contentType: photoContentType(file) };
 }
 
 export async function removeDevicePhoto(path?: string) {
