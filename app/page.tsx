@@ -8,8 +8,7 @@ import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
 type InstructionImage = { id: string; contentType?: string; filePath?: string };
-type InstructionFontSize = 11 | 14 | 18 | 22;
-type InstructionRun = { text: string; bold?: boolean; italic?: boolean; fontSize?: InstructionFontSize };
+type InstructionRun = { text: string; bold?: boolean; italic?: boolean };
 type InstructionBlock = { type: "paragraph" | "bullet"; runs: InstructionRun[] } | { type: "image"; imageId: string };
 type InstructionDocument = { version: 1; blocks: InstructionBlock[] };
 type RoutineAmount = { key: string; name: string; targetCount: number; kind?: TrackerKind; unit?: string; content?: string; bullets?: string[]; images?: InstructionImage[] };
@@ -223,12 +222,6 @@ function trackerKindLabel(tracker: RoutineAmount) {
 
 const pendingInstructionFiles = new Map<string, File>();
 const INSTRUCTION_IMAGE_ID = /^(?:pending-)?[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const INSTRUCTION_FONT_SIZES = new Set<InstructionFontSize>([11, 14, 18, 22]);
-
-function instructionFontSize(value: unknown): InstructionFontSize | undefined {
-  const size = Number.parseInt(String(value ?? ""), 10) as InstructionFontSize;
-  return INSTRUCTION_FONT_SIZES.has(size) ? size : undefined;
-}
 
 function cleanInstructionRuns(value: unknown): InstructionRun[] {
   if (!Array.isArray(value)) return [];
@@ -236,8 +229,7 @@ function cleanInstructionRuns(value: unknown): InstructionRun[] {
     if (!entry || typeof entry !== "object") return [];
     const run = entry as Record<string, unknown>;
     const text = String(run.text ?? "").slice(0, 3000);
-    const fontSize = instructionFontSize(run.fontSize);
-    return text ? [{ text, ...(run.bold ? { bold: true } : {}), ...(run.italic ? { italic: true } : {}), ...(fontSize ? { fontSize } : {}) }] : [];
+    return text ? [{ text, ...(run.bold ? { bold: true } : {}), ...(run.italic ? { italic: true } : {}) }] : [];
   }).slice(0, 120);
 }
 
@@ -2068,7 +2060,6 @@ function InstructionsPanel({ instructions, routineId, className = "" }: { instru
 function InstructionRunsView({ runs }: { runs: InstructionRun[] }) {
   return <>{runs.map((run, index) => {
     let node: ReactNode = run.text;
-    if (run.fontSize) node = <span style={{ fontSize: `${run.fontSize}px` }}>{node}</span>;
     if (run.italic) node = <em>{node}</em>;
     if (run.bold) node = <strong>{node}</strong>;
     return <span key={index}>{node}</span>;
@@ -2994,7 +2985,6 @@ function TrackingBuilder({ lists, amounts, onListsChange, onAmountsChange, routi
 function appendInstructionRuns(parent: HTMLElement, runs: InstructionRun[]) {
   for (const run of runs) {
     let node: Node = document.createTextNode(run.text);
-    if (run.fontSize) { const sized = document.createElement("span"); sized.style.fontSize = `${run.fontSize}px`; sized.append(node); node = sized; }
     if (run.italic) { const italic = document.createElement("em"); italic.append(node); node = italic; }
     if (run.bold) { const bold = document.createElement("strong"); bold.append(node); node = bold; }
     parent.append(node);
@@ -3019,22 +3009,21 @@ function instructionEditorFigure(imageId: string, source: string, alt: string) {
 
 function instructionRunsFromNode(root: Node): InstructionRun[] {
   const runs: InstructionRun[] = [];
-  const visit = (node: Node, bold = false, italic = false, fontSize?: InstructionFontSize) => {
+  const visit = (node: Node, bold = false, italic = false) => {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent ?? "";
       if (!text) return;
       const previous = runs.at(-1);
-      if (previous && Boolean(previous.bold) === bold && Boolean(previous.italic) === italic && previous.fontSize === fontSize) previous.text += text;
-      else runs.push({ text, ...(bold ? { bold: true } : {}), ...(italic ? { italic: true } : {}), ...(fontSize ? { fontSize } : {}) });
+      if (previous && Boolean(previous.bold) === bold && Boolean(previous.italic) === italic) previous.text += text;
+      else runs.push({ text, ...(bold ? { bold: true } : {}), ...(italic ? { italic: true } : {}) });
       return;
     }
     if (!(node instanceof HTMLElement)) return;
-    if (node.tagName === "BR") { runs.push({ text: "\n", ...(bold ? { bold: true } : {}), ...(italic ? { italic: true } : {}), ...(fontSize ? { fontSize } : {}) }); return; }
+    if (node.tagName === "BR") { runs.push({ text: "\n", ...(bold ? { bold: true } : {}), ...(italic ? { italic: true } : {}) }); return; }
     const weight = node.style.fontWeight;
     const nextBold = bold || node.tagName === "B" || node.tagName === "STRONG" || weight === "bold" || Number(weight) >= 600;
     const nextItalic = italic || node.tagName === "I" || node.tagName === "EM" || node.style.fontStyle === "italic";
-    const nextFontSize = instructionFontSize(node.style.fontSize) ?? fontSize;
-    node.childNodes.forEach((child) => visit(child, nextBold, nextItalic, nextFontSize));
+    node.childNodes.forEach((child) => visit(child, nextBold, nextItalic));
   };
   root.childNodes.forEach((child) => visit(child));
   return runs;
@@ -3079,16 +3068,6 @@ function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmo
     if (editor.contains(range.commonAncestorContainer)) savedRangeRef.current = range.cloneRange();
   };
 
-  const restoreSelection = () => {
-    const editor = editorRef.current;
-    const selection = window.getSelection();
-    const range = savedRangeRef.current;
-    if (!editor || !selection || !range || !editor.contains(range.commonAncestorContainer)) return;
-    editor.focus();
-    selection.removeAllRanges();
-    selection.addRange(range);
-  };
-
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -3127,23 +3106,8 @@ function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmo
   const applyFormat = (command: "bold" | "italic" | "insertUnorderedList") => {
     const editor = editorRef.current;
     if (!editor) return;
-    restoreSelection();
+    editor.focus();
     document.execCommand(command);
-    saveSelection();
-    syncDocument();
-  };
-
-  const applyFontSize = (size: InstructionFontSize) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    restoreSelection();
-    document.execCommand("fontSize", false, "7");
-    editor.querySelectorAll('font[size="7"]').forEach((font) => {
-      const sized = document.createElement("span");
-      sized.style.fontSize = `${size}px`;
-      while (font.firstChild) sized.append(font.firstChild);
-      font.replaceWith(sized);
-    });
     saveSelection();
     syncDocument();
   };
@@ -3184,17 +3148,6 @@ function InstructionEditor({ amount, routineId, onUpdate }: { amount: RoutineAmo
         <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyFormat("bold")} aria-label="Bold"><strong>B</strong></button>
         <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyFormat("italic")} aria-label="Italic"><em>I</em></button>
         <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyFormat("insertUnorderedList")} aria-label="Bullet list"><span aria-hidden="true">•≡</span></button>
-        <select className="instruction-font-size" aria-label="Font size" defaultValue="" onPointerDown={saveSelection} onChange={(event) => {
-          const size = instructionFontSize(event.currentTarget.value);
-          if (size) applyFontSize(size);
-          event.currentTarget.value = "";
-        }}>
-          <option value="" disabled>Size</option>
-          <option value="11">Small</option>
-          <option value="14">Normal</option>
-          <option value="18">Large</option>
-          <option value="22">Largest</option>
-        </select>
         <label className="instruction-rich-image" title="Insert image"><input type="file" accept="image/*" onPointerDown={saveSelection} onChange={(event) => { insertImage(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} aria-label="Insert image" /><span><Upload aria-hidden="true" /></span></label>
       </div>
       <div ref={editorRef} className="instruction-rich-content" contentEditable role="textbox" aria-multiline="true" aria-label="Instruction content" data-placeholder="Write instructions, format text, or insert an image…" onInput={syncDocument} onKeyUp={saveSelection} onMouseUp={saveSelection} onBlur={saveSelection} onClick={(event) => {

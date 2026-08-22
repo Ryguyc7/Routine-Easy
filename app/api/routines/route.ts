@@ -85,10 +85,8 @@ function cleanInstructionContent(value: unknown) {
         if (!entry || typeof entry !== "object" || characters >= 6000) return [];
         const run = entry as Record<string, unknown>;
         const text = String(run.text ?? "").slice(0, Math.max(0, 6000 - characters));
-        const requestedFontSize = Number.parseInt(String(run.fontSize ?? ""), 10);
-        const fontSize = [11, 14, 18, 22].includes(requestedFontSize) ? requestedFontSize : undefined;
         characters += text.length;
-        return text ? [{ text, ...(run.bold ? { bold: true } : {}), ...(run.italic ? { italic: true } : {}), ...(fontSize ? { fontSize } : {}) }] : [];
+        return text ? [{ text, ...(run.bold ? { bold: true } : {}), ...(run.italic ? { italic: true } : {}) }] : [];
       }).slice(0, 120);
       return runs.length ? [{ type: block.type, runs }] : [];
     }).slice(0, 100);
