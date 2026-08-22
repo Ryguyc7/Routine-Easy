@@ -281,6 +281,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(fullPageBuilderCss, /\.instruction-rich-content \{[^}]*min-height: 180px/);
   assert.match(fullPageBuilderCss, /\.instruction-rich-content ul \{ list-style: disc outside; \}/);
   assert.match(fullPageBuilderCss, /\.instruction-rich-content li \{ display: list-item/);
+  assert.match(page, /WKWebView wraps lists in one or more DIVs/);
+  assert.match(page, /node\.childNodes\.forEach\(\(child\) => visit\(child\)\)/);
   assert.match(fullPageBuilderCss, /\.routine-instruction ul \{[^}]*list-style: none/);
   assert.match(fullPageBuilderCss, /\.routine-instruction li::before \{[^}]*content: "•"/);
   assert.doesNotMatch(page, /aria-label="Font size"/);

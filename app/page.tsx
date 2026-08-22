@@ -3337,14 +3337,24 @@ function serializeInstructionEditor(editor: HTMLElement): InstructionDocument {
     const runs = instructionRunsFromNode(node);
     if (runs.map((run) => run.text).join("").trim()) blocks.push({ type, runs });
   };
-  editor.childNodes.forEach((node) => {
+  const visit = (node: Node) => {
     if (node instanceof HTMLElement && node.matches("figure[data-image-id]")) {
       const imageId = node.dataset.imageId ?? "";
       if (INSTRUCTION_IMAGE_ID.test(imageId)) blocks.push({ type: "image", imageId });
     } else if (node instanceof HTMLElement && (node.tagName === "UL" || node.tagName === "OL")) {
-      node.querySelectorAll(":scope > li").forEach((item) => addTextBlock(item, "bullet"));
+      Array.from(node.children).forEach((item) => {
+        if (item.tagName === "LI") addTextBlock(item, "bullet");
+        else visit(item);
+      });
+    } else if (node instanceof HTMLElement && node.tagName === "LI") {
+      addTextBlock(node, "bullet");
+    } else if (node instanceof HTMLElement && node.tagName !== "P" && Array.from(node.children).some((child) => child.matches("div, p, ul, ol, figure[data-image-id]"))) {
+      // WKWebView wraps lists in one or more DIVs. Walk those wrappers instead
+      // of reading their combined text, which would join every bullet together.
+      node.childNodes.forEach((child) => visit(child));
     } else addTextBlock(node, "paragraph");
-  });
+  };
+  editor.childNodes.forEach((node) => visit(node));
   return { version: 1, blocks: blocks.slice(0, 100) };
 }
 
