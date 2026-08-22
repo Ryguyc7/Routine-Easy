@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, startTransition, type ChangeEvent, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, GripVertical, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -17,6 +17,8 @@ type RoutineListDraft = RoutineList & { items: string };
 type DayTrackingPlan = { tracking: string[]; label?: string };
 type DayVariant = string | DayTrackingPlan;
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
+type RoutineTimeSection = "auto" | "morning" | "afternoon" | "evening" | "anytime";
+type ResolvedTimeSection = Exclude<RoutineTimeSection, "auto">;
 const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
 const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
 type Routine = {
@@ -34,6 +36,8 @@ type Routine = {
   dayVariants: Partial<Record<number, DayVariant>>;
   startDate: string;
   endDate: string;
+  timeSection: RoutineTimeSection;
+  sortOrder: number;
   items: RoutineItem[];
 };
 
@@ -64,7 +68,37 @@ type RoutineTemplate = {
   dayVariants?: Partial<Record<number, DayVariant>>;
   startDate?: string;
   endDate?: string;
+  timeSection?: RoutineTimeSection;
 };
+
+const TIME_SECTIONS: Array<{ id: ResolvedTimeSection; label: string; note: string; icon: LucideIcon }> = [
+  { id: "morning", label: "Morning", note: "Start the day", icon: Sparkles },
+  { id: "afternoon", label: "Afternoon", note: "Keep momentum", icon: Sun },
+  { id: "evening", label: "Evening", note: "Wind down", icon: Moon },
+  { id: "anytime", label: "Anytime", note: "No set time", icon: Clock3 },
+];
+
+function cleanRoutineTimeSection(value: unknown): RoutineTimeSection {
+  return value === "morning" || value === "afternoon" || value === "evening" || value === "anytime" ? value : "auto";
+}
+
+function resolvedRoutineSection(routine: Pick<Routine, "time" | "timeSection">): ResolvedTimeSection {
+  const requested = cleanRoutineTimeSection(routine.timeSection);
+  if (requested !== "auto") return requested;
+  const hour = Number(routine.time.split(":")[0]);
+  if (!Number.isFinite(hour)) return "anytime";
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  return "evening";
+}
+
+function normalizeRoutineCollection(items: Routine[]) {
+  return items.map((routine, index) => ({
+    ...routine,
+    timeSection: cleanRoutineTimeSection(routine.timeSection),
+    sortOrder: Number.isFinite(routine.sortOrder) ? routine.sortOrder : index,
+  })).sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+}
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full", theme: "system", completedVisibility: "show", feedback: "on", reminders: "off" };
 const SPLASH_DURATION_MS = 2100;
@@ -311,6 +345,8 @@ function routineFromForm(form: FormData, id: number, existing: Routine | undefin
     dayVariants: readDayVariants(form),
     startDate: String(form.get("startDate") ?? ""),
     endDate: String(form.get("endDate") ?? ""),
+    timeSection: existing?.timeSection ?? cleanRoutineTimeSection(form.get("timeSection")),
+    sortOrder: existing?.sortOrder ?? id,
     items,
   };
 }
@@ -524,12 +560,15 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [savingList, setSavingList] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
+  const [showArrangeRoutines, setShowArrangeRoutines] = useState(false);
+  const [draggedRoutineId, setDraggedRoutineId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const completionsRef = useRef<Completion[]>([]);
   const itemCompletionsRef = useRef<ItemCompletion[]>([]);
   const amountCompletionsRef = useRef<AmountCompletion[]>([]);
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
+  const arrangementSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingDeviceSnapshotRef = useRef<DeviceSnapshot | null>(null);
   const deviceSaveTimerRef = useRef<number | undefined>(undefined);
@@ -562,6 +601,47 @@ export default function Home() {
     setTrackerEntries(next);
   }
 
+  function commitRoutineArrangement(next: Routine[]) {
+    const ordered = next.map((routine, sortOrder) => ({ ...routine, sortOrder }));
+    setRoutines(ordered);
+    if (isNativeApp()) return;
+    arrangementSaveQueueRef.current = arrangementSaveQueueRef.current.catch(() => undefined).then(async () => {
+      const response = await fetch("/api/routines", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: ordered.map(({ id, timeSection, sortOrder }) => ({ id, timeSection, sortOrder })) }),
+      });
+      if (!response.ok) throw new Error("Routine arrangement failed");
+    }).catch(async () => {
+      setError("Your routine order could not be saved. Please try again.");
+      await loadData();
+    });
+  }
+
+  function arrangeRoutine(routineId: number, targetSetting: RoutineTimeSection, targetIndex?: number) {
+    const moved = routines.find((routine) => routine.id === routineId);
+    if (!moved) return;
+    const updatedMoved = { ...moved, timeSection: targetSetting };
+    const targetSection = resolvedRoutineSection(updatedMoved);
+    const buckets = new Map(TIME_SECTIONS.map(({ id }) => [id, routines.filter((routine) => routine.id !== routineId && resolvedRoutineSection(routine) === id)]));
+    const target = buckets.get(targetSection) ?? [];
+    const insertion = Math.min(target.length, Math.max(0, targetIndex ?? target.length));
+    target.splice(insertion, 0, updatedMoved);
+    buckets.set(targetSection, target);
+    commitRoutineArrangement(TIME_SECTIONS.flatMap(({ id }) => buckets.get(id) ?? []));
+  }
+
+  function shiftRoutine(routineId: number, direction: -1 | 1) {
+    const routine = routines.find((item) => item.id === routineId);
+    if (!routine) return;
+    const section = resolvedRoutineSection(routine);
+    const siblings = routines.filter((item) => resolvedRoutineSection(item) === section);
+    const index = siblings.findIndex((item) => item.id === routineId);
+    const nextIndex = Math.min(siblings.length - 1, Math.max(0, index + direction));
+    if (nextIndex === index) return;
+    arrangeRoutine(routineId, routine.timeSection, nextIndex);
+  }
+
   function queueRoutineMutation(routineId: number, request: () => Promise<Response>) {
     if (isNativeApp()) return Promise.resolve();
     const queues = routineMutationQueuesRef.current;
@@ -582,7 +662,7 @@ export default function Home() {
     try {
       if (isNativeApp()) {
         const data = await loadDeviceSnapshot();
-        setRoutines(data.routines as Routine[]);
+        setRoutines(normalizeRoutineCollection(data.routines as Routine[]));
         completionsRef.current = data.completions as Completion[];
         itemCompletionsRef.current = data.itemCompletions as ItemCompletion[];
         amountCompletionsRef.current = data.amountCompletions as AmountCompletion[];
@@ -597,7 +677,7 @@ export default function Home() {
       const response = await fetch("/api/routines", { cache: "no-store" });
       if (!response.ok) throw new Error("Could not load your routines.");
       const data = await response.json();
-      setRoutines(data.routines);
+      setRoutines(normalizeRoutineCollection(data.routines));
       completionsRef.current = data.completions;
       itemCompletionsRef.current = data.itemCompletions ?? [];
       amountCompletionsRef.current = data.amountCompletions ?? [];
@@ -830,6 +910,10 @@ export default function Home() {
   const doneCount = eligibleTodayRoutines.filter(isRoutineDone).length;
   const progress = eligibleTodayRoutines.length ? Math.round((doneCount / eligibleTodayRoutines.length) * 100) : 0;
   const animatedProgress = useAnimatedNumber(progress, preferences.motion === "reduced" ? 0 : 600);
+  const todaySectionGroups = TIME_SECTIONS.map((section) => ({
+    ...section,
+    routines: visibleTodayRoutines.filter((routine) => resolvedRoutineSection(routine) === section.id),
+  })).filter((section) => section.routines.length);
 
   useEffect(() => {
     if (preferences.reminders !== "on" || !("Notification" in window) || Notification.permission !== "granted") return;
@@ -1146,6 +1230,7 @@ export default function Home() {
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
         endDate: form.get("endDate"),
+        timeSection: form.get("timeSection"),
       }),
     });
     if (response.ok) {
@@ -1182,6 +1267,7 @@ export default function Home() {
       dayVariants: { ...routine.dayVariants },
       startDate: routine.startDate,
       endDate: routine.endDate,
+      timeSection: routine.timeSection,
     });
     setShowTemplatePicker(false);
     setShowAdd(true);
@@ -1261,6 +1347,7 @@ export default function Home() {
         dayVariants: readDayVariants(form),
         startDate: form.get("startDate"),
         endDate: form.get("endDate"),
+        timeSection: form.get("timeSection"),
       }),
     });
     if (response.ok) {
@@ -1356,25 +1443,29 @@ export default function Home() {
 
             <section className="routine-section">
               <div className="routine-list">
-                {loading ? <LoadingRows /> : visibleTodayRoutines.length ? visibleTodayRoutines.map((routine) => (
-                  <RoutineRow
-                    key={routine.id}
-                    routine={routine}
-                    completed={!skippedToday.has(routine.id) && isRoutineDone(routine)}
-                    skipped={skippedToday.has(routine.id)}
-                    completedItemIds={completedItemsToday}
-                    amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
-                    trackerEntries={Object.fromEntries(trackerEntries.filter((entry) => entry.routineId === routine.id && entry.date === todayKey).map((entry) => [entry.trackerKey, entry]))}
-                    onToggle={() => toggleRoutine(routine.id)}
-                    onToggleItem={toggleItem}
-                    onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
-                    onSetNote={(tracker, value) => setNoteEntry(routine.id, tracker, value)}
-                    onUploadPhoto={(tracker, file) => uploadTrackerPhoto(routine.id, tracker, file)}
-                    onRemovePhoto={(tracker) => removeTrackerPhoto(routine.id, tracker)}
-                    onSkip={(nextSkipped) => nextSkipped ? setRoutineSkip(routine.id, true) : undoRoutineSkip(routine)}
-                    timeFormat={preferences.timeFormat}
-                  />
-                )) : todayRoutines.length ? <div className="completed-hidden-state"><CircleCheckBig aria-hidden="true" /><strong>Everything completed is hidden</strong><p>You can bring finished routines back whenever you want.</p><button type="button" onClick={() => updatePreferences({ completedVisibility: "show" })}>Show completed routines</button></div> : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
+                {loading ? <LoadingRows /> : visibleTodayRoutines.length ? <div className="today-time-groups">{todaySectionGroups.map((section) => {
+                  const SectionIcon = section.icon;
+                  return <section className={`today-time-group time-section-${section.id}`} key={section.id}>
+                    <header><span><SectionIcon aria-hidden="true" /></span><div><h2>{section.label}</h2><p>{section.note}</p></div><small>{section.routines.length}</small></header>
+                    <div>{section.routines.map((routine) => <RoutineRow
+                      key={routine.id}
+                      routine={routine}
+                      completed={!skippedToday.has(routine.id) && isRoutineDone(routine)}
+                      skipped={skippedToday.has(routine.id)}
+                      completedItemIds={completedItemsToday}
+                      amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
+                      trackerEntries={Object.fromEntries(trackerEntries.filter((entry) => entry.routineId === routine.id && entry.date === todayKey).map((entry) => [entry.trackerKey, entry]))}
+                      onToggle={() => toggleRoutine(routine.id)}
+                      onToggleItem={toggleItem}
+                      onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
+                      onSetNote={(tracker, value) => setNoteEntry(routine.id, tracker, value)}
+                      onUploadPhoto={(tracker, file) => uploadTrackerPhoto(routine.id, tracker, file)}
+                      onRemovePhoto={(tracker) => removeTrackerPhoto(routine.id, tracker)}
+                      onSkip={(nextSkipped) => nextSkipped ? setRoutineSkip(routine.id, true) : undoRoutineSkip(routine)}
+                      timeFormat={preferences.timeFormat}
+                    />)}</div>
+                  </section>;
+                })}</div> : todayRoutines.length ? <div className="completed-hidden-state"><CircleCheckBig aria-hidden="true" /><strong>Everything completed is hidden</strong><p>You can bring finished routines back whenever you want.</p><button type="button" onClick={() => updatePreferences({ completedVisibility: "show" })}>Show completed routines</button></div> : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
               </div>
             </section>
           </div>
@@ -1423,8 +1514,17 @@ export default function Home() {
               const routine = routines.find((item) => item.id === editingRoutineId);
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={closeEditRoutine} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
             })()}
+            {showArrangeRoutines && <RoutineArrangement
+              routines={routines}
+              draggedRoutineId={draggedRoutineId}
+              onDragStart={(routineId) => setDraggedRoutineId(routineId)}
+              onDragEnd={() => setDraggedRoutineId(null)}
+              onMove={arrangeRoutine}
+              onShift={shiftRoutine}
+              onClose={() => { setDraggedRoutineId(null); setShowArrangeRoutines(false); }}
+            />}
             <section className={`routine-library${!loading && !routines.length ? " routine-library-empty" : ""}`}>
-              {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
+              {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="arrange-routines-button" type="button" aria-expanded={showArrangeRoutines} onClick={() => setShowArrangeRoutines((visible) => !visible)}><GripVertical aria-hidden="true" />Arrange</button><button className="desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
               <div className="routine-grid">
                 {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
               </div>
@@ -2204,6 +2304,44 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;
 }
 
+function RoutineArrangement({ routines, draggedRoutineId, onDragStart, onDragEnd, onMove, onShift, onClose }: {
+  routines: Routine[];
+  draggedRoutineId: number | null;
+  onDragStart: (routineId: number) => void;
+  onDragEnd: () => void;
+  onMove: (routineId: number, section: RoutineTimeSection, index?: number) => void;
+  onShift: (routineId: number, direction: -1 | 1) => void;
+  onClose: () => void;
+}) {
+  const droppedRoutineId = (event: ReactDragEvent) => draggedRoutineId ?? Number(event.dataTransfer.getData("text/plain"));
+  return <section className="routine-arrangement" aria-labelledby="routine-arrangement-title">
+    <header className="routine-arrangement-header"><div><span className="routine-arrangement-icon"><GripVertical aria-hidden="true" /></span><div><h2 id="routine-arrangement-title">Arrange your day</h2><p>Drag routines into order or choose a time section.</p></div></div><button type="button" onClick={onClose} aria-label="Close routine arrangement"><X aria-hidden="true" /></button></header>
+    <div className="routine-arrangement-sections">
+      {TIME_SECTIONS.map((section) => {
+        const SectionIcon = section.icon;
+        const sectionRoutines = routines.filter((routine) => resolvedRoutineSection(routine) === section.id);
+        return <section className={`routine-arrangement-section time-section-${section.id}${draggedRoutineId !== null ? " drag-ready" : ""}`} key={section.id} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }} onDrop={(event) => { event.preventDefault(); const id = droppedRoutineId(event); if (Number.isInteger(id)) onMove(id, section.id); onDragEnd(); }}>
+          <header><span><SectionIcon aria-hidden="true" /></span><div><h3>{section.label}</h3><p>{section.note}</p></div><small>{sectionRoutines.length}</small></header>
+          <div className="routine-arrangement-list">
+            {sectionRoutines.map((routine, index) => {
+              const automaticSection = resolvedRoutineSection({ ...routine, timeSection: "auto" });
+              const automaticLabel = TIME_SECTIONS.find((option) => option.id === automaticSection)?.label ?? "Anytime";
+              return <article className={`routine-arrangement-row${draggedRoutineId === routine.id ? " dragging" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties} draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(routine.id)); onDragStart(routine.id); }} onDragEnd={onDragEnd} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); const id = droppedRoutineId(event); const targetIndex = sectionRoutines.filter((item) => item.id !== id).findIndex((item) => item.id === routine.id); if (Number.isInteger(id) && id !== routine.id && targetIndex >= 0) onMove(id, section.id, targetIndex); onDragEnd(); }} key={routine.id}>
+              <span className="routine-drag-handle" title={`Drag ${routine.name}`}><GripVertical aria-hidden="true" /></span>
+              <span className="routine-arrangement-emoji" aria-hidden="true">{routine.emoji}</span>
+              <div className="routine-arrangement-copy"><strong>{routine.name}</strong><small>{routine.time ? formatRoutineTime(routine.time, "12-hour") : "Anytime"}</small></div>
+              <label className="routine-section-select"><span className="sr-only">Time section for {routine.name}</span><select value={routine.timeSection} onChange={(event) => onMove(routine.id, event.target.value as RoutineTimeSection)} aria-label={`Time section for ${routine.name}`}><option value="auto">Auto ({automaticLabel})</option>{TIME_SECTIONS.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
+              <div className="routine-order-buttons"><button type="button" onClick={() => onShift(routine.id, -1)} disabled={index === 0} aria-label={`Move ${routine.name} up`}><ArrowUp aria-hidden="true" /></button><button type="button" onClick={() => onShift(routine.id, 1)} disabled={index === sectionRoutines.length - 1} aria-label={`Move ${routine.name} down`}><ArrowDown aria-hidden="true" /></button></div>
+            </article>;})}
+            {!sectionRoutines.length && <div className="routine-arrangement-empty">Drop a routine here</div>}
+          </div>
+        </section>;
+      })}
+    </div>
+    <p className="routine-arrangement-help"><strong>Auto</strong> uses the routine’s scheduled time. Changes save as you make them.</p>
+  </section>;
+}
+
 function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const instructionCount = routine.amounts.filter((amount) => trackerKind(amount) === "instructions").length;
@@ -2496,6 +2634,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
   <div className="add-modal-stack">
   <div className={`add-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card add-routine-modal" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label="Add a routine">
+    <input type="hidden" name="timeSection" value={template?.timeSection ?? "auto"} />
     <header className="routine-wizard-header">
       <button type="button" className="app-page-back routine-builder-back" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)} aria-label={step === 0 ? "Close routine builder" : "Go back to previous step"}><ChevronLeft aria-hidden="true" /></button>
       <div className="routine-wizard-header-content">
@@ -2700,6 +2839,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
   <div className="add-modal-stack">
   <div className={`add-form-shell step-tone-${step + 1}`}>
   <form ref={formRef} className="add-card add-routine-modal edit-routine-wizard" onSubmit={submitWizard} role="dialog" aria-modal="true" aria-label={`Edit ${routine.name}`}>
+    <input type="hidden" name="timeSection" value={routine.timeSection} />
     <header className="routine-wizard-header">
       <button type="button" className="app-page-back routine-builder-back" onClick={() => step === 0 ? onCancel() : moveToStep(step - 1)} aria-label={step === 0 ? "Close routine editor" : "Go back to previous step"}><ChevronLeft aria-hidden="true" /></button>
       <div className="routine-wizard-header-content">

@@ -20,7 +20,9 @@ export async function ensureDatabase() {
     list_config TEXT NOT NULL DEFAULT '[]',
     day_variants TEXT NOT NULL DEFAULT '{}',
     start_date TEXT NOT NULL DEFAULT '',
-    end_date TEXT NOT NULL DEFAULT ''
+    end_date TEXT NOT NULL DEFAULT '',
+    time_section TEXT NOT NULL DEFAULT 'auto',
+    sort_order INTEGER NOT NULL DEFAULT 0
   )`).run();
   const routineColumns = await env.DB.prepare("PRAGMA table_info(routines)").all<{ name: string }>();
   const existingColumns = new Set(routineColumns.results.map((column) => column.name));
@@ -32,6 +34,11 @@ export async function ensureDatabase() {
   if (!existingColumns.has("day_variants")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN day_variants TEXT NOT NULL DEFAULT '{}'").run();
   if (!existingColumns.has("start_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN start_date TEXT NOT NULL DEFAULT ''").run();
   if (!existingColumns.has("end_date")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN end_date TEXT NOT NULL DEFAULT ''").run();
+  if (!existingColumns.has("time_section")) await env.DB.prepare("ALTER TABLE routines ADD COLUMN time_section TEXT NOT NULL DEFAULT 'auto'").run();
+  if (!existingColumns.has("sort_order")) {
+    await env.DB.prepare("ALTER TABLE routines ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0").run();
+    await env.DB.prepare("UPDATE routines SET sort_order = id WHERE sort_order = 0").run();
+  }
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS completions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_key TEXT NOT NULL,
@@ -94,6 +101,8 @@ export async function ensureDatabase() {
     ON amount_completions(owner_key, routine_id, amount_key, date)`).run();
   await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_tracker_entries_owner_routine_tracker_date
     ON tracker_entries(owner_key, routine_id, tracker_key, date)`).run();
+  await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_routines_owner_sort_order
+    ON routines(owner_key, sort_order, id)`).run();
   const legacyAmounts = await env.DB.prepare(`SELECT id, owner_key AS ownerKey, target_count AS targetCount, unit
     FROM routines WHERE tracking_mode IN ('quantity', 'hybrid') AND amount_config = '[]'`).all<{ id: number; ownerKey: string; targetCount: number; unit: string }>();
   for (const routine of legacyAmounts.results) {

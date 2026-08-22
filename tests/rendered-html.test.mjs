@@ -25,6 +25,14 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /Your routines start here/);
   assert.match(page, /Create one small routine and build from there/);
   assert.match(page, /className="routines-empty"/);
+  assert.match(page, /Arrange your day/);
+  assert.match(page, /function RoutineArrangement/);
+  assert.match(page, /draggable onDragStart/);
+  assert.match(page, /Time section for \$\{routine\.name\}/);
+  assert.match(page, /Auto \(\{automaticLabel\}\)/);
+  assert.match(page, /const TIME_SECTIONS/);
+  assert.match(page, /resolvedRoutineSection/);
+  assert.match(page, /today-time-groups/);
   assert.doesNotMatch(page, /function OnboardingPage|routineez-onboarding-complete/);
   assert.match(page, /SPLASH_DURATION_MS = 2100/);
   assert.match(page, /splash-routine/);
@@ -237,6 +245,12 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(routinesRoute, /list_config AS listConfig/);
   assert.match(storage, /list_config TEXT NOT NULL DEFAULT '\[\]'/);
   assert.match(storage, /list_key TEXT NOT NULL DEFAULT 'list-1'/);
+  assert.match(storage, /time_section TEXT NOT NULL DEFAULT 'auto'/);
+  assert.match(storage, /sort_order INTEGER NOT NULL DEFAULT 0/);
+  assert.match(storage, /idx_routines_owner_sort_order/);
+  assert.match(routinesRoute, /export async function PATCH/);
+  assert.match(routinesRoute, /ORDER BY sort_order, id/);
+  assert.match(routinesRoute, /UPDATE routines SET time_section = \?, sort_order = \?/);
   assert.match(quantityRoute, /amount_key AS amountKey|amount_key = \?/);
   assert.match(quantityRoute, /INSERT INTO amount_completions/);
   assert.match(quantityRoute, /kind === "instructions"/);

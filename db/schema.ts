@@ -16,7 +16,9 @@ export const routines = sqliteTable("routines", {
   dayVariants: text("day_variants").notNull().default("{}"),
   startDate: text("start_date").notNull().default(""),
   endDate: text("end_date").notNull().default(""),
-});
+  timeSection: text("time_section").notNull().default("auto"),
+  sortOrder: integer("sort_order").notNull().default(0),
+}, (table) => [index("idx_routines_owner_sort_order").on(table.ownerKey, table.sortOrder, table.id)]);
 
 export const completions = sqliteTable("completions", {
   id: integer("id").primaryKey({ autoIncrement: true }),

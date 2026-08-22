@@ -3,6 +3,7 @@ import { ensureDatabase, ownerKey } from "../../../db/storage";
 import { instructionImageKeys } from "../../../db/instruction-images";
 
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
+type RoutineTimeSection = "auto" | "morning" | "afternoon" | "evening" | "anytime";
 type TrackerKind = "amount" | "duration" | "timer" | "rating" | "number" | "note" | "instructions" | "photo" | "avoidance";
 const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
 const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
@@ -21,6 +22,8 @@ type RoutineRow = {
   dayVariants: string;
   startDate: string;
   endDate: string;
+  timeSection: string;
+  sortOrder: number;
 };
 type RoutineItemRow = { id: number; routineId: number; title: string; listKey: string; position: number };
 type InstructionImage = { id: string; contentType?: string };
@@ -30,7 +33,11 @@ type DayVariant = string | { tracking: string[]; label?: string };
 
 const ROUTINE_SELECT = `id, name, emoji, color, time, days,
   tracking_mode AS trackingMode, target_count AS targetCount, unit, amount_config AS amountConfig, list_config AS listConfig, day_variants AS dayVariants,
-  start_date AS startDate, end_date AS endDate`;
+  start_date AS startDate, end_date AS endDate, time_section AS timeSection, sort_order AS sortOrder`;
+
+function cleanTimeSection(value: unknown): RoutineTimeSection {
+  return value === "morning" || value === "afternoon" || value === "evening" || value === "anytime" ? value : "auto";
+}
 
 function cleanItems(items: unknown) {
   if (!Array.isArray(items)) return [];
@@ -193,7 +200,7 @@ function normalize(row: RoutineRow, items: RoutineItemRow[]) {
   try { storedLists = JSON.parse(row.listConfig); } catch { storedLists = []; }
   const amounts = cleanAmounts(storedAmounts, trackingMode, { targetCount: row.targetCount, unit: row.unit });
   const lists = usesChecklist(trackingMode) ? (storedLists.length ? storedLists : items.length ? [{ key: "list-1", name: "Checklist" }] : []) : [];
-  return { ...row, trackingMode, dayVariants, days: JSON.parse(row.days) as number[], items, amounts, lists };
+  return { ...row, trackingMode, timeSection: cleanTimeSection(row.timeSection), sortOrder: Number.isFinite(row.sortOrder) ? row.sortOrder : row.id, dayVariants, days: JSON.parse(row.days) as number[], items, amounts, lists };
 }
 
 async function getItems(owner: string) {
@@ -210,7 +217,7 @@ async function getRoutine(owner: string, id: number) {
 export async function GET(request: Request) {
   await ensureDatabase();
   const owner = ownerKey(request);
-  const routines = await env.DB.prepare(`SELECT ${ROUTINE_SELECT} FROM routines WHERE owner_key = ? ORDER BY id`)
+  const routines = await env.DB.prepare(`SELECT ${ROUTINE_SELECT} FROM routines WHERE owner_key = ? ORDER BY sort_order, id`)
     .bind(owner).all<RoutineRow>();
 
   const [items, completions, itemCompletions, amountCompletions, trackerEntries] = await Promise.all([
@@ -238,7 +245,7 @@ export async function POST(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, unknown>; startDate?: string; endDate?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, unknown>; startDate?: string; endDate?: string; timeSection?: RoutineTimeSection; items?: string[];
   };
   const name = payload.name?.trim();
   const days = cleanDays(payload.days);
@@ -254,11 +261,13 @@ export async function POST(request: Request) {
   const startDate = cleanDate(payload.startDate);
   const endDate = cleanDate(payload.endDate);
   if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
+  const timeSection = cleanTimeSection(payload.timeSection);
+  const nextOrder = await env.DB.prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS value FROM routines WHERE owner_key = ?").bind(owner).first<{ value: number }>();
   const result = await env.DB.prepare(`INSERT INTO routines
-    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, amount_config, list_config, day_variants, start_date, end_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (owner_key, name, emoji, color, time, days, tracking_mode, target_count, unit, amount_config, list_config, day_variants, start_date, end_date, time_section, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING ${ROUTINE_SELECT}`)
-    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(lists.map(({ key, name }) => ({ key, name }))), JSON.stringify(dayVariants), startDate, endDate)
+    .bind(owner, name.slice(0, 40), payload.emoji ?? "✨", payload.color ?? "#6C5CE7", payload.time ?? "", JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(lists.map(({ key, name }) => ({ key, name }))), JSON.stringify(dayVariants), startDate, endDate, timeSection, nextOrder?.value ?? 0)
     .first<RoutineRow>();
   if (lists.length) {
     await env.DB.batch(lists.flatMap((list) => list.items.map((title, position) =>
@@ -275,7 +284,7 @@ export async function PUT(request: Request) {
   const owner = ownerKey(request);
   const payload = await request.json() as {
     id?: number; name?: string; emoji?: string; color?: string; time?: string; days?: number[];
-    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, unknown>; startDate?: string; endDate?: string; items?: string[];
+    trackingMode?: TrackingMode; targetCount?: number; unit?: string; amounts?: unknown; lists?: unknown; dayVariants?: Record<string, unknown>; startDate?: string; endDate?: string; timeSection?: RoutineTimeSection; items?: string[];
   };
   if (!Number.isInteger(payload.id)) return Response.json({ error: "Invalid routine" }, { status: 400 });
   const existing = await getRoutine(owner, payload.id!);
@@ -310,6 +319,7 @@ export async function PUT(request: Request) {
   const dayVariants = cleanDayVariants(payload.dayVariants ?? currentDayVariants);
   const startDate = cleanDate(payload.startDate ?? existing.startDate);
   const endDate = cleanDate(payload.endDate ?? existing.endDate);
+  const timeSection = cleanTimeSection(payload.timeSection ?? existing.timeSection);
   if (invalidDateRange(startDate, endDate)) return Response.json({ error: "Stop date must be on or after the start date" }, { status: 400 });
   const lists = cleanLists(payload.lists, trackingMode, payload.items);
   if (usesChecklist(trackingMode) && !lists.length) return Response.json({ error: "Add at least one named list with an item" }, { status: 400 });
@@ -320,8 +330,8 @@ export async function PUT(request: Request) {
   const nextItemData = lists.flatMap((list) => list.items.map((title, position) => ({ title, listKey: list.key, position })));
   const itemsChanged = usesChecklist(currentMode) !== usesChecklist(trackingMode) || JSON.stringify(currentListConfig) !== JSON.stringify(nextListConfig) || JSON.stringify(currentItems.results.map(({ title, listKey, position }) => ({ title, listKey, position }))) !== JSON.stringify(nextItemData);
   const statements = [
-    env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, amount_config = ?, list_config = ?, day_variants = ?, start_date = ?, end_date = ? WHERE owner_key = ? AND id = ?")
-      .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(nextListConfig), JSON.stringify(dayVariants), startDate, endDate, owner, existing.id),
+    env.DB.prepare("UPDATE routines SET name = ?, emoji = ?, color = ?, time = ?, days = ?, tracking_mode = ?, target_count = ?, unit = ?, amount_config = ?, list_config = ?, day_variants = ?, start_date = ?, end_date = ?, time_section = ? WHERE owner_key = ? AND id = ?")
+      .bind(name, emoji, color, payload.time ?? existing.time, JSON.stringify(days), trackingMode, primaryAmount.targetCount, primaryAmount.name, JSON.stringify(amounts), JSON.stringify(nextListConfig), JSON.stringify(dayVariants), startDate, endDate, timeSection, owner, existing.id),
   ];
   const nextAmountKeys = new Set(amounts.map((amount) => amount.key));
   const removedAmounts = currentAmounts.filter((amount) => !nextAmountKeys.has(amount.key));
@@ -363,6 +373,29 @@ export async function PUT(request: Request) {
       .bind(owner, existing.id).all<RoutineItemRow>(),
   ]);
   return Response.json({ routine: normalize(updated!, items.results) });
+}
+
+export async function PATCH(request: Request) {
+  await ensureDatabase();
+  const owner = ownerKey(request);
+  const payload = await request.json() as { order?: Array<{ id?: number; timeSection?: RoutineTimeSection; sortOrder?: number }> };
+  if (!Array.isArray(payload.order) || !payload.order.length || payload.order.length > 200) {
+    return Response.json({ error: "Add at least one routine to arrange" }, { status: 400 });
+  }
+  const updates = payload.order.map((item, index) => ({
+    id: Number(item.id),
+    timeSection: cleanTimeSection(item.timeSection),
+    sortOrder: Number.isInteger(item.sortOrder) ? Math.max(0, Number(item.sortOrder)) : index,
+  }));
+  if (updates.some((item) => !Number.isInteger(item.id)) || new Set(updates.map((item) => item.id)).size !== updates.length) {
+    return Response.json({ error: "Invalid routine order" }, { status: 400 });
+  }
+  const owned = await env.DB.prepare("SELECT id FROM routines WHERE owner_key = ?").bind(owner).all<{ id: number }>();
+  const ownedIds = new Set(owned.results.map((routine) => routine.id));
+  if (updates.some((item) => !ownedIds.has(item.id))) return Response.json({ error: "Routine not found" }, { status: 404 });
+  await env.DB.batch(updates.map((item) => env.DB.prepare("UPDATE routines SET time_section = ?, sort_order = ? WHERE owner_key = ? AND id = ?")
+    .bind(item.timeSection, item.sortOrder, owner, item.id)));
+  return Response.json({ ok: true });
 }
 
 export async function DELETE(request: Request) {

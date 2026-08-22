@@ -64,6 +64,13 @@
       "when": 1786904013585,
       "tag": "0008_nosy_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1787374731270,
+      "tag": "0009_cynical_juggernaut",
+      "breakpoints": true
     }
   ]
 }
