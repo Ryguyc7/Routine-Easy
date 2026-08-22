@@ -561,7 +561,7 @@ export default function Home() {
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const arrangementSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; armed: boolean; active: boolean; changed: boolean; lastTarget: string; order: Routine[] } | null>(null);
+  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; latestY: number; frameId: number | null; armed: boolean; active: boolean; changed: boolean; lastTarget: string; order: Routine[] } | null>(null);
   const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingDeviceSnapshotRef = useRef<DeviceSnapshot | null>(null);
   const deviceSaveTimerRef = useRef<number | undefined>(undefined);
@@ -612,12 +612,21 @@ export default function Home() {
   }
 
   function beginDirectRoutineDrag(routineId: number, pointerId: number, startY: number, armed: boolean) {
-    directRoutineDragRef.current = { routineId, pointerId, startY, armed, active: false, changed: false, lastTarget: "", order: routines };
+    directRoutineDragRef.current = { routineId, pointerId, startY, latestY: startY, frameId: null, armed, active: false, changed: false, lastTarget: "", order: routines };
+  }
+
+  function activateDirectRoutineDrag(drag: NonNullable<typeof directRoutineDragRef.current>) {
+    if (drag.active) return;
+    drag.active = true;
+    setDirectDraggingRoutineId(drag.routineId);
+    document.body.classList.add("reordering-routines");
   }
 
   function armDirectRoutineDrag(pointerId: number) {
     const drag = directRoutineDragRef.current;
-    if (drag?.pointerId === pointerId) drag.armed = true;
+    if (drag?.pointerId !== pointerId) return;
+    drag.armed = true;
+    activateDirectRoutineDrag(drag);
   }
 
   function animateRoutineOrder(previousBounds: Map<number, DOMRect>, draggedId: number) {
@@ -631,7 +640,7 @@ export default function Home() {
         const next = element.getBoundingClientRect();
         const offset = previous.top - next.top;
         if (Math.abs(offset) < 1) return;
-        element.animate([{ transform: `translateY(${offset}px)` }, { transform: "translateY(0)" }], { duration: 230, easing: "cubic-bezier(.2,.8,.2,1)" });
+        element.animate([{ transform: `translateY(${offset}px)` }, { transform: "translateY(0)" }], { duration: 140, easing: "cubic-bezier(.2,.82,.25,1)" });
       });
     });
   }
@@ -650,31 +659,40 @@ export default function Home() {
     return { element, id: Number(element.dataset.routineOrderId), bounds, layoutTop: bounds.top - animatedOffsetY, height: element.offsetHeight || bounds.height };
   }
 
-  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLDivElement>) {
-    const drag = directRoutineDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !drag.armed) return;
-    event.stopPropagation();
-    if (!drag.active) {
-      if (Math.abs(event.clientY - drag.startY) < 6) return;
-      drag.active = true;
-      setDirectDraggingRoutineId(drag.routineId);
-      document.body.classList.add("reordering-routines");
+  function processDirectRoutineDrag(drag: NonNullable<typeof directRoutineDragRef.current>) {
+    const scrollArea = document.querySelector<HTMLElement>(".today-page .routine-list");
+    let autoScrolling = false;
+    if (scrollArea) {
+      const scrollBounds = scrollArea.getBoundingClientRect();
+      const edgeSize = Math.min(72, scrollBounds.height * .22);
+      let scrollSpeed = 0;
+      if (drag.latestY < scrollBounds.top + edgeSize) {
+        scrollSpeed = -18 * Math.min(1, (scrollBounds.top + edgeSize - drag.latestY) / edgeSize);
+      } else if (drag.latestY > scrollBounds.bottom - edgeSize) {
+        scrollSpeed = 18 * Math.min(1, (drag.latestY - (scrollBounds.bottom - edgeSize)) / edgeSize);
+      }
+      if (scrollSpeed) {
+        const previousScrollTop = scrollArea.scrollTop;
+        scrollArea.scrollTop += scrollSpeed;
+        autoScrolling = Math.abs(scrollArea.scrollTop - previousScrollTop) > .5;
+        if (autoScrolling) drag.lastTarget = "";
+      }
     }
-    event.preventDefault();
+
     const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-routine-order-id]"));
     const rows = elements
       .map(routineOrderLayout)
       .filter((row) => Number.isInteger(row.id) && row.id !== drag.routineId)
       .sort((a, b) => a.layoutTop - b.layoutTop);
-    if (!rows.length) return;
-    const rowBelowPointer = rows.find((row) => event.clientY < row.layoutTop + row.height / 2);
+    if (!rows.length) return autoScrolling;
+    const rowBelowPointer = rows.find((row) => drag.latestY < row.layoutTop + row.height / 2);
     const target = rowBelowPointer ?? rows[rows.length - 1];
     const targetId = target.id;
     const afterTarget = !rowBelowPointer;
     const targetKey = `${targetId}:${afterTarget ? "after" : "before"}`;
-    if (drag.lastTarget === targetKey) return;
+    if (drag.lastTarget === targetKey) return autoScrolling;
     const next = reorderRoutineCollection(drag.order, drag.routineId, targetId, afterTarget);
-    if (next === drag.order) return;
+    if (next === drag.order) return autoScrolling;
     const previousBounds = new Map(elements.map((element) => [Number(element.dataset.routineOrderId), element.getBoundingClientRect()]));
     elements.forEach((element) => element.getAnimations().forEach((animation) => animation.cancel()));
     drag.order = next;
@@ -682,12 +700,36 @@ export default function Home() {
     drag.lastTarget = targetKey;
     setRoutines(next);
     animateRoutineOrder(previousBounds, drag.routineId);
+    return autoScrolling;
+  }
+
+  function scheduleDirectRoutineDragFrame(drag: NonNullable<typeof directRoutineDragRef.current>) {
+    if (drag.frameId !== null) return;
+    drag.frameId = window.requestAnimationFrame(() => {
+      if (directRoutineDragRef.current !== drag) return;
+      drag.frameId = null;
+      if (processDirectRoutineDrag(drag)) scheduleDirectRoutineDragFrame(drag);
+    });
+  }
+
+  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = directRoutineDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !drag.armed) return;
+    event.stopPropagation();
+    event.preventDefault();
+    if (!drag.active) {
+      if (Math.abs(event.clientY - drag.startY) < 5) return;
+      activateDirectRoutineDrag(drag);
+    }
+    drag.latestY = event.clientY;
+    scheduleDirectRoutineDragFrame(drag);
   }
 
   function endDirectRoutineDrag(pointerId: number) {
     const drag = directRoutineDragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
     directRoutineDragRef.current = null;
+    if (drag.frameId !== null) window.cancelAnimationFrame(drag.frameId);
     document.body.classList.remove("reordering-routines");
     setDirectDraggingRoutineId(null);
     if (drag.active && drag.changed) commitRoutineArrangement(drag.order);
@@ -2141,8 +2183,10 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
       reorderHoldTimerRef.current = window.setTimeout(() => {
         if (!pointerActiveRef.current || gestureAxisRef.current !== "pending") return;
         reorderReadyRef.current = true;
+        gestureAxisRef.current = "reorder";
+        setSwiping(true);
         onReorderArm(pointerId);
-      }, 210);
+      }, 120);
     }
   };
   const moveSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {

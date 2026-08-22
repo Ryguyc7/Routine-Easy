@@ -2320,7 +2320,8 @@ html[data-theme="dark"] .settings-list .setting-card {
 
 /* Direct routine ordering on the Today screen. */
 .routine-order-item {
-  transition: transform .2s cubic-bezier(.2,.8,.2,1), border-color .18s ease, opacity .18s ease, box-shadow .2s ease;
+  transition: transform .14s cubic-bezier(.2,.82,.25,1), border-color .12s ease, opacity .12s ease, box-shadow .14s ease;
+  will-change: transform;
 }
 .routine-order-item .routine-swipe-surface { cursor: grab; }
 .routine-order-item .routine-swipe-surface:active { cursor: grabbing; }
@@ -2341,7 +2342,7 @@ body.reordering-routines * {
   -webkit-user-select: none !important;
 }
 body.reordering-routines .routine-order-item:not(.reorder-dragging) {
-  transition-duration: .14s;
+  transition-duration: .1s;
 }
 
 @media (hover: none) {
