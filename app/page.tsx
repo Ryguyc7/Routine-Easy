@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, startTransition, type ChangeEvent, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowDown, ArrowUp, Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, GripVertical, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, GripVertical, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -18,7 +18,6 @@ type DayTrackingPlan = { tracking: string[]; label?: string };
 type DayVariant = string | DayTrackingPlan;
 type TrackingMode = "simple" | "checklist" | "quantity" | "hybrid";
 type RoutineTimeSection = "auto" | "morning" | "afternoon" | "evening" | "anytime";
-type ResolvedTimeSection = Exclude<RoutineTimeSection, "auto">;
 const usesChecklist = (mode: TrackingMode) => mode === "checklist" || mode === "hybrid";
 const usesQuantity = (mode: TrackingMode) => mode === "quantity" || mode === "hybrid";
 type Routine = {
@@ -71,25 +70,8 @@ type RoutineTemplate = {
   timeSection?: RoutineTimeSection;
 };
 
-const TIME_SECTIONS: Array<{ id: ResolvedTimeSection; label: string; note: string; icon: LucideIcon }> = [
-  { id: "morning", label: "Morning", note: "Start the day", icon: Sparkles },
-  { id: "afternoon", label: "Afternoon", note: "Keep momentum", icon: Sun },
-  { id: "evening", label: "Evening", note: "Wind down", icon: Moon },
-  { id: "anytime", label: "Anytime", note: "No set time", icon: Clock3 },
-];
-
 function cleanRoutineTimeSection(value: unknown): RoutineTimeSection {
   return value === "morning" || value === "afternoon" || value === "evening" || value === "anytime" ? value : "auto";
-}
-
-function resolvedRoutineSection(routine: Pick<Routine, "time" | "timeSection">): ResolvedTimeSection {
-  const requested = cleanRoutineTimeSection(routine.timeSection);
-  if (requested !== "auto") return requested;
-  const hour = Number(routine.time.split(":")[0]);
-  if (!Number.isFinite(hour)) return "anytime";
-  if (hour < 12) return "morning";
-  if (hour < 17) return "afternoon";
-  return "evening";
 }
 
 function normalizeRoutineCollection(items: Routine[]) {
@@ -98,6 +80,17 @@ function normalizeRoutineCollection(items: Routine[]) {
     timeSection: cleanRoutineTimeSection(routine.timeSection),
     sortOrder: Number.isFinite(routine.sortOrder) ? routine.sortOrder : index,
   })).sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+}
+
+function reorderRoutineCollection(items: Routine[], routineId: number, targetId: number, afterTarget: boolean) {
+  if (routineId === targetId) return items;
+  const moved = items.find((routine) => routine.id === routineId);
+  if (!moved) return items;
+  const remaining = items.filter((routine) => routine.id !== routineId);
+  const targetIndex = remaining.findIndex((routine) => routine.id === targetId);
+  if (targetIndex < 0) return items;
+  remaining.splice(targetIndex + (afterTarget ? 1 : 0), 0, moved);
+  return remaining.map((routine, sortOrder) => ({ ...routine, sortOrder }));
 }
 
 const DEFAULT_PREFERENCES: AppPreferences = { timeFormat: "12-hour", weekStartsOn: "sunday", motion: "full", theme: "system", completedVisibility: "show", feedback: "on", reminders: "off" };
@@ -560,8 +553,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [savingList, setSavingList] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState<number | null>(null);
-  const [showArrangeRoutines, setShowArrangeRoutines] = useState(false);
-  const [draggedRoutineId, setDraggedRoutineId] = useState<number | null>(null);
+  const [directDraggingRoutineId, setDirectDraggingRoutineId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const completionsRef = useRef<Completion[]>([]);
   const itemCompletionsRef = useRef<ItemCompletion[]>([]);
@@ -569,6 +561,7 @@ export default function Home() {
   const trackerEntriesRef = useRef<TrackerEntry[]>([]);
   const routineMutationQueuesRef = useRef(new Map<number, Promise<void>>());
   const arrangementSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const directRoutineDragRef = useRef<{ routineId: number; pointerId: number; startY: number; active: boolean; changed: boolean; lastTarget: string; order: Routine[] } | null>(null);
   const deviceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingDeviceSnapshotRef = useRef<DeviceSnapshot | null>(null);
   const deviceSaveTimerRef = useRef<number | undefined>(undefined);
@@ -618,28 +611,50 @@ export default function Home() {
     });
   }
 
-  function arrangeRoutine(routineId: number, targetSetting: RoutineTimeSection, targetIndex?: number) {
-    const moved = routines.find((routine) => routine.id === routineId);
-    if (!moved) return;
-    const updatedMoved = { ...moved, timeSection: targetSetting };
-    const targetSection = resolvedRoutineSection(updatedMoved);
-    const buckets = new Map(TIME_SECTIONS.map(({ id }) => [id, routines.filter((routine) => routine.id !== routineId && resolvedRoutineSection(routine) === id)]));
-    const target = buckets.get(targetSection) ?? [];
-    const insertion = Math.min(target.length, Math.max(0, targetIndex ?? target.length));
-    target.splice(insertion, 0, updatedMoved);
-    buckets.set(targetSection, target);
-    commitRoutineArrangement(TIME_SECTIONS.flatMap(({ id }) => buckets.get(id) ?? []));
+  function beginDirectRoutineDrag(routineId: number, event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    directRoutineDragRef.current = { routineId, pointerId: event.pointerId, startY: event.clientY, active: false, changed: false, lastTarget: "", order: routines };
+    event.currentTarget.setPointerCapture(event.pointerId);
   }
 
-  function shiftRoutine(routineId: number, direction: -1 | 1) {
-    const routine = routines.find((item) => item.id === routineId);
-    if (!routine) return;
-    const section = resolvedRoutineSection(routine);
-    const siblings = routines.filter((item) => resolvedRoutineSection(item) === section);
-    const index = siblings.findIndex((item) => item.id === routineId);
-    const nextIndex = Math.min(siblings.length - 1, Math.max(0, index + direction));
-    if (nextIndex === index) return;
-    arrangeRoutine(routineId, routine.timeSection, nextIndex);
+  function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = directRoutineDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.stopPropagation();
+    if (!drag.active) {
+      if (Math.abs(event.clientY - drag.startY) < 6) return;
+      drag.active = true;
+      setDirectDraggingRoutineId(drag.routineId);
+      document.body.classList.add("reordering-routines");
+    }
+    event.preventDefault();
+    const target = document.elementsFromPoint(event.clientX, event.clientY)
+      .map((element) => element.closest<HTMLElement>("[data-routine-order-id]"))
+      .find((element): element is HTMLElement => Boolean(element && Number(element.dataset.routineOrderId) !== drag.routineId));
+    if (!target) return;
+    const targetId = Number(target.dataset.routineOrderId);
+    const bounds = target.getBoundingClientRect();
+    const afterTarget = event.clientY >= bounds.top + bounds.height / 2;
+    const targetKey = `${targetId}:${afterTarget ? "after" : "before"}`;
+    if (!Number.isInteger(targetId) || drag.lastTarget === targetKey) return;
+    const next = reorderRoutineCollection(drag.order, drag.routineId, targetId, afterTarget);
+    if (next === drag.order) return;
+    drag.order = next;
+    drag.changed = true;
+    drag.lastTarget = targetKey;
+    setRoutines(next);
+  }
+
+  function endDirectRoutineDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = directRoutineDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.stopPropagation();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    directRoutineDragRef.current = null;
+    document.body.classList.remove("reordering-routines");
+    setDirectDraggingRoutineId(null);
+    if (drag.active && drag.changed) commitRoutineArrangement(drag.order);
   }
 
   function queueRoutineMutation(routineId: number, request: () => Promise<Response>) {
@@ -841,6 +856,7 @@ export default function Home() {
   useEffect(() => () => {
     if (bottomNavReturnTimerRef.current) window.clearTimeout(bottomNavReturnTimerRef.current);
     if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
+    document.body.classList.remove("reordering-routines");
   }, []);
 
   function openAddFromHeader() {
@@ -910,10 +926,13 @@ export default function Home() {
   const doneCount = eligibleTodayRoutines.filter(isRoutineDone).length;
   const progress = eligibleTodayRoutines.length ? Math.round((doneCount / eligibleTodayRoutines.length) * 100) : 0;
   const animatedProgress = useAnimatedNumber(progress, preferences.motion === "reduced" ? 0 : 600);
-  const todaySectionGroups = TIME_SECTIONS.map((section) => ({
-    ...section,
-    routines: visibleTodayRoutines.filter((routine) => resolvedRoutineSection(routine) === section.id),
-  })).filter((section) => section.routines.length);
+
+  function shiftTodayRoutine(routineId: number, direction: -1 | 1) {
+    const index = visibleTodayRoutines.findIndex((routine) => routine.id === routineId);
+    const target = visibleTodayRoutines[index + direction];
+    if (index < 0 || !target) return;
+    commitRoutineArrangement(reorderRoutineCollection(routines, routineId, target.id, direction > 0));
+  }
 
   useEffect(() => {
     if (preferences.reminders !== "on" || !("Notification" in window) || Notification.permission !== "granted") return;
@@ -1443,29 +1462,28 @@ export default function Home() {
 
             <section className="routine-section">
               <div className="routine-list">
-                {loading ? <LoadingRows /> : visibleTodayRoutines.length ? <div className="today-time-groups">{todaySectionGroups.map((section) => {
-                  const SectionIcon = section.icon;
-                  return <section className={`today-time-group time-section-${section.id}`} key={section.id}>
-                    <header><span><SectionIcon aria-hidden="true" /></span><div><h2>{section.label}</h2><p>{section.note}</p></div><small>{section.routines.length}</small></header>
-                    <div>{section.routines.map((routine) => <RoutineRow
-                      key={routine.id}
-                      routine={routine}
-                      completed={!skippedToday.has(routine.id) && isRoutineDone(routine)}
-                      skipped={skippedToday.has(routine.id)}
-                      completedItemIds={completedItemsToday}
-                      amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
-                      trackerEntries={Object.fromEntries(trackerEntries.filter((entry) => entry.routineId === routine.id && entry.date === todayKey).map((entry) => [entry.trackerKey, entry]))}
-                      onToggle={() => toggleRoutine(routine.id)}
-                      onToggleItem={toggleItem}
-                      onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
-                      onSetNote={(tracker, value) => setNoteEntry(routine.id, tracker, value)}
-                      onUploadPhoto={(tracker, file) => uploadTrackerPhoto(routine.id, tracker, file)}
-                      onRemovePhoto={(tracker) => removeTrackerPhoto(routine.id, tracker)}
-                      onSkip={(nextSkipped) => nextSkipped ? setRoutineSkip(routine.id, true) : undoRoutineSkip(routine)}
-                      timeFormat={preferences.timeFormat}
-                    />)}</div>
-                  </section>;
-                })}</div> : todayRoutines.length ? <div className="completed-hidden-state"><CircleCheckBig aria-hidden="true" /><strong>Everything completed is hidden</strong><p>You can bring finished routines back whenever you want.</p><button type="button" onClick={() => updatePreferences({ completedVisibility: "show" })}>Show completed routines</button></div> : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
+                {loading ? <LoadingRows /> : visibleTodayRoutines.length ? visibleTodayRoutines.map((routine) => <RoutineRow
+                  key={routine.id}
+                  routine={routine}
+                  completed={!skippedToday.has(routine.id) && isRoutineDone(routine)}
+                  skipped={skippedToday.has(routine.id)}
+                  completedItemIds={completedItemsToday}
+                  amountCounts={Object.fromEntries(routine.amounts.map((amount) => [amount.key, amountCount(routine.id, amount.key)]))}
+                  trackerEntries={Object.fromEntries(trackerEntries.filter((entry) => entry.routineId === routine.id && entry.date === todayKey).map((entry) => [entry.trackerKey, entry]))}
+                  onToggle={() => toggleRoutine(routine.id)}
+                  onToggleItem={toggleItem}
+                  onSetAmount={(amount, count) => setAmount(routine.id, amount, count)}
+                  onSetNote={(tracker, value) => setNoteEntry(routine.id, tracker, value)}
+                  onUploadPhoto={(tracker, file) => uploadTrackerPhoto(routine.id, tracker, file)}
+                  onRemovePhoto={(tracker) => removeTrackerPhoto(routine.id, tracker)}
+                  onSkip={(nextSkipped) => nextSkipped ? setRoutineSkip(routine.id, true) : undoRoutineSkip(routine)}
+                  timeFormat={preferences.timeFormat}
+                  reorderDragging={directDraggingRoutineId === routine.id}
+                  onReorderStart={beginDirectRoutineDrag}
+                  onReorderMove={moveDirectRoutineDrag}
+                  onReorderEnd={endDirectRoutineDrag}
+                  onReorderKey={(direction) => shiftTodayRoutine(routine.id, direction)}
+                />) : todayRoutines.length ? <div className="completed-hidden-state"><CircleCheckBig aria-hidden="true" /><strong>Everything completed is hidden</strong><p>You can bring finished routines back whenever you want.</p><button type="button" onClick={() => updatePreferences({ completedVisibility: "show" })}>Show completed routines</button></div> : <EmptyToday onAdd={() => { setTab("routines"); setShowTemplatePicker(true); }} />}
               </div>
             </section>
           </div>
@@ -1514,17 +1532,8 @@ export default function Home() {
               const routine = routines.find((item) => item.id === editingRoutineId);
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={closeEditRoutine} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
             })()}
-            {showArrangeRoutines && <RoutineArrangement
-              routines={routines}
-              draggedRoutineId={draggedRoutineId}
-              onDragStart={(routineId) => setDraggedRoutineId(routineId)}
-              onDragEnd={() => setDraggedRoutineId(null)}
-              onMove={arrangeRoutine}
-              onShift={shiftRoutine}
-              onClose={() => { setDraggedRoutineId(null); setShowArrangeRoutines(false); }}
-            />}
             <section className={`routine-library${!loading && !routines.length ? " routine-library-empty" : ""}`}>
-              {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="arrange-routines-button" type="button" aria-expanded={showArrangeRoutines} onClick={() => setShowArrangeRoutines((visible) => !visible)}><GripVertical aria-hidden="true" />Arrange</button><button className="desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
+              {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
               <div className="routine-grid">
                 {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
               </div>
@@ -1991,7 +2000,7 @@ function CalendarNavButton({ active, onClick, date }: { active: boolean; onClick
   return <button className={`calendar-nav-button ${active ? "active" : ""}`} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon date-nav-icon" aria-hidden="true"><i>{date.toLocaleDateString("en-US", { month: "short" })}</i><strong>{date.getDate()}</strong></span><span className="nav-label">Calendar</span></button>;
 }
 
-function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat }) {
+function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat, reorderDragging, onReorderStart, onReorderMove, onReorderEnd, onReorderKey }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat; reorderDragging: boolean; onReorderStart: (routineId: number, event: ReactPointerEvent<HTMLButtonElement>) => void; onReorderMove: (event: ReactPointerEvent<HTMLButtonElement>) => void; onReorderEnd: (event: ReactPointerEvent<HTMLButtonElement>) => void; onReorderKey: (direction: -1 | 1) => void }) {
   const dayVariant = routine.dayVariants?.[new Date().getDay()];
   const activeTracking = routineTrackingForDay(routine, new Date().getDay());
   const { lists: activeLists, amounts: activeAmounts, instructions: activeInstructions, items: activeItems, mode: activeTrackingMode } = activeTracking;
@@ -2067,7 +2076,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
   };
   const beginSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     const target = event.target instanceof Element ? event.target : null;
-    if (event.button !== 0 || target?.closest(".routine-check-zone, .routine-skip-accessible") || (expanded && !target?.closest(".routine-main"))) return;
+    if (event.button !== 0 || target?.closest(".routine-check-zone, .routine-skip-accessible, .routine-reorder-handle") || (expanded && !target?.closest(".routine-main"))) return;
     pointerActiveRef.current = true;
     dragStartRef.current = { x: event.clientX, y: event.clientY };
     gestureAxisRef.current = "pending";
@@ -2108,7 +2117,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     updateDrag(0);
   };
   const swipeDirection = dragX > 0 ? "swiping-right" : dragX < 0 ? "swiping-left" : "";
-  return <article className={`routine-row mode-${activeTrackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>
+  return <article data-routine-order-id={routine.id} className={`routine-row routine-order-item mode-${activeTrackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${reorderDragging ? "reorder-dragging" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="routine-swipe-underlay" aria-hidden="true"><span><SkipForward />{skipped ? "Undo skip" : "Skip today"}</span><span>{skipped ? "Undo skip" : "Skip today"}<SkipForward /></span></div>
     <div className="routine-swipe-surface" style={{ transform: `translateX(${dragX}px)` }} onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={finishSwipe} onPointerCancel={cancelSwipe}>
       <div className="routine-main" role="button" tabIndex={0} onKeyDown={(event) => {
@@ -2121,6 +2130,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
         <span className="routine-info"><strong>{routine.name}</strong><small>{skipped ? "Skipped today" : <>{todayVariant && <b className="today-variant">{todayVariant}</b>}{todayVariant && " · "}{formatRoutineTime(routine.time, timeFormat)}{detail ? ` · ${detail}` : ""}</>}</small></span>
         {hasDetails && <span className="expand-chevron" aria-hidden="true" />}
       </div>
+      <button type="button" className="routine-reorder-handle" onPointerDown={(event) => onReorderStart(routine.id, event)} onPointerMove={onReorderMove} onPointerUp={onReorderEnd} onPointerCancel={onReorderEnd} onLostPointerCapture={onReorderEnd} onKeyDown={(event) => { if (event.key === "ArrowUp" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); onReorderKey(event.key === "ArrowUp" ? -1 : 1); } }} aria-label={`Reorder ${routine.name}. Drag, or use the up and down arrow keys.`}><GripVertical aria-hidden="true" /></button>
       <button type="button" className="routine-check-zone" onPointerDown={beginCheckPointer} onPointerUp={finishCheckPointer} onPointerCancel={cancelCheckPointer} onLostPointerCapture={() => { checkPointerRef.current.active = false; }} onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -2302,44 +2312,6 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
   }
 
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;
-}
-
-function RoutineArrangement({ routines, draggedRoutineId, onDragStart, onDragEnd, onMove, onShift, onClose }: {
-  routines: Routine[];
-  draggedRoutineId: number | null;
-  onDragStart: (routineId: number) => void;
-  onDragEnd: () => void;
-  onMove: (routineId: number, section: RoutineTimeSection, index?: number) => void;
-  onShift: (routineId: number, direction: -1 | 1) => void;
-  onClose: () => void;
-}) {
-  const droppedRoutineId = (event: ReactDragEvent) => draggedRoutineId ?? Number(event.dataTransfer.getData("text/plain"));
-  return <section className="routine-arrangement" aria-labelledby="routine-arrangement-title">
-    <header className="routine-arrangement-header"><div><span className="routine-arrangement-icon"><GripVertical aria-hidden="true" /></span><div><h2 id="routine-arrangement-title">Arrange your day</h2><p>Drag routines into order or choose a time section.</p></div></div><button type="button" onClick={onClose} aria-label="Close routine arrangement"><X aria-hidden="true" /></button></header>
-    <div className="routine-arrangement-sections">
-      {TIME_SECTIONS.map((section) => {
-        const SectionIcon = section.icon;
-        const sectionRoutines = routines.filter((routine) => resolvedRoutineSection(routine) === section.id);
-        return <section className={`routine-arrangement-section time-section-${section.id}${draggedRoutineId !== null ? " drag-ready" : ""}`} key={section.id} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }} onDrop={(event) => { event.preventDefault(); const id = droppedRoutineId(event); if (Number.isInteger(id)) onMove(id, section.id); onDragEnd(); }}>
-          <header><span><SectionIcon aria-hidden="true" /></span><div><h3>{section.label}</h3><p>{section.note}</p></div><small>{sectionRoutines.length}</small></header>
-          <div className="routine-arrangement-list">
-            {sectionRoutines.map((routine, index) => {
-              const automaticSection = resolvedRoutineSection({ ...routine, timeSection: "auto" });
-              const automaticLabel = TIME_SECTIONS.find((option) => option.id === automaticSection)?.label ?? "Anytime";
-              return <article className={`routine-arrangement-row${draggedRoutineId === routine.id ? " dragging" : ""}`} style={{ "--routine": routine.color } as React.CSSProperties} draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(routine.id)); onDragStart(routine.id); }} onDragEnd={onDragEnd} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); const id = droppedRoutineId(event); const targetIndex = sectionRoutines.filter((item) => item.id !== id).findIndex((item) => item.id === routine.id); if (Number.isInteger(id) && id !== routine.id && targetIndex >= 0) onMove(id, section.id, targetIndex); onDragEnd(); }} key={routine.id}>
-              <span className="routine-drag-handle" title={`Drag ${routine.name}`}><GripVertical aria-hidden="true" /></span>
-              <span className="routine-arrangement-emoji" aria-hidden="true">{routine.emoji}</span>
-              <div className="routine-arrangement-copy"><strong>{routine.name}</strong><small>{routine.time ? formatRoutineTime(routine.time, "12-hour") : "Anytime"}</small></div>
-              <label className="routine-section-select"><span className="sr-only">Time section for {routine.name}</span><select value={routine.timeSection} onChange={(event) => onMove(routine.id, event.target.value as RoutineTimeSection)} aria-label={`Time section for ${routine.name}`}><option value="auto">Auto ({automaticLabel})</option>{TIME_SECTIONS.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
-              <div className="routine-order-buttons"><button type="button" onClick={() => onShift(routine.id, -1)} disabled={index === 0} aria-label={`Move ${routine.name} up`}><ArrowUp aria-hidden="true" /></button><button type="button" onClick={() => onShift(routine.id, 1)} disabled={index === sectionRoutines.length - 1} aria-label={`Move ${routine.name} down`}><ArrowDown aria-hidden="true" /></button></div>
-            </article>;})}
-            {!sectionRoutines.length && <div className="routine-arrangement-empty">Drop a routine here</div>}
-          </div>
-        </section>;
-      })}
-    </div>
-    <p className="routine-arrangement-help"><strong>Auto</strong> uses the routine’s scheduled time. Changes save as you make them.</p>
-  </section>;
 }
 
 function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
