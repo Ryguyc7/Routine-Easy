@@ -29,6 +29,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function beginDirectRoutineDrag/);
   assert.match(page, /function moveDirectRoutineDrag/);
   assert.match(page, /function animateRoutineOrder/);
+  assert.match(page, /function routineOrderLayout/);
+  assert.match(page, /rowBelowPointer = rows\.find/);
+  assert.match(page, /element\.getAnimations\(\)\.forEach\(\(animation\) => animation\.cancel\(\)\)/);
   assert.match(page, /element\.animate/);
   assert.match(page, /touchmove", holdCardStill, \{ passive: false \}/);
   assert.match(page, /}, 210\)/);
@@ -76,6 +79,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   const addRoutineSource = page.slice(page.indexOf("function AddRoutineForm"), page.indexOf("function UniqueChoiceToggles"));
   assert.doesNotMatch(addRoutineSource, /step === 0 \? "Cancel" : "Back"/);
   const fullPageBuilderCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(fullPageBuilderCss, /\.routine-order-item\.reorder-dragging,[\s\S]*?outline: 3px solid/);
   assert.match(fullPageBuilderCss, /\.splash-blob > i::after/);
   assert.match(fullPageBuilderCss, /splash-glow-breathe/);
   assert.match(fullPageBuilderCss, /The add flow is a full-screen page/);

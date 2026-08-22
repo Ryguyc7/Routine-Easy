@@ -636,6 +636,20 @@ export default function Home() {
     });
   }
 
+  function routineOrderLayout(element: HTMLElement) {
+    const bounds = element.getBoundingClientRect();
+    const transform = window.getComputedStyle(element).transform;
+    let animatedOffsetY = 0;
+    if (transform !== "none") {
+      try {
+        animatedOffsetY = new DOMMatrixReadOnly(transform).m42;
+      } catch {
+        animatedOffsetY = 0;
+      }
+    }
+    return { element, id: Number(element.dataset.routineOrderId), bounds, layoutTop: bounds.top - animatedOffsetY, height: element.offsetHeight || bounds.height };
+  }
+
   function moveDirectRoutineDrag(event: ReactPointerEvent<HTMLDivElement>) {
     const drag = directRoutineDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId || !drag.armed) return;
@@ -647,18 +661,22 @@ export default function Home() {
       document.body.classList.add("reordering-routines");
     }
     event.preventDefault();
-    const target = document.elementsFromPoint(event.clientX, event.clientY)
-      .map((element) => element.closest<HTMLElement>("[data-routine-order-id]"))
-      .find((element): element is HTMLElement => Boolean(element && Number(element.dataset.routineOrderId) !== drag.routineId));
-    if (!target) return;
-    const targetId = Number(target.dataset.routineOrderId);
-    const bounds = target.getBoundingClientRect();
-    const afterTarget = event.clientY >= bounds.top + bounds.height / 2;
+    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-routine-order-id]"));
+    const rows = elements
+      .map(routineOrderLayout)
+      .filter((row) => Number.isInteger(row.id) && row.id !== drag.routineId)
+      .sort((a, b) => a.layoutTop - b.layoutTop);
+    if (!rows.length) return;
+    const rowBelowPointer = rows.find((row) => event.clientY < row.layoutTop + row.height / 2);
+    const target = rowBelowPointer ?? rows[rows.length - 1];
+    const targetId = target.id;
+    const afterTarget = !rowBelowPointer;
     const targetKey = `${targetId}:${afterTarget ? "after" : "before"}`;
-    if (!Number.isInteger(targetId) || drag.lastTarget === targetKey) return;
+    if (drag.lastTarget === targetKey) return;
     const next = reorderRoutineCollection(drag.order, drag.routineId, targetId, afterTarget);
     if (next === drag.order) return;
-    const previousBounds = new Map(Array.from(document.querySelectorAll<HTMLElement>("[data-routine-order-id]")).map((element) => [Number(element.dataset.routineOrderId), element.getBoundingClientRect()]));
+    const previousBounds = new Map(elements.map((element) => [Number(element.dataset.routineOrderId), element.getBoundingClientRect()]));
+    elements.forEach((element) => element.getAnimations().forEach((animation) => animation.cancel()));
     drag.order = next;
     drag.changed = true;
     drag.lastTarget = targetKey;
