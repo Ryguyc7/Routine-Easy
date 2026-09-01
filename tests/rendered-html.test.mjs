@@ -629,6 +629,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /event\.key === "Enter" \|\| event\.key === " "/);
   assert.match(page, /function undoRoutineSkip/);
   assert.match(page, /className="routine-check-zone"/);
+  assert.match(page, /completed \? <Check \/> : null/);
   assert.match(page, /const checkPointerRef = useRef/);
   assert.match(page, /onPointerDown=\{beginCheckPointer\}/);
   assert.match(page, /onPointerUp=\{finishCheckPointer\}/);
@@ -743,6 +744,8 @@ test("motion polish stays tactile and respects reduced motion", async () => {
   assert.doesNotMatch(css, /\.routine-row\.expanded \.routine-expansion \{[^}]*opacity:/);
   assert.doesNotMatch(css, /\.routine-checklist::before|\.quantity-trackers::before/);
   assert.match(css, /\.routine-swipe-surface \{[^}]*border: 0/);
+  assert.match(css, /\.check-circle \{[\s\S]*?width: 24px;[\s\S]*?border-radius: 50%/);
+  assert.match(css, /\.check-circle svg \{[\s\S]*?stroke-width: 2\.7/);
   assert.match(css, /\.routine-expansion \{[^}]*border: 0/);
   assert.doesNotMatch(css, /\.quantity-trackers\.tracker-controls-collapsed \{ display: none/);
   assert.doesNotMatch(css, /\.routine-row:not\(\.expanded\) \{ height: 110px/);

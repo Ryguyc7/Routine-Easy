@@ -2699,12 +2699,20 @@ html[data-theme="dark"] :is(.routine-emoji, .card-color, .history-emoji, .histor
 }
 
 .check-circle {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: transparent;
   background: var(--color-cloud);
   border: 1.5px solid var(--color-edge);
-  border-radius: var(--radius-check);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cloud) 45%, transparent);
+  transition: transform .18s ease, color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.check-circle svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.7;
 }
 
 .routine-row.completed .check-circle,
@@ -2714,7 +2722,7 @@ html[data-theme="dark"] .routine-row.skipped .check-circle {
   color: var(--color-cloud);
   background: var(--color-ink);
   border-color: var(--color-ink);
-  box-shadow: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--routine) 14%, transparent), var(--shadow-tier-1);
 }
 
 html[data-theme="dark"] .routine-row.completed .check-circle,
