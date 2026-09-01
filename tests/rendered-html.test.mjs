@@ -591,12 +591,12 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /onClick=\{onAddRoutine\}>Add your first routine/);
   assert.match(page, /!loading && !routines\.length \? " history-page-empty"/);
   assert.match(page, /\{routines\.length > 0 && <ScrollablePicker label="History routine filters"/);
-  assert.match(page, /Day details/);
+  assert.doesNotMatch(page, />Day details</);
   assert.doesNotMatch(page, /Edit what was recorded for/);
   assert.match(page, /history-tracker-editor/);
   assert.match(page, /history-summary-fix/);
   assert.match(page, /history-status-editor/);
-  assert.match(page, />Change status<\/span>/);
+  assert.match(page, />Choose status<\/span>/);
   assert.doesNotMatch(page, /Correct this day/);
   assert.match(page, /createPortal\(<div className="feature-dialog-backdrop history-edit-page">/);
   assert.match(page, /className="app-page-back history-page-back"[^>]*aria-label="Back to history"/);
@@ -608,6 +608,11 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-edit-sticky \{ position: sticky/);
   assert.match(css, /\.history-edit-page\.feature-dialog-backdrop \{[^}]*z-index: 220;[^}]*padding: 0;[^}]*backdrop-filter: none/);
   assert.match(css, /\.history-edit-page \.history-edit-dialog \{[^}]*width: 100%;[^}]*height: 100svh;[^}]*border-radius: 0;[^}]*background: transparent/);
+  assert.match(css, /Day details follows the same Cirrus surface/);
+  assert.match(css, /\.history-edit-page \.history-edit-sticky > header,[^{]*\{[^}]*background: var\(--surface-card\);[^}]*border-radius: var\(--radius-pill\)/);
+  assert.match(css, /\.history-edit-page \.history-record-section,[^{]*\{[^}]*background: var\(--surface-card\);[^}]*border-radius: var\(--radius-card\);[^}]*box-shadow: var\(--shadow-tier-1\)/);
+  assert.match(css, /\.history-edit-page \.history-record-row > span,[^{]*\{[^}]*border-radius: 50%/);
+  assert.doesNotMatch(settingsSource, /Day details/);
   assert.match(page, /History routine filters/);
   assert.match(page, /tab === "history"/);
   assert.match(page, /label="History"/);

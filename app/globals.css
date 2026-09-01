@@ -3420,6 +3420,346 @@ html[data-theme="dark"] .onboarding-live-card {
   }
 }
 
+/* Day details follows the same Cirrus surface and control language as the
+   calendar, history overview, and settings screens. */
+.history-edit-page.feature-dialog-backdrop,
+html[data-theme="dark"] .history-edit-page.feature-dialog-backdrop {
+  background-color: var(--surface-page);
+  background-image:
+    radial-gradient(62% 38% at 18% 78%, color-mix(in srgb, var(--color-cloud) 78%, transparent) 0%, transparent 62%),
+    radial-gradient(52% 34% at 82% 70%, color-mix(in srgb, var(--color-cloud) 70%, transparent) 0%, transparent 60%),
+    linear-gradient(180deg, var(--color-horizon) 0%, var(--color-sky) 78%);
+}
+
+.history-edit-page .history-edit-dialog,
+html[data-theme="dark"] .history-edit-page .history-edit-dialog {
+  color: var(--text-strong);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.history-edit-page .history-edit-dialog::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.history-edit-page .history-edit-sticky,
+html[data-theme="dark"] .history-edit-page .history-edit-sticky {
+  padding: max(16px, env(safe-area-inset-top)) max(24px, calc((100% - 680px) / 2)) 14px;
+  background: color-mix(in srgb, var(--surface-page) 94%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.history-edit-page .history-edit-sticky > header,
+html[data-theme="dark"] .history-edit-page .history-edit-sticky > header {
+  min-height: 64px;
+  grid-template-columns: 40px 42px minmax(0, 1fr);
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-tier-2);
+}
+
+.history-edit-page .history-page-back.app-page-back,
+html[data-theme="dark"] .history-edit-page .history-page-back.app-page-back {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border: var(--border-hairline);
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.history-edit-page .history-page-back svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.75;
+}
+
+.history-edit-page .history-emoji,
+html[data-theme="dark"] .history-edit-page .history-emoji {
+  width: 42px;
+  height: 42px;
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border: var(--border-hairline);
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.history-edit-page .history-edit-sticky > header > div {
+  gap: 1px;
+}
+
+.history-edit-page .history-edit-sticky > header h2 {
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-snug);
+}
+
+.history-edit-page .history-edit-sticky > header small {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.history-edit-page .history-day-summary,
+html[data-theme="dark"] .history-edit-page .history-day-summary,
+.history-edit-page .history-day-summary.completed,
+html[data-theme="dark"] .history-edit-page .history-day-summary.completed,
+.history-edit-page .history-day-summary.partial,
+html[data-theme="dark"] .history-edit-page .history-day-summary.partial,
+.history-edit-page .history-day-summary.skipped,
+html[data-theme="dark"] .history-edit-page .history-day-summary.skipped {
+  min-height: 68px;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: var(--border-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-tier-1);
+}
+
+.history-edit-page .history-day-summary > span,
+.history-edit-page .history-day-summary.completed > span,
+.history-edit-page .history-day-summary.partial > span,
+.history-edit-page .history-day-summary.skipped > span,
+html[data-theme="dark"] .history-edit-page .history-day-summary > span {
+  width: 36px;
+  height: 36px;
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-radius: 50%;
+  font-size: 16px;
+}
+
+.history-edit-page .history-day-summary strong {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-edit-page .history-day-summary small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.history-edit-page .history-summary-fix,
+.history-edit-page .history-day-summary.missed .history-summary-fix,
+.history-edit-page .history-day-summary.skipped .history-summary-fix,
+html[data-theme="dark"] .history-edit-page .history-summary-fix {
+  min-height: 38px;
+  padding: 0 16px;
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.history-edit-page .history-status-editor {
+  width: 100%;
+  margin: 10px auto 0;
+}
+
+.history-edit-page .history-status-editor > span,
+html[data-theme="dark"] .history-edit-page .history-status-editor > span {
+  margin: 0 0 6px 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.history-edit-page .history-edit-options-compact,
+html[data-theme="dark"] .history-edit-page .history-edit-options-compact {
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+}
+
+.history-edit-page .history-edit-options-compact button,
+html[data-theme="dark"] .history-edit-page .history-edit-options-compact button {
+  min-height: 42px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+}
+
+.history-edit-page .history-edit-options-compact button > span,
+html[data-theme="dark"] .history-edit-page .history-edit-options-compact button > span {
+  color: inherit;
+  background: transparent;
+  border-radius: 50%;
+}
+
+.history-edit-page .history-edit-options-compact button.active,
+.history-edit-page .history-edit-options-compact .completed.active,
+.history-edit-page .history-edit-options-compact .skipped.active,
+.history-edit-page .history-edit-options-compact .missed.active,
+html[data-theme="dark"] .history-edit-page .history-edit-options-compact button.active {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  box-shadow: var(--shadow-tier-1);
+}
+
+.history-edit-page .history-edit-options-compact strong {
+  color: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.history-edit-page .history-records {
+  width: min(680px, calc(100% - 48px));
+  gap: 16px;
+  margin: 18px auto 0;
+}
+
+.history-edit-page .history-record-section,
+html[data-theme="dark"] .history-edit-page .history-record-section,
+.history-edit-page .history-simple-record,
+html[data-theme="dark"] .history-edit-page .history-simple-record {
+  gap: 10px;
+  padding: 20px;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: var(--border-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-tier-1);
+}
+
+.history-edit-page .history-record-heading {
+  align-items: baseline;
+  gap: 12px;
+}
+
+.history-edit-page .history-record-section > h3,
+.history-edit-page .history-record-heading h3 {
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-snug);
+  text-transform: none;
+}
+
+.history-edit-page .history-record-heading span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.history-edit-page .history-record-list {
+  gap: 0;
+}
+
+.history-edit-page .history-record-list > strong {
+  margin: 2px 0 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.history-edit-page .history-record-row {
+  min-height: 52px;
+  gap: 12px;
+  padding: 9px 8px;
+  border-radius: var(--radius-tile);
+  transition: background-color .18s ease, transform .18s ease;
+}
+
+.history-edit-page .history-record-row.history-record-edit:hover {
+  color: inherit;
+  background: var(--surface-sunken);
+}
+
+.history-edit-page .history-record-row.history-record-edit:active {
+  transform: scale(.99);
+}
+
+.history-edit-page .history-record-row + .history-record-row,
+html[data-theme="dark"] .history-edit-page .history-record-row + .history-record-row {
+  border-top: var(--border-hairline);
+}
+
+.history-edit-page .history-record-row > span,
+.history-edit-page .history-tracker-copy > span,
+.history-edit-page .history-simple-record > span,
+html[data-theme="dark"] :is(.history-edit-page .history-record-row > span, .history-edit-page .history-tracker-copy > span, .history-edit-page .history-simple-record > span) {
+  width: 24px;
+  height: 24px;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: 1.5px solid var(--color-edge);
+  border-radius: 50%;
+  font-size: 11px;
+}
+
+.history-edit-page .history-record-row.recorded > span,
+.history-edit-page .history-tracker-record.recorded .history-tracker-copy > span,
+.history-edit-page .history-simple-record.recorded > span,
+html[data-theme="dark"] :is(.history-edit-page .history-record-row.recorded > span, .history-edit-page .history-tracker-record.recorded .history-tracker-copy > span, .history-edit-page .history-simple-record.recorded > span) {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.history-edit-page .history-record-row strong,
+.history-edit-page .history-tracker-copy strong,
+.history-edit-page .history-simple-record strong {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-edit-page .history-record-row small,
+.history-edit-page .history-tracker-copy small,
+.history-edit-page .history-simple-record small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .history-edit-page .history-edit-sticky,
+  html[data-theme="dark"] .history-edit-page .history-edit-sticky {
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  }
+
+  .history-edit-page .history-records {
+    width: calc(100% - 32px);
+    margin-top: 16px;
+  }
+
+  .history-edit-page .history-record-section,
+  .history-edit-page .history-simple-record {
+    padding: 18px;
+  }
+
+  .history-edit-page .history-record-heading {
+    align-items: flex-start;
+  }
+}
+
 /* Keep the shared routine filters visually centered while preserving
    start-aligned horizontal scrolling when the row becomes wider. */
 :is(.calendar-filter-picker, .history-filter-picker) .filter-pills {
