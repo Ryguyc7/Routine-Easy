@@ -3418,6 +3418,12 @@ html[data-theme="dark"] .onboarding-live-card {
   }
 }
 
+/* Keep the shared routine filters visually centered while preserving
+   start-aligned horizontal scrolling when the row becomes wider. */
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills {
+  justify-content: safe center;
+}
+
 @media (max-width: 760px) {
   .content.sky,
   html[data-theme="dark"] .content.sky {

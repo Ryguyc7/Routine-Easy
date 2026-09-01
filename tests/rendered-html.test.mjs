@@ -701,6 +701,7 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /html\[data-theme="dark"\] \.filter-pills button\.active \{[^}]*background: var\(--pill\)/);
   assert.match(css, /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button,[\s\S]*?width: 42px;[\s\S]*?height: 42px;[\s\S]*?border-radius: var\(--radius-pill\)/);
   assert.match(css, /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button\.active,[\s\S]*?background: var\(--color-ink\)/);
+  assert.match(css, /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills \{\s*justify-content: safe center;/);
   assert.match(css, /\.routine-card \{\s*min-height: 96px;[\s\S]*?grid-template-columns: 44px minmax\(0, 1fr\) auto;[\s\S]*?padding: 14px/);
   assert.match(css, /\.routine-card-actions \{\s*position: static;[\s\S]*?gap: 6px/);
   assert.match(css, /\.routine-card-actions \.delete-button,[\s\S]*?width: 32px;[\s\S]*?opacity: 1/);
