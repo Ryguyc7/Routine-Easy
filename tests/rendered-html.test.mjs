@@ -67,6 +67,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /<span className="easy-s">S<\/span>/);
   assert.match(page, /<span className="easy-y">Y<\/span>/);
   assert.match(page, /window\.clearTimeout\(splashTimer\)/);
+  assert.match(page, /\{!splashVisible && <nav className=\{\`bottom-nav/);
   assert.match(page, /Edit routine/);
   assert.match(page, />Edit<\/button>/);
   assert.match(page, /name: form\.get\("name"\)/);

@@ -1647,7 +1647,7 @@ export default function Home() {
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
-      <nav className={`bottom-nav nav-${bottomNavPhase}${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
+      {!splashVisible && <nav className={`bottom-nav nav-${bottomNavPhase}${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
         <BottomNavSurface
           key={`${tab}-${bottomNavPhase === "exiting" ? "closing" : "opening"}`}
           tab={tab}
@@ -1658,7 +1658,7 @@ export default function Home() {
         <CalendarNavButton active={tab === "calendar"} onClick={() => selectBottomTab("calendar")} date={today} />
         <NavButton active={tab === "routines"} onClick={() => selectBottomTab("routines")} icon={ListChecks} label="Routines" />
         <NavButton active={tab === "history"} onClick={() => selectBottomTab("history")} icon={History} label="History" />
-      </nav>
+      </nav>}
     </main>{splashOverlay}</>
   );
 }
