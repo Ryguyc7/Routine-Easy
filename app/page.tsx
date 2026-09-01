@@ -2290,8 +2290,8 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
           <strong className="routine-list-name">{list.name}</strong>
           {activeItems.filter((item) => item.listKey === list.key).map((item) => {
             const checked = completedItemIds.has(item.id);
-            return <button key={item.id} className={checked ? "checked" : ""} onClick={() => onToggleItem(item.id)}>
-              <span className="item-check">✓</span><span>{item.title}</span>
+            return <button key={item.id} className={checked ? "checked" : ""} onClick={() => onToggleItem(item.id)} aria-pressed={checked}>
+              <span className="item-check" aria-hidden="true">{checked ? <Check /> : null}</span><span>{item.title}</span>
             </button>;
           })}
         </section>)}</div>}

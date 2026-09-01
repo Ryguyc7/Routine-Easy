@@ -2755,6 +2755,55 @@ html[data-theme="dark"] .routine-row.skipped .check-circle {
   border-color: var(--color-edge);
 }
 
+.routine-checklist button,
+html[data-theme="dark"] .routine-checklist button {
+  color: var(--text-strong);
+  background: transparent;
+  text-decoration: none;
+}
+
+.routine-checklist button:hover,
+.routine-checklist button.checked {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--routine) 8%, var(--surface-card));
+  text-decoration: none;
+}
+
+html[data-theme="dark"] .routine-checklist button:hover,
+html[data-theme="dark"] .routine-checklist button.checked {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--routine) 10%, var(--surface-sunken));
+  text-decoration: none;
+}
+
+.routine-checklist .item-check,
+html[data-theme="dark"] .routine-checklist .item-check {
+  width: 22px;
+  height: 22px;
+  color: transparent;
+  background: transparent;
+  border: 1.5px solid var(--color-edge);
+  border-radius: 50%;
+}
+
+.routine-checklist .item-check svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.7;
+}
+
+.routine-checklist button.checked .item-check,
+html[data-theme="dark"] .routine-checklist button.checked .item-check {
+  color: var(--color-cloud);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  text-decoration: none;
+}
+
+html[data-theme="dark"] .routine-checklist button.checked .item-check {
+  color: #0e1116;
+}
+
 .routine-card {
   min-height: 148px;
   padding: 24px 28px 52px 24px;

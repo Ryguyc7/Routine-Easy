@@ -629,6 +629,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function undoRoutineSkip/);
   assert.match(page, /className="routine-check-zone"/);
   assert.match(page, /completed \? <Check \/> : null/);
+  assert.match(page, /className="item-check" aria-hidden="true">\{checked \? <Check \/> : null\}/);
   assert.match(page, /const checkPointerRef = useRef/);
   assert.match(page, /onPointerDown=\{beginCheckPointer\}/);
   assert.match(page, /onPointerUp=\{finishCheckPointer\}/);
@@ -750,6 +751,9 @@ test("motion polish stays tactile and respects reduced motion", async () => {
   assert.match(css, /\.check-circle svg \{[\s\S]*?stroke-width: 2\.7/);
   assert.match(css, /\.routine-emoji,[\s\S]*?\.routine-row\.expanded \.routine-emoji[\s\S]*?border-radius: 50%;[\s\S]*?box-shadow: none/);
   assert.match(css, /\.routine-row\.completed \.check-circle,[\s\S]*?box-shadow: none/);
+  assert.match(css, /\.routine-checklist \.item-check,[\s\S]*?width: 22px;[\s\S]*?border-radius: 50%/);
+  assert.match(css, /html\[data-theme="dark"\] \.routine-checklist button\.checked \{[\s\S]*?background: color-mix\(in srgb, var\(--routine\) 10%, var\(--surface-sunken\)\);[\s\S]*?text-decoration: none/);
+  assert.match(css, /\.routine-checklist button\.checked \.item-check,[\s\S]*?background: var\(--color-ink\)/);
   assert.match(css, /\.routine-expansion \{[^}]*border: 0/);
   assert.doesNotMatch(css, /\.quantity-trackers\.tracker-controls-collapsed \{ display: none/);
   assert.doesNotMatch(css, /\.routine-row:not\(\.expanded\) \{ height: 110px/);
