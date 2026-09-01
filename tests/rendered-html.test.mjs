@@ -570,7 +570,10 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function selectBottomTab\(nextTab: MainTab\)/);
   assert.doesNotMatch(page, /bottomNavPhase !== "idle"\) return/);
   assert.match(page, /function selectBottomTab\(nextTab: MainTab\)[\s\S]*?setBottomNavPhase\("idle"\);[\s\S]*?setTab\(nextTab\);/);
-  assert.match(page, /bottom-nav nav-\$\{bottomNavPhase\}\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \|\| historyDayEditorOpen \|\| tab === "settings" \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
+  assert.match(page, /bottom-nav nav-\$\{bottomNavPhase\}\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \|\| routineToDelete !== null \|\| historyDayEditorOpen \|\| tab === "settings" \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
+  assert.match(page, /function openDeleteDialog\(routine: Routine\) \{\s*prepareCreationFlow\(\);\s*setRoutineToDelete\(routine\);/);
+  assert.match(page, /function closeDeleteDialog\(\) \{\s*setRoutineToDelete\(null\);\s*animateBottomNavReturn\(\);/);
+  assert.match(page, /onCancel=\{closeDeleteDialog\}/);
   assert.match(page, /function openSettings\(\) \{\s*prepareCreationFlow\(\);/);
   assert.match(page, /function closeSettings\(\) \{\s*setTab\(settingsReturnTabRef\.current\);\s*animateBottomNavReturn\(\);/);
   assert.match(page, /function openHistoryDayEditor\(\) \{\s*prepareCreationFlow\(\);\s*setHistoryDayEditorOpen\(true\);/);

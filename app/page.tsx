@@ -991,6 +991,16 @@ export default function Home() {
     animateBottomNavReturn();
   }
 
+  function openDeleteDialog(routine: Routine) {
+    prepareCreationFlow();
+    setRoutineToDelete(routine);
+  }
+
+  function closeDeleteDialog() {
+    setRoutineToDelete(null);
+    animateBottomNavReturn();
+  }
+
   function updatePreferences(next: Partial<AppPreferences>) {
     setPreferences((current) => {
       const updated = { ...current, ...next };
@@ -1375,7 +1385,7 @@ export default function Home() {
       await Promise.all([...removedPhotos, ...removedInstructionImages].map((path) => removeDevicePhoto(path)));
       setError("");
       setDeleting(false);
-      setRoutineToDelete(null);
+      closeDeleteDialog();
       return;
     }
     try {
@@ -1387,7 +1397,7 @@ export default function Home() {
       await loadData();
     } finally {
       setDeleting(false);
-      setRoutineToDelete(null);
+      closeDeleteDialog();
     }
   }
 
@@ -1499,7 +1509,7 @@ export default function Home() {
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><Plus aria-hidden="true" /></button>
         </header>
 
-        {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={() => setRoutineToDelete(null)} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
+        {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={closeDeleteDialog} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
         {showTemplatePicker && <TemplateChooser onCancel={closeTemplatePicker} onChoose={(template) => { setSelectedTemplate(template); setShowTemplatePicker(false); setShowAdd(true); }} />}
 
         {error && <div className="error-banner" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
@@ -1590,7 +1600,7 @@ export default function Home() {
             <section className={`routine-library${!loading && !routines.length ? " routine-library-empty" : ""}`}>
               {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="btn btn-primary btn-sm desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="btn btn-primary primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
+                {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => openDeleteDialog(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="btn btn-primary primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
               </div>
             </section>
           </div>
@@ -1601,7 +1611,7 @@ export default function Home() {
         {tab === "settings" && <SettingsPage preferences={preferences} onChange={updatePreferences} onReplacePreferences={replacePreferences} onRefreshData={loadData} onBack={closeSettings} />}
       </section>
 
-      {!splashVisible && <nav className={`bottom-nav nav-${bottomNavPhase}${showTemplatePicker || showAdd || editingRoutineId !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
+      {!splashVisible && <nav className={`bottom-nav nav-${bottomNavPhase}${showTemplatePicker || showAdd || editingRoutineId !== null || routineToDelete !== null || historyDayEditorOpen || tab === "settings" ? " creation-flow-hidden" : bottomNavReturning ? " creation-flow-returning" : ""}`} aria-label="Main navigation">
         <BottomNavSurface
           key={`${tab}-${bottomNavPhase === "exiting" ? "closing" : "opening"}`}
           tab={tab}
