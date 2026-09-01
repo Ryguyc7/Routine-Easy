@@ -3157,13 +3157,24 @@ html[data-theme="dark"] .onboarding-live-card {
 
   .mobile-add,
   html[data-theme="dark"] .mobile-add {
+    display: grid;
+    place-items: center;
+    padding: 0;
     color: var(--color-cloud);
     background: var(--color-ink);
     border-color: var(--color-ink);
+    line-height: 0;
   }
 
   html[data-theme="dark"] .mobile-add {
     color: #0e1116;
+  }
+
+  .mobile-add svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
   }
 
   .page {
@@ -3203,6 +3214,38 @@ html[data-theme="dark"] .onboarding-live-card {
     display: none;
   }
 
+  .bottom-nav-selection {
+    position: absolute;
+    top: 10px;
+    left: 7px;
+    z-index: 0;
+    width: calc((100% - 20px) / 4);
+    height: 36px;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    transform: translateX(0);
+    transition: transform .38s cubic-bezier(.22, .82, .24, 1);
+    will-change: transform;
+  }
+
+  .bottom-nav-selection::before {
+    content: "";
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-ink);
+    box-shadow: var(--shadow-tier-1);
+  }
+
+  .bottom-nav-selection-calendar { transform: translateX(calc(100% + 2px)); }
+  .bottom-nav-selection-routines { transform: translateX(calc(200% + 4px)); }
+  .bottom-nav-selection-history { transform: translateX(calc(300% + 6px)); }
+
+  .reduce-motion .bottom-nav-selection {
+    transition: none;
+  }
+
   .bottom-nav button,
   .bottom-nav button.calendar-nav-button,
   html[data-theme="dark"] :is(.bottom-nav button, .bottom-nav button.calendar-nav-button) {
@@ -3221,6 +3264,7 @@ html[data-theme="dark"] .onboarding-live-card {
     border: 0;
     border-radius: var(--radius-pill);
     transform: none;
+    animation: none !important;
   }
 
   .bottom-nav button::before {
@@ -3251,15 +3295,16 @@ html[data-theme="dark"] .onboarding-live-card {
     border-radius: var(--radius-pill);
     box-shadow: none;
     transform: none;
+    animation: none !important;
   }
 
   .bottom-nav button:not(.calendar-nav-button).active .nav-icon {
     color: var(--color-cloud);
-    background: var(--color-ink);
+    background: transparent;
   }
 
   html[data-theme="dark"] .bottom-nav button:not(.calendar-nav-button).active .nav-icon {
-    color: #0e1116;
+    color: var(--color-cloud);
   }
 
   .bottom-nav .nav-icon svg {
@@ -3278,6 +3323,7 @@ html[data-theme="dark"] .onboarding-live-card {
     line-height: 1;
     font-weight: 500;
     transform: none;
+    animation: none !important;
   }
 
   .bottom-nav button.active .nav-label,
@@ -3327,11 +3373,11 @@ html[data-theme="dark"] .onboarding-live-card {
 
   .bottom-nav .calendar-nav-button.active .date-nav-icon,
   html[data-theme="dark"] .bottom-nav .calendar-nav-button.active .date-nav-icon {
-    --calendar-ink: var(--color-ink);
+    --calendar-ink: var(--color-cloud);
     color: var(--calendar-ink);
-    background: var(--surface-card);
+    background: transparent;
     border-color: var(--calendar-ink);
-    box-shadow: var(--shadow-tier-1);
+    box-shadow: none;
   }
 
   .bottom-nav .calendar-nav-button.active .date-nav-icon i,

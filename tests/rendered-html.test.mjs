@@ -388,6 +388,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /<linearGradient id=\{sheenId\}[\s\S]*?bottom-nav-sheen-bottom/);
   assert.match(page, /className="bottom-nav-surface-sheen"/);
   assert.match(page, /className="mobile-add premium-action"/);
+  assert.match(page, /className="mobile-add premium-action"[^>]*><Plus aria-hidden="true" \/>/);
+  assert.match(page, /bottom-nav-selection bottom-nav-selection-\$\{tab\}/);
   assert.doesNotMatch(page, /className="bottom-nav-add"|className="mobile-header-balance"/);
   assert.doesNotMatch(page, /LiquidButton|liquid-glass/);
   assert.match(mobileIndex, /maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover/);
@@ -551,7 +553,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /function animateBottomNavReturn/);
   assert.match(page, /function selectBottomTab\(nextTab: MainTab\)/);
   assert.doesNotMatch(page, /bottomNavPhase !== "idle"\) return/);
-  assert.match(page, /setBottomNavPhase\("exiting"\)[\s\S]*?\}, 215\);/);
+  assert.match(page, /function selectBottomTab\(nextTab: MainTab\)[\s\S]*?setBottomNavPhase\("idle"\);[\s\S]*?setTab\(nextTab\);/);
   assert.match(page, /bottom-nav nav-\$\{bottomNavPhase\}\$\{showTemplatePicker \|\| showAdd \|\| editingRoutineId !== null \|\| historyDayEditorOpen \|\| tab === "settings" \? " creation-flow-hidden" : bottomNavReturning \? " creation-flow-returning"/);
   assert.match(page, /function openSettings\(\) \{\s*prepareCreationFlow\(\);/);
   assert.match(page, /function closeSettings\(\) \{\s*setTab\(settingsReturnTabRef\.current\);\s*animateBottomNavReturn\(\);/);
@@ -714,6 +716,10 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.bottom-nav button\.active \.nav-icon \{[\s\S]*?background: transparent/);
   assert.match(css, /html\[data-theme="dark"\] \.bottom-nav-surface-fill \{ fill: #211f25/);
   assert.match(css, /html\[data-theme="dark"\] \.bottom-nav-surface-sheen \{ opacity: \.4/);
+  assert.match(css, /\.bottom-nav-selection \{[\s\S]*?transition: transform \.38s cubic-bezier/);
+  assert.match(css, /\.bottom-nav-selection-history \{ transform: translateX\(calc\(300% \+ 6px\)\)/);
+  assert.match(css, /\.bottom-nav button,[\s\S]*?animation: none !important/);
+  assert.match(css, /\.mobile-add svg \{[\s\S]*?width: 22px;[\s\S]*?height: 22px/);
 });
 
 test("motion polish stays tactile and respects reduced motion", async () => {

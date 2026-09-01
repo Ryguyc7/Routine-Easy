@@ -2,7 +2,7 @@
 
 import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, Plus, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -913,31 +913,11 @@ export default function Home() {
   const nativeApp = isNativeApp();
 
   function selectBottomTab(nextTab: MainTab) {
-    if (nextTab === tab) {
-      if (bottomNavPhase === "exiting") {
-        if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
-        setBottomNavPhase("entering");
-        bottomNavSwitchTimerRef.current = window.setTimeout(() => {
-          setBottomNavPhase("idle");
-          bottomNavSwitchTimerRef.current = undefined;
-        }, 390);
-      }
-      return;
-    }
-    if (preferences.motion === "reduced") {
-      setTab(nextTab);
-      return;
-    }
+    if (nextTab === tab) return;
     if (bottomNavSwitchTimerRef.current) window.clearTimeout(bottomNavSwitchTimerRef.current);
-    setBottomNavPhase("exiting");
-    bottomNavSwitchTimerRef.current = window.setTimeout(() => {
-      setTab(nextTab);
-      setBottomNavPhase("entering");
-      bottomNavSwitchTimerRef.current = window.setTimeout(() => {
-        setBottomNavPhase("idle");
-        bottomNavSwitchTimerRef.current = undefined;
-      }, 390);
-    }, 215);
+    bottomNavSwitchTimerRef.current = undefined;
+    setBottomNavPhase("idle");
+    setTab(nextTab);
   }
 
   function animateBottomNavReturn() {
@@ -1541,7 +1521,7 @@ export default function Home() {
             <img src="/routineez-checklist-glossy.png" alt="" />
             <span className="mobile-wordmark-name">Routine<EasyWord className="mobile-wordmark-easy" /></span>
           </div>
-          <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
+          <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><Plus aria-hidden="true" /></button>
         </header>
 
         {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={() => setRoutineToDelete(null)} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
@@ -1654,6 +1634,7 @@ export default function Home() {
           phase={bottomNavPhase}
           reducedMotion={preferences.motion === "reduced"}
         />
+        <span className={`bottom-nav-selection bottom-nav-selection-${tab}`} aria-hidden="true" />
         <NavButton active={tab === "today"} onClick={() => selectBottomTab("today")} icon={CircleCheckBig} label="Today" />
         <CalendarNavButton active={tab === "calendar"} onClick={() => selectBottomTab("calendar")} date={today} />
         <NavButton active={tab === "routines"} onClick={() => selectBottomTab("routines")} icon={ListChecks} label="Routines" />
