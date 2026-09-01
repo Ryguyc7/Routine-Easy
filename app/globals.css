@@ -4127,7 +4127,19 @@ html[data-theme="dark"] .icon-view-more {
   box-shadow: none;
 }
 
-.settings-toolbar {
+.settings-view-open .settings-page {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.settings-view-open .settings-page::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.settings-toolbar,
+html[data-theme="dark"] .settings-toolbar {
   min-height: 64px;
   padding: 10px 12px;
   color: var(--text-strong);
@@ -4175,7 +4187,27 @@ html[data-theme="dark"] .setting-card + .setting-card {
 html[data-theme="dark"] .setting-icon {
   color: var(--text-on-ink);
   background: var(--color-ink);
+  border: var(--border-hairline);
   border-radius: 50%;
+  box-shadow: none;
+}
+
+.setting-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.75;
+}
+
+.setting-copy h2 {
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.setting-copy p,
+.setting-copy small {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .setting-options {
@@ -4192,11 +4224,32 @@ html[data-theme="dark"] .setting-icon {
   border-radius: var(--radius-pill);
 }
 
+.setting-options button:hover {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--text-strong) 5%, transparent);
+}
+
+.setting-options strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.setting-options span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
 .setting-options button.active,
 html[data-theme="dark"] .setting-options button.active {
   color: var(--text-on-ink);
   background: var(--color-ink);
   box-shadow: var(--shadow-tier-1);
+}
+
+.setting-options button.active:hover,
+html[data-theme="dark"] .setting-options button.active:hover {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
 }
 
 .setting-options button.active span,

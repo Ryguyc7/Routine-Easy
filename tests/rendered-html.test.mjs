@@ -489,6 +489,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /className="app-page-back settings-back" onClick=\{onBack\} aria-label="Back to app"/);
   const settingsSource = page.slice(page.indexOf("function SettingsPage"), page.indexOf("function BlobCorners"));
   assert.doesNotMatch(settingsSource, /Make it yours|Choose how Routine EASY looks and feels/);
+  assert.doesNotMatch(settingsSource, /settings-scrollbar|VerticalScrollIndicator/);
   assert.match(page, /tab === "settings" \? " settings-view-open"/);
   const settingsCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(settingsCss, /\.settings-view-open \.mobile-header \{ display: none; \}/);
@@ -563,6 +564,10 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(css, /\.settings-list,[^{]*\{[^}]*gap: 12px;[^}]*background: transparent;[^}]*box-shadow: none/);
   assert.match(css, /\.settings-list \.setting-card,[^{]*\{[^}]*background: var\(--surface-card\);[^}]*border-radius: var\(--radius-card\);[^}]*box-shadow: var\(--shadow-tier-1\)/);
   assert.match(css, /\.setting-options button\.active,[^{]*\{[^}]*background: var\(--color-ink\)/);
+  assert.match(css, /\.settings-view-open \.settings-page \{[^}]*scrollbar-width: none/);
+  assert.match(css, /\.settings-view-open \.settings-page::\-webkit-scrollbar \{[^}]*display: none/);
+  assert.match(css, /html\[data-theme="dark"\] \.settings-toolbar \{[^}]*background: var\(--surface-card\)/);
+  assert.match(css, /html\[data-theme="dark"\] \.setting-icon \{[^}]*background: var\(--color-ink\)/);
   assert.match(page, /function animateBottomNavReturn/);
   assert.match(page, /function selectBottomTab\(nextTab: MainTab\)/);
   assert.doesNotMatch(page, /bottomNavPhase !== "idle"\) return/);

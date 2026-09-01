@@ -1897,9 +1897,7 @@ function SettingsPage({ preferences, onChange, onReplacePreferences, onRefreshDa
     </div>
     <p className="settings-saved"><CircleCheckBig aria-hidden="true" />Preferences save automatically</p>
     {showDataPrivacy && <DataPrivacyDialog preferences={preferences} onClose={() => setShowDataPrivacy(false)} onReplacePreferences={onReplacePreferences} onRefreshData={onRefreshData} />}
-  </div>
-  <VerticalScrollIndicator scrollerRef={pageRef} label="Settings page" className="settings-scrollbar" headerSelector=".settings-toolbar" />
-  </>;
+  </div></>;
 }
 
 function DataPrivacyDialog({ preferences, onClose, onReplacePreferences, onRefreshData }: { preferences: AppPreferences; onClose: () => void; onReplacePreferences: (next: unknown) => void; onRefreshData: () => Promise<void> }) {
