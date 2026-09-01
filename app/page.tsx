@@ -1646,6 +1646,7 @@ export default function Home() {
 
 type HistoryDayState = { date: Date; key: string; status: "completed" | "partial" | "skipped" | "missed" | "scheduled" | "off" };
 type EditableHistoryStatus = "completed" | "skipped" | "missed";
+type HistoryPeriod = "daily" | "monthly" | "yearly";
 
 function buildRoutineHistory(routine: Routine, completions: Completion[], itemCompletions: ItemCompletion[], amountCompletions: AmountCompletion[], todayKey: string, month: Date): HistoryDayState[] {
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -1680,6 +1681,7 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
   const selected = selectedRoutine === "all" ? undefined : routines.find((routine) => routine.id === selectedRoutine);
   const effectiveSelection = selected ? selected.id : "all";
   const [editingDay, setEditingDay] = useState<HistoryDayState | null>(null);
+  const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("monthly");
   const todayDate = new Date(`${todayKey}T12:00:00`);
   const [historyMonth, setHistoryMonth] = useState(() => new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
   const currentMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
@@ -1688,6 +1690,19 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
   const historyDayNames = weekStartsOn === "monday" ? [...DAY_NAMES.slice(1), DAY_NAMES[0]] : DAY_NAMES;
   const firstWeekday = (historyMonth.getDay() - (weekStartsOn === "monday" ? 1 : 0) + 7) % 7;
   const historyByRoutine = useMemo(() => new Map(routines.map((routine) => [routine.id, buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey, historyMonth)])), [routines, completions, itemCompletions, amountCompletions, todayKey, historyMonth]);
+  const overviewHistoryByRoutine = useMemo(() => {
+    const current = new Date(`${todayKey}T12:00:00`);
+    const months = historyPeriod === "yearly"
+      ? Array.from({ length: current.getMonth() + 1 }, (_, month) => new Date(current.getFullYear(), month, 1))
+      : [new Date(current.getFullYear(), current.getMonth(), 1)];
+
+    return new Map(routines.map((routine) => {
+      const states = months.flatMap((month) => buildRoutineHistory(routine, completions, itemCompletions, amountCompletions, todayKey, month));
+      return [routine.id, historyPeriod === "daily" ? states.filter((day) => day.key === todayKey) : states];
+    }));
+  }, [routines, completions, itemCompletions, amountCompletions, todayKey, historyPeriod]);
+  const historyPeriodLabel = historyPeriod === "daily" ? "Daily" : historyPeriod === "yearly" ? "Yearly" : "Monthly";
+  const historyPeriodSummary = historyPeriod === "daily" ? "Today" : historyPeriod === "yearly" ? "This year" : "This month";
   const activeEditingDay = editingDay && selected ? historyByRoutine.get(selected.id)?.find((day) => day.key === editingDay.key) ?? editingDay : null;
   const openDayEditor = (day: HistoryDayState) => {
     onOpenDayEditor();
@@ -1724,13 +1739,18 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
         <p className="history-edit-hint">Tap a past day to see what you recorded or correct it.</p>
       </section>;
     })() : <section className="history-overview">
-      <header><h2>Monthly progress</h2></header>
+      <header className="history-overview-header">
+        <h2>{historyPeriodLabel} progress</h2>
+        <div className="history-period-toggle" role="group" aria-label="History period">
+          {(["daily", "monthly", "yearly"] as HistoryPeriod[]).map((period) => <button type="button" key={period} className={historyPeriod === period ? "active" : ""} aria-pressed={historyPeriod === period} onClick={() => setHistoryPeriod(period)}>{period[0].toUpperCase() + period.slice(1)}</button>)}
+        </div>
+      </header>
       <div className="history-overview-grid">{routines.map((routine) => {
-        const states = historyByRoutine.get(routine.id) ?? [];
+        const states = overviewHistoryByRoutine.get(routine.id) ?? [];
         const rate = historyRate(states, states.length);
-        return <button key={routine.id} className="history-overview-card" style={{ "--history-color": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)} aria-label={`View ${routine.name} monthly history, ${rate}% complete`}>
-          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>View monthly details</small></span><span className="history-overview-meta"><b>{rate}%</b><ChevronRight aria-hidden="true" /></span>
-          <span className="history-overview-progress" role="progressbar" aria-label={`${routine.name} monthly progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate}><i style={{ width: `${rate}%` }} /></span>
+        return <button key={routine.id} className="history-overview-card" style={{ "--history-color": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)} aria-label={`View ${routine.name} history, ${historyPeriodLabel.toLowerCase()} progress ${rate}%`}>
+          <span className="history-overview-emoji">{routine.emoji}</span><span className="history-overview-copy"><strong>{routine.name}</strong><small>{historyPeriodSummary}</small></span><span className="history-overview-meta"><b>{rate}%</b><ChevronRight aria-hidden="true" /></span>
+          <span className="history-overview-progress" role="progressbar" aria-label={`${routine.name} ${historyPeriodLabel.toLowerCase()} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate}><i style={{ width: `${rate}%` }} /></span>
         </button>;
       })}</div>
     </section>}

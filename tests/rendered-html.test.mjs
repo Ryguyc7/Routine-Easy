@@ -590,10 +590,13 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /tab === "history"/);
   assert.match(page, /label="History"/);
   assert.match(page, /history-overview-grid/);
-  assert.match(page, /<header><h2>Monthly progress<\/h2><\/header>/);
+  assert.match(page, /type HistoryPeriod = "daily" \| "monthly" \| "yearly"/);
+  assert.match(page, /className="history-period-toggle" role="group" aria-label="History period"/);
+  assert.match(page, /<h2>\{historyPeriodLabel\} progress<\/h2>/);
+  assert.match(page, /setHistoryPeriod\(period\)/);
   assert.doesNotMatch(page, /Select a routine for the full monthly view/);
   assert.match(page, /className="history-overview-progress" role="progressbar"/);
-  assert.match(page, /View monthly details/);
+  assert.match(page, /const historyPeriodSummary = historyPeriod === "daily" \? "Today" : historyPeriod === "yearly" \? "This year" : "This month"/);
   assert.match(page, /className="history-overview-meta"/);
   assert.match(page, /history-title-row/);
   assert.match(page, /buildRoutineHistory/);
@@ -601,7 +604,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-month-toolbar/);
   assert.match(page, /history-current-month-button/);
   assert.match(page, /calendar-month-heading[^]*history-current-month-button/);
-  assert.doesNotMatch(page, /This month/);
+  assert.match(css, /\.history-period-toggle \{[^}]*grid-template-columns: repeat\(3, 1fr\)/);
+  assert.match(css, /\.history-period-toggle button\.active/);
   assert.match(page, /className=\{`skipped[^]*?<SkipForward \/>/);
   assert.doesNotMatch(page, /↷/);
   assert.match(page, /Skip today/);

@@ -2967,6 +2967,72 @@ html[data-theme="dark"] .history-month-toolbar :is(.calendar-today-button, .hist
   padding: 18px;
 }
 
+.history-overview > .history-overview-header {
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.history-period-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border: var(--border-soft);
+  border-radius: var(--radius-pill);
+}
+
+.history-period-toggle button,
+html[data-theme="dark"] .history-period-toggle button {
+  min-width: 68px;
+  min-height: 32px;
+  padding: 0 12px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color .18s ease, background-color .22s ease, box-shadow .22s ease, transform .18s ease;
+}
+
+.history-period-toggle button:hover {
+  color: var(--text-strong);
+}
+
+.history-period-toggle button.active,
+html[data-theme="dark"] .history-period-toggle button.active {
+  color: var(--color-cloud);
+  background: var(--color-ink);
+  box-shadow: var(--shadow-tier-1);
+}
+
+html[data-theme="dark"] .history-period-toggle button.active {
+  color: #0e1116;
+}
+
+.history-period-toggle button:active {
+  transform: scale(.97);
+}
+
+@media (max-width: 760px) {
+  .history-overview > .history-overview-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .history-period-toggle {
+    width: 100%;
+  }
+
+  .history-period-toggle button {
+    min-width: 0;
+  }
+}
+
 .settings-page {
   max-width: 840px;
 }
