@@ -368,10 +368,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /weekday: "long", month: "long", day: "numeric"/);
   assert.doesNotMatch(page, /desktop-calendar-icon/);
   assert.doesNotMatch(page, /desktop-today-date/);
-  assert.match(page, /function CalendarNavButton/);
-  const calendarNavButton = page.slice(page.indexOf("function CalendarNavButton"), page.indexOf("function RoutineRow"));
-  assert.match(calendarNavButton, /<CalendarDays aria-hidden="true" strokeWidth=\{active \? 2\.4 : 2\} \/>/);
-  assert.doesNotMatch(calendarNavButton, /date-nav-icon|month: "short"/);
+  assert.match(page, /<NavButton active=\{tab === "calendar"\}[\s\S]*?icon=\{CalendarDays\} label="Calendar" \/>/);
+  assert.doesNotMatch(page, /function CalendarNavButton/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /calendar-nav-button\.active \{ position: relative;[\s\S]*background: transparent; border: 0/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{ width: 38px[^}]*drop-shadow\(0 0 13px rgba\(32,34,44/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /mobile-wordmark img \{[^}]*transform: translateY\(2px\)/);

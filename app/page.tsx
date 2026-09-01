@@ -1636,7 +1636,7 @@ export default function Home() {
         />
         <span className={`bottom-nav-selection bottom-nav-selection-${tab}`} aria-hidden="true" />
         <NavButton active={tab === "today"} onClick={() => selectBottomTab("today")} icon={CircleCheckBig} label="Today" />
-        <CalendarNavButton active={tab === "calendar"} onClick={() => selectBottomTab("calendar")} />
+        <NavButton active={tab === "calendar"} onClick={() => selectBottomTab("calendar")} icon={CalendarDays} label="Calendar" />
         <NavButton active={tab === "routines"} onClick={() => selectBottomTab("routines")} icon={ListChecks} label="Routines" />
         <NavButton active={tab === "history"} onClick={() => selectBottomTab("history")} icon={History} label="History" />
       </nav>}
@@ -2076,10 +2076,6 @@ function BottomNavSurface({ tab, phase, reducedMotion }: { tab: Tab; phase: Bott
 
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
   return <button className={active ? "active" : ""} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon"><Icon aria-hidden="true" strokeWidth={active ? 2.4 : 2} /></span><span className="nav-label">{label}</span></button>;
-}
-
-function CalendarNavButton({ active, onClick }: { active: boolean; onClick: () => void }) {
-  return <button className={`calendar-nav-button ${active ? "active" : ""}`} onClick={onClick} aria-current={active ? "page" : undefined}><span className="nav-icon"><CalendarDays aria-hidden="true" strokeWidth={active ? 2.4 : 2} /></span><span className="nav-label">Calendar</span></button>;
 }
 
 function RoutineRow({ routine, completed, skipped, completedItemIds, amountCounts, trackerEntries, onToggle, onToggleItem, onSetAmount, onSetNote, onUploadPhoto, onRemovePhoto, onSkip, timeFormat, reorderDragging, onReorderStart, onReorderArm, onReorderMove, onReorderEnd, onReorderKey }: { routine: Routine; completed: boolean; skipped: boolean; completedItemIds: Set<number>; amountCounts: Record<string, number>; trackerEntries: Record<string, TrackerEntry | undefined>; onToggle: () => void; onToggleItem: (itemId: number) => void; onSetAmount: (amount: RoutineAmount, count: number) => void; onSetNote: (tracker: RoutineAmount, value: string) => void; onUploadPhoto: (tracker: RoutineAmount, file: File) => void; onRemovePhoto: (tracker: RoutineAmount) => void; onSkip: (skipped: boolean) => void; timeFormat: TimeFormat; reorderDragging: boolean; onReorderStart: (routineId: number, pointerId: number, startY: number, armed: boolean) => void; onReorderArm: (pointerId: number) => void; onReorderMove: (event: ReactPointerEvent<HTMLDivElement>) => void; onReorderEnd: (pointerId: number) => void; onReorderKey: (direction: -1 | 1) => void }) {
