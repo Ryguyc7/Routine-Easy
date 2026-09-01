@@ -556,6 +556,14 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(css, /\.routine-builder-page \.add-routine-modal \.form-actions \{[^}]*background: transparent;[^}]*backdrop-filter: none;[^}]*box-shadow: none/);
   assert.match(css, /html\[data-theme="dark"\] \.routine-builder-page \.add-routine-modal \.form-actions \{ background: transparent; box-shadow: none; \}/);
   assert.match(css, /\.routine-template-page \.template-dialog > \.template-dialog-header \{[^}]*height: calc\(68px \+ env\(safe-area-inset-top\)\);[^}]*grid-template-columns: 42px minmax\(0, 1fr\) 42px/);
+  assert.match(css, /Unified secondary pages/);
+  assert.match(css, /:is\(\.routine-template-page\.feature-dialog-backdrop, \.routine-builder-page\.add-modal-backdrop\) \{[^}]*background-color: var\(--color-sky\);[^}]*linear-gradient\(180deg, var\(--color-horizon\) 0%, var\(--color-sky\) 78%\)/);
+  assert.match(css, /\.routine-template-page \.template-dialog > \.template-dialog-header,[^{]*\{[^}]*background: var\(--surface-card\);[^}]*border-radius: var\(--radius-pill\);[^}]*box-shadow: var\(--shadow-tier-2\)/);
+  assert.match(css, /\.routine-builder-page \.form-grid,[^{]*\{[^}]*background: var\(--surface-card\);[^}]*border-radius: 36px;[^}]*box-shadow: var\(--shadow-tier-1\)/);
+  assert.match(css, /\.routine-builder-page \.wizard-progress i\.active,[^{]*\{[^}]*background: var\(--color-ink\)/);
+  assert.match(css, /\.settings-list,[^{]*\{[^}]*gap: 12px;[^}]*background: transparent;[^}]*box-shadow: none/);
+  assert.match(css, /\.settings-list \.setting-card,[^{]*\{[^}]*background: var\(--surface-card\);[^}]*border-radius: var\(--radius-card\);[^}]*box-shadow: var\(--shadow-tier-1\)/);
+  assert.match(css, /\.setting-options button\.active,[^{]*\{[^}]*background: var\(--color-ink\)/);
   assert.match(page, /function animateBottomNavReturn/);
   assert.match(page, /function selectBottomTab\(nextTab: MainTab\)/);
   assert.doesNotMatch(page, /bottomNavPhase !== "idle"\) return/);
