@@ -2,7 +2,7 @@
 
 import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, Camera, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, Plus, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, Camera, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, Plus, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -1360,31 +1360,6 @@ export default function Home() {
     setSaving(false);
   }
 
-  function duplicateRoutine(routine: Routine) {
-    prepareCreationFlow();
-    setEditingRoutineId(null);
-    setSelectedTemplate({
-      id: `duplicate-${routine.id}`,
-      name: `${routine.name} copy`,
-      description: `A copy of ${routine.name}`,
-      emoji: routine.emoji,
-      color: routine.color,
-      time: routine.time,
-      days: [...routine.days],
-      amounts: routine.amounts.map((amount) => trackerKind(amount) === "instructions" ? { ...amount, images: [] } : { ...amount }),
-      lists: routine.lists.map((list) => ({
-        ...list,
-        items: routine.items.filter((item) => item.listKey === list.key).map((item) => item.title).join("\n"),
-      })),
-      dayVariants: { ...routine.dayVariants },
-      startDate: routine.startDate,
-      endDate: routine.endDate,
-      timeSection: routine.timeSection,
-    });
-    setShowTemplatePicker(false);
-    setShowAdd(true);
-  }
-
   async function deleteRoutine(id: number) {
     setDeleting(true);
     const deletedRoutine = routines.find((routine) => routine.id === id);
@@ -1615,7 +1590,7 @@ export default function Home() {
             <section className={`routine-library${!loading && !routines.length ? " routine-library-empty" : ""}`}>
               {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="btn btn-primary btn-sm desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="btn btn-primary primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
+                {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="btn btn-primary primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
               </div>
             </section>
           </div>
@@ -2474,7 +2449,7 @@ function TrackerControl({ routine, tracker, count, entry, date, onChange, onSetN
   return <div className="quantity-tracker tracker-control-row"><strong className="quantity-name">{tracker.name}</strong><button type="button" className={`tracker-avoidance${count ? " active" : ""}`} onClick={() => onChange(count ? 0 : 1)}><span>{count ? "✓" : ""}</span>I avoided this {date === localDateKey() ? "today" : "that day"}</button></div>;
 }
 
-function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistory, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDuplicate: () => void; onHistory: () => void; onDelete: () => void }) {
+function RoutineCard({ routine, timeFormat, onEditOptions, onDelete }: { routine: Routine; timeFormat: TimeFormat; onEditOptions: () => void; onDelete: () => void }) {
   const dayLabel = routine.days.length === 7 ? "Every day" : routine.days.map((day) => DAY_NAMES[day]).join(" · ");
   const instructionCount = routine.amounts.filter((amount) => trackerKind(amount) === "instructions").length;
   const trackingLabelParts = [
@@ -2485,13 +2460,11 @@ function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistor
   const trackingLabel = trackingLabelParts.length ? trackingLabelParts.join(" + ") : "Single check";
   return <article className="card routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
-    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
+    <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small>{(routine.startDate || routine.endDate) && <small className="date-range-label">{formatDateRange(routine)}</small>}</div>
     <div className="routine-card-actions">
       <button onClick={onEditOptions} aria-label={`Edit ${routine.name}`}>Edit</button>
-      <button onClick={onDuplicate} aria-label={`Duplicate ${routine.name}`}><Copy aria-hidden="true" />Duplicate</button>
-      <button onClick={onHistory} aria-label={`View history for ${routine.name}`}><History aria-hidden="true" />History</button>
+      <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`} title="Delete"><Trash2 aria-hidden="true" /></button>
     </div>
-    <button className="delete-button" onClick={onDelete} aria-label={`Delete ${routine.name}`}><Trash2 aria-hidden="true" /></button>
   </article>;
 }
 
@@ -2795,7 +2768,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
       </section>
     </div>
     <div className="form-actions wizard-actions">
-      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} aria-disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving} aria-disabled={saving || stepSettling}>{saving ? "Saving…" : template?.id.startsWith("duplicate-") ? "Save duplicate" : "Add routine"}</button>}
+      {step < steps.length - 1 ? <button type="button" className="primary-button premium-action" onClick={() => moveToStep(step + 1)} aria-disabled={stepSettling}>Next</button> : <button className="primary-button premium-action" disabled={saving} aria-disabled={saving || stepSettling}>{saving ? "Saving…" : "Add routine"}</button>}
     </div>
   </form>
   <VerticalScrollIndicator scrollerRef={formRef} label="Add routine form" />

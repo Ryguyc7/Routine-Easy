@@ -2781,8 +2781,12 @@ html[data-theme="dark"] .routine-checklist button.checked .item-check {
 }
 
 .routine-card {
-  min-height: 148px;
-  padding: 24px 28px 52px 24px;
+  min-height: 96px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
 }
 
 .routine-card::before {
@@ -2790,13 +2794,13 @@ html[data-theme="dark"] .routine-checklist button.checked .item-check {
 }
 
 .routine-grid {
-  gap: 20px;
+  gap: 12px;
 }
 
 .routine-card-actions {
-  left: 84px;
-  right: 18px;
-  bottom: 16px;
+  position: static;
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
@@ -2812,6 +2816,38 @@ html[data-theme="dark"] .routine-card-actions button {
   font-weight: 500;
 }
 
+.routine-card .card-color {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border-radius: var(--radius-tile);
+  font-size: 20px;
+}
+
+.routine-card .card-body {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.routine-card .card-body p {
+  margin: 0;
+  font-size: var(--fs-label);
+  font-weight: 500;
+}
+
+.routine-card .card-body small {
+  display: block;
+  overflow: hidden;
+  font-size: var(--fs-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.routine-card .card-body .date-range-label {
+  margin: 0;
+}
+
 .routine-card-actions button:first-child,
 html[data-theme="dark"] .routine-card-actions button:first-child {
   color: var(--color-cloud);
@@ -2821,6 +2857,26 @@ html[data-theme="dark"] .routine-card-actions button:first-child {
 
 html[data-theme="dark"] .routine-card-actions button:first-child {
   color: #0e1116;
+}
+
+.routine-card-actions .delete-button,
+html[data-theme="dark"] .routine-card-actions .delete-button {
+  position: static;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--color-danger, #d84b5f);
+  background: color-mix(in srgb, var(--color-danger, #d84b5f) 8%, var(--surface-card));
+  border: 1px solid color-mix(in srgb, var(--color-danger, #d84b5f) 18%, var(--color-edge));
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.routine-card-actions .delete-button:hover {
+  color: var(--color-cloud);
+  background: var(--color-danger, #d84b5f);
 }
 
 .primary-button,

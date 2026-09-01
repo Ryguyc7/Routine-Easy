@@ -446,7 +446,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(layout, /routineez-favicon\.png/);
   assert.match(page, /className="mobile-settings" onClick={openSettings} aria-label="Open settings"><Settings2/);
   assert.doesNotMatch(page, /mobile-profile|showProfile|profile-popover-backdrop/);
-  assert.match(page, /className="delete-button"[\s\S]*?<Trash2 aria-hidden="true"/);
+  assert.match(page, /className="routine-card-actions"[\s\S]*?className="delete-button"[\s\S]*?<Trash2 aria-hidden="true"/);
   assert.match(page, /Step \{step \+ 1\} of \{steps\.length\}/);
   assert.match(page, /The basics/);
   assert.match(page, /How to track it/);
@@ -655,12 +655,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.skipped \.collapsed-progress span \{ width: 100% !important/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-swipe-underlay/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /routine-row\.skipped \{ border-style: dashed/);
-  assert.match(page, /Duplicate/);
-  const duplicateRoutineSource = page.slice(page.indexOf("function duplicateRoutine"), page.indexOf("async function deleteRoutine"));
-  assert.match(duplicateRoutineSource, /setSelectedTemplate\(\{/);
-  assert.match(duplicateRoutineSource, /setShowAdd\(true\)/);
-  assert.doesNotMatch(duplicateRoutineSource, /fetch\(/);
-  assert.match(page, /Save duplicate/);
+  assert.doesNotMatch(page, /function duplicateRoutine|>Duplicate<|Save duplicate|View history for/);
+  assert.match(page, /function RoutineCard\(\{ routine, timeFormat, onEditOptions, onDelete \}/);
+  assert.match(page, /\(routine\.startDate \|\| routine\.endDate\) && <small className="date-range-label"/);
   assert.match(completionRoute, /"completed" \| "skipped"/);
   assert.match(completionRoute, /ON CONFLICT\(owner_key, routine_id, date\) DO UPDATE SET status/);
   assert.match(routinesRoute, /routine_id AS routineId, date, status FROM completions/);
@@ -695,7 +692,9 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /html\[data-theme="dark"\] \.filter-pills button\.active \{[^}]*background: var\(--pill\)/);
   assert.match(css, /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button,[\s\S]*?width: 42px;[\s\S]*?height: 42px;[\s\S]*?border-radius: var\(--radius-pill\)/);
   assert.match(css, /:is\(\.calendar-filter-picker, \.history-filter-picker\) \.filter-pills button\.active,[\s\S]*?background: var\(--color-ink\)/);
-  assert.match(css, /html\[data-theme="dark"\] \.routine-card-actions button \{[^}]*background: color-mix/);
+  assert.match(css, /\.routine-card \{\s*min-height: 96px;[\s\S]*?grid-template-columns: 44px minmax\(0, 1fr\) auto;[\s\S]*?padding: 14px/);
+  assert.match(css, /\.routine-card-actions \{\s*position: static;[\s\S]*?gap: 6px/);
+  assert.match(css, /\.routine-card-actions \.delete-button,[\s\S]*?width: 32px;[\s\S]*?opacity: 1/);
   assert.match(css, /html\[data-theme="dark"\] \.delete-button,/);
   assert.match(css, /Floating mobile navigation with a fully staged active-ball and pull-down cutout/);
   assert.doesNotMatch(css, /transition: --active-x|@property --active-x/);
