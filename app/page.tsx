@@ -2,7 +2,7 @@
 
 import { FormEvent, startTransition, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, CircleUserRound, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus2, Camera, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Copy, Database, Download, EyeOff, History, ListChecks, Monitor, Moon, ShieldCheck, SkipForward, Settings2, Sparkles, Sun, Trash2, Upload, Volume2, X, type LucideIcon } from "lucide-react";
 import { clearDeviceData, isNativeApp, loadDevicePreferences, loadDeviceSnapshot, readDevicePhoto, removeDevicePhoto, saveDeviceInstructionImage, saveDevicePhoto, saveDevicePreferences, saveDeviceSnapshot, type DeviceSnapshot } from "./device-storage";
 
 type RoutineItem = { id: number; routineId: number; title: string; listKey: string; position: number };
@@ -544,7 +544,6 @@ export default function Home() {
   const [bottomNavReturning, setBottomNavReturning] = useState(false);
   const [bottomNavPhase, setBottomNavPhase] = useState<BottomNavPhase>("idle");
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [systemDark, setSystemDark] = useState(false);
@@ -993,7 +992,6 @@ export default function Home() {
 
   function openSettings() {
     prepareCreationFlow();
-    setShowProfile(false);
     if (tab !== "settings") settingsReturnTabRef.current = tab;
     setTab("settings");
   }
@@ -1099,15 +1097,6 @@ export default function Home() {
       oscillator.addEventListener("ended", () => void context.close(), { once: true });
     } catch { /* Feedback is optional when a browser blocks audio. */ }
   }
-
-  useEffect(() => {
-    if (!showProfile) return;
-    const closeProfile = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowProfile(false);
-    };
-    window.addEventListener("keydown", closeProfile);
-    return () => window.removeEventListener("keydown", closeProfile);
-  }, [showProfile]);
 
   async function toggleRoutine(routineId: number, date = todayKey) {
     const routine = routines.find((item) => item.id === routineId);
@@ -1547,26 +1536,13 @@ export default function Home() {
       <section className="content sky">
         <BlobCorners className="app-background-blobs" />
         <header className="mobile-header">
-          <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
+          <button className="mobile-settings" onClick={openSettings} aria-label="Open settings"><Settings2 aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="Routine EASY">
             <img src="/routineez-checklist-glossy.png" alt="" />
             <span className="mobile-wordmark-name">Routine<EasyWord className="mobile-wordmark-easy" /></span>
           </div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><span aria-hidden="true">+</span></button>
         </header>
-
-        {showProfile && <div className="profile-popover-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowProfile(false); }}>
-          <section className="profile-card" role="dialog" aria-label="Your Routine EASY profile">
-            <button className="profile-close" onClick={() => setShowProfile(false)} aria-label="Close profile"><X aria-hidden="true" /></button>
-            <div className="profile-avatar"><CircleUserRound aria-hidden="true" /></div>
-            <div className="profile-copy"><small>Your profile</small><h2>My Routine<EasyWord className="brand-easy" /></h2><p>Small routines. Easier days.</p></div>
-            <div className="profile-stats"><div><i><ListChecks aria-hidden="true" /></i><span><strong>{routines.length}</strong><small>Routines</small></span></div><div><i><CircleCheckBig aria-hidden="true" /></i><span><strong>{doneCount}/{eligibleTodayRoutines.length}</strong><small>Done today</small></span></div></div>
-            <div className="profile-actions">
-              <button className="profile-settings-button" onClick={openSettings}><Settings2 aria-hidden="true" />Settings</button>
-              <button className="profile-routines-button" onClick={() => { setTab("routines"); setShowProfile(false); }}><ListChecks aria-hidden="true" />Manage routines</button>
-            </div>
-          </section>
-        </div>}
 
         {routineToDelete && <DeleteRoutineDialog routine={routineToDelete} deleting={deleting} onCancel={() => setRoutineToDelete(null)} onConfirm={() => deleteRoutine(routineToDelete.id)} />}
         {showTemplatePicker && <TemplateChooser onCancel={closeTemplatePicker} onChoose={(template) => { setSelectedTemplate(template); setShowTemplatePicker(false); setShowAdd(true); }} />}

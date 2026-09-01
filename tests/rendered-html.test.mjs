@@ -435,7 +435,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(layout, /const faviconFallback = "\/favicon\.ico\?v=20260818-3"/);
   assert.match(layout, /icons:[\s\S]*icon: \[[\s\S]*url: favicon[\s\S]*url: faviconFallback/);
   assert.doesNotMatch(layout, /routineez-favicon\.png/);
-  assert.match(page, /mobile-profile/);
+  assert.match(page, /className="mobile-settings" onClick={openSettings} aria-label="Open settings"><Settings2/);
+  assert.doesNotMatch(page, /mobile-profile|showProfile|profile-popover-backdrop/);
   assert.match(page, /className="delete-button"[\s\S]*?<Trash2 aria-hidden="true"/);
   assert.match(page, /Step \{step \+ 1\} of \{steps\.length\}/);
   assert.match(page, /The basics/);
@@ -471,11 +472,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /disabled=\{saving\} aria-disabled=\{saving \|\| stepSettling\}/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /add-form-shell \{[^}]*flex: 1 1 auto; max-height: none; display: flex; overflow: hidden/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /add-modal-stack > \.routine-live-preview \{ max-height: min\(240px, 32svh\)/);
-  assert.match(page, /CircleUserRound/);
-  assert.match(page, /profile-popover-backdrop/);
-  assert.match(page, /profile-settings-button/);
-  assert.match(page, /profile-stats"><div><i><ListChecks/);
-assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-hidden="true" \/>Manage routines<\/button>/);
+  assert.doesNotMatch(page, /CircleUserRound|profile-popover-backdrop|profile-settings-button|profile-routines-button|profile-stats/);
   assert.match(page, /function SettingsPage/);
   assert.doesNotMatch(page, /<h2>Welcome screen<\/h2>|View onboarding|showOnboarding|onShowOnboarding/);
   assert.match(page, /settingsReturnTabRef = useRef<Exclude<Tab, "settings">>/);
@@ -496,7 +493,6 @@ assert.match(page, /className="profile-routines-button"[\s\S]*?<ListChecks aria-
   assert.match(page, /!expanded && <div className="collapsed-progress"/);
   assert.match(page, /weekStartsOn/);
   assert.match(page, /preferences\.motion === "reduced"/);
-  assert.match(page, /Manage routines/);
   assert.match(page, /className="settings-list" role="group" aria-label="Preferences"/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.setting-card \+ \.setting-card \{ border-top:/);
   assert.match(page, /Completed routines/);

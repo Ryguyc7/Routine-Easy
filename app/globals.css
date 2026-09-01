@@ -3089,14 +3089,19 @@ html[data-theme="dark"] .onboarding-live-card {
 }
 
 @media (max-width: 760px) {
+  .content.sky,
+  html[data-theme="dark"] .content.sky {
+    padding-top: 0;
+  }
+
   .mobile-header,
   html[data-theme="dark"] .mobile-header {
-    position: sticky;
-    top: max(12px, env(safe-area-inset-top));
+    position: fixed;
+    inset: max(12px, calc(env(safe-area-inset-top) + 8px)) 16px auto;
     z-index: 30;
-    width: calc(100% - 32px);
+    width: auto;
     height: 64px;
-    margin: 12px 16px 0;
+    margin: 0;
     padding: 8px 10px;
     color: var(--text-strong);
     background: var(--surface-card);
@@ -3117,9 +3122,9 @@ html[data-theme="dark"] .onboarding-live-card {
     filter: grayscale(1) brightness(0) invert(1);
   }
 
-  .mobile-profile,
+  .mobile-settings,
   .mobile-add,
-  html[data-theme="dark"] :is(.mobile-profile, .mobile-add) {
+  html[data-theme="dark"] :is(.mobile-settings, .mobile-add) {
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -3128,10 +3133,21 @@ html[data-theme="dark"] .onboarding-live-card {
     box-shadow: none;
   }
 
-  .mobile-profile {
+  .mobile-settings {
+    justify-self: start;
+    display: grid;
+    place-items: center;
+    padding: 0;
     color: var(--text-strong);
     background: var(--surface-sunken);
     border: var(--border-hairline);
+    cursor: pointer;
+  }
+
+  .mobile-settings svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.75;
   }
 
   .mobile-add,
@@ -3143,6 +3159,11 @@ html[data-theme="dark"] .onboarding-live-card {
 
   html[data-theme="dark"] .mobile-add {
     color: #0e1116;
+  }
+
+  .page {
+    height: 100dvh;
+    padding-top: calc(96px + env(safe-area-inset-top));
   }
 
   .progress-card,
