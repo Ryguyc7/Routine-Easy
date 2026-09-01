@@ -1714,9 +1714,9 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
   };
 
   return <div className={`page history-page${selected ? " history-page-detail" : ""}${!loading && !routines.length ? " history-page-empty" : ""}`}>
-    {routines.length > 0 && <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills" accent={selected?.color} multicolor={effectiveSelection === "all"}>
-      <button className={effectiveSelection === "all" ? "active" : ""} aria-pressed={effectiveSelection === "all"} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}>All routines</button>
-      {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} aria-pressed={effectiveSelection === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => onSelectRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
+    {routines.length > 0 && <ScrollablePicker label="History routine filters" className="history-filter-picker" scrollClassName="filter-pills">
+      <button className={effectiveSelection === "all" ? "active" : ""} aria-label="All routines" title="All routines" aria-pressed={effectiveSelection === "all"} onClick={() => { onSelectRoutine("all"); setHistoryMonth(currentMonth); }}><ListChecks aria-hidden="true" /></button>
+      {routines.map((routine) => <button key={routine.id} className={effectiveSelection === routine.id ? "active" : ""} aria-label={`View ${routine.name} history`} title={routine.name} aria-pressed={effectiveSelection === routine.id} onClick={() => onSelectRoutine(routine.id)}><span aria-hidden="true">{routine.emoji}</span></button>)}
     </ScrollablePicker>}
     {loading ? <LoadingRows /> : !routines.length ? <section className="history-empty"><span className="empty-state-icon history-empty-icon" aria-hidden="true"><History /></span><h3>Your progress starts here</h3><p>Add a routine and its history will appear here.</p><button className="primary-button premium-action" onClick={onAddRoutine}>Add your first routine</button></section> : selected ? (() => {
       const states = historyByRoutine.get(selected.id) ?? [];

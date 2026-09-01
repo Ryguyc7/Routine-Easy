@@ -342,7 +342,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .filter-pills button span { margin-right: 6px; }
 .filter-pills button.active { color: #fff; background: var(--pill); border-color: var(--pill); }
 .filter-pills button:first-child.active { --pill: var(--ink); }
-:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:first-child.active {
+.calendar-filter-picker .filter-pills button:first-child.active {
   --pill: transparent;
   position: relative;
   overflow: hidden;
@@ -356,7 +356,7 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:first-child.active { animation: none !important; }
+  .calendar-filter-picker .filter-pills button:first-child.active { animation: none !important; }
 }
 .calendar-filter-picker { margin: 0 0 15px; }
 .calendar-filter-picker .filter-pills { margin: 0; padding-bottom: 7px; }
@@ -1712,7 +1712,7 @@ html[data-theme="dark"] .filter-pills button:first-child.active {
   background: #f4f1f7;
   box-shadow: 0 5px 14px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,255,255,.35);
 }
-html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:first-child.active {
+html[data-theme="dark"] .calendar-filter-picker .filter-pills button:first-child.active {
   padding: 5px 9px 7px;
   color: #f4f1f7;
   border: 3px solid transparent;
@@ -2965,6 +2965,68 @@ html[data-theme="dark"] .history-month-toolbar :is(.calendar-today-button, .hist
 
 .history-overview-card {
   padding: 18px;
+}
+
+.history-filter-picker .filter-pills {
+  gap: 8px;
+  padding: 0 0 6px;
+}
+
+.history-filter-picker .filter-pills button,
+html[data-theme="dark"] .history-filter-picker .filter-pills button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text-muted);
+  background: var(--surface-card);
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+}
+
+.history-filter-picker .filter-pills button:hover {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+}
+
+.history-filter-picker .filter-pills button.active,
+.history-filter-picker .filter-pills button:first-child.active,
+html[data-theme="dark"] .history-filter-picker .filter-pills button.active,
+html[data-theme="dark"] .history-filter-picker .filter-pills button:first-child.active {
+  color: var(--color-cloud);
+  background: var(--color-ink);
+  border: var(--border-hairline);
+  border-color: var(--color-ink);
+  box-shadow: var(--shadow-tier-1);
+  animation: none;
+}
+
+html[data-theme="dark"] .history-filter-picker .filter-pills button.active,
+html[data-theme="dark"] .history-filter-picker .filter-pills button:first-child.active {
+  color: #0e1116;
+}
+
+.history-filter-picker .filter-pills button span {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.history-filter-picker .filter-pills button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.history-filter-picker .picker-scrollbar::before,
+html[data-theme="dark"] .history-filter-picker .picker-scrollbar::before {
+  background: var(--border-strong);
+}
+
+.history-filter-picker .picker-thumb::after,
+html[data-theme="dark"] .history-filter-picker .picker-thumb::after {
+  background: var(--text-muted);
 }
 
 .history-overview > .history-overview-header {
