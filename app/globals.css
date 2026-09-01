@@ -1463,21 +1463,23 @@ html[data-theme="dark"] .settings-saved, html[data-theme="dark"] .setting-option
 @keyframes detail-card-arrive { from { opacity: 0; transform: translateY(8px) scale(.985); } }
 @keyframes saved-check-arrive { from { opacity: 0; transform: scale(.45) rotate(-22deg); } 70% { opacity: 1; transform: scale(1.12) rotate(3deg); } }
 
-/* App-icon palette: one coordinated system instead of a purple-only UI. */
+/* One neutral wordmark across every app surface. */
 .brand-easy, .mobile-wordmark-easy, .splash-easy {
   display: inline-flex;
   align-items: baseline;
-  margin-left: 3px;
-  font-size: .78em;
-  font-weight: 800;
-  letter-spacing: -.55px;
+  margin-left: 2px;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
   background: none;
   -webkit-text-fill-color: currentColor;
 }
-.easy-e { color: var(--purple); -webkit-text-fill-color: var(--purple); }
-.easy-a { color: var(--coral); -webkit-text-fill-color: var(--coral); }
-.easy-s { color: var(--gold); -webkit-text-fill-color: var(--gold); }
-.easy-y { color: var(--sky); -webkit-text-fill-color: var(--sky); }
+:is(.easy-e, .easy-a, .easy-s, .easy-y) {
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
 .premium-action {
   background: var(--sky);
   box-shadow: 0 10px 22px rgba(77,150,255,.24), inset 0 1px 0 rgba(255,255,255,.42);
@@ -3422,6 +3424,18 @@ html[data-theme="dark"] .onboarding-live-card {
    start-aligned horizontal scrolling when the row becomes wider. */
 :is(.calendar-filter-picker, .history-filter-picker) .filter-pills {
   justify-content: safe center;
+}
+
+/* The checklist artwork stays recognizable without reintroducing the old
+   multicolor brand palette. */
+.mobile-wordmark img,
+html[data-theme="dark"] .mobile-wordmark img {
+  filter: grayscale(1) saturate(0) contrast(1.08);
+}
+
+.splash-logo,
+html[data-theme="dark"] .splash-logo {
+  filter: grayscale(1) saturate(0) contrast(1.08) drop-shadow(0 13px 20px rgba(14, 17, 22, .18));
 }
 
 @media (max-width: 760px) {

@@ -409,15 +409,12 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /premium-action/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Premium actions: solid, polished/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /--brand-spectrum/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /App-icon palette: one coordinated system/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /One neutral wordmark across every app surface/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\(1\)\.active,[\s\S]*?bottom-nav button:nth-of-type\(4\)\.active[^}]*color: var\(--ink\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\([1-4]\)\.active[^}]*color: (?:var\(--purple\)|var\(--coral\)|#b97a08|var\(--sky\))/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-e \{ color: var\(--purple\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-a \{ color: var\(--coral\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-s \{ color: var\(--gold\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-y \{ color: var\(--sky\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /:is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit;\s*-webkit-text-fill-color: currentColor;/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-detail-card \{ padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; \}/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.history-detail-card > header \{ display: grid; justify-items: center;/);
   assert.match(page, /history-page-detail/);
@@ -751,6 +748,8 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.progress-track,[\s\S]*?html\[data-theme="dark"\] \.progress-track \{\s*height: 5px/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy \{[\s\S]*?font-family: inherit;[\s\S]*?font-size: inherit;[\s\S]*?font-weight: inherit/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy :is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit/);
+  assert.match(css, /\.mobile-wordmark img,[^{]*\{\s*filter: grayscale\(1\) saturate\(0\) contrast\(1\.08\)/);
+  assert.match(css, /\.splash-logo,[^{]*\{\s*filter: grayscale\(1\) saturate\(0\) contrast\(1\.08\)/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button\.active \.nav-icon,[\s\S]*?color: var\(--color-cloud\)/);
   assert.match(css, /\.bottom-nav button:nth-of-type\(1\)\.active \.nav-label,[\s\S]*?bottom-nav button:nth-of-type\(4\)\.active \.nav-label \{\s*color: var\(--text-strong\)/);
 });
