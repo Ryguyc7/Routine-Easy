@@ -1544,7 +1544,7 @@ export default function Home() {
         </nav>
       </aside>
 
-      <section className="content">
+      <section className="content sky">
         <BlobCorners className="app-background-blobs" />
         <header className="mobile-header">
           <button className={`mobile-profile${showProfile ? " active" : ""}`} onClick={() => setShowProfile((visible) => !visible)} aria-label="Open profile" aria-expanded={showProfile}><CircleUserRound aria-hidden="true" /></button>
@@ -1575,7 +1575,7 @@ export default function Home() {
 
         {tab === "today" && (
           <div className="page today-page">
-            <section className="progress-card">
+            <section className="progress-card slab">
               <div className="progress-copy">
                 <span className="progress-icon">✦</span>
                 <div><strong>{progress === 100 && eligibleTodayRoutines.length ? "Beautiful work!" : progress > 50 ? "You’re on a roll!" : "Let’s make a start"}</strong><p>{doneCount} of {eligibleTodayRoutines.length} routines complete{skippedToday.size ? ` · ${skippedToday.size} skipped` : ""}</p></div>
@@ -1658,9 +1658,9 @@ export default function Home() {
               return routine ? <RoutineOptionsEditor routine={routine} onSubmit={(event) => saveRoutineOptions(event, routine)} onCancel={closeEditRoutine} saving={savingList} usedEmojis={routines.filter((item) => item.id !== routine.id).map((item) => item.emoji)} usedColors={routines.filter((item) => item.id !== routine.id).map((item) => item.color)} /> : null;
             })()}
             <section className={`routine-library${!loading && !routines.length ? " routine-library-empty" : ""}`}>
-              {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
+              {(loading || routines.length > 0) && <div className="section-title"><h2>Your routines</h2><div className="section-title-actions"><span>{routines.length} total</span><button className="btn btn-primary btn-sm desktop-routine-add premium-action" onClick={() => { prepareCreationFlow(); setEditingRoutineId(null); setShowTemplatePicker(true); }}>+ Add routine</button></div></div>}
               <div className="routine-grid">
-                {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
+                {loading ? <LoadingRows /> : routines.length ? routines.map((routine) => <RoutineCard key={routine.id} routine={routine} timeFormat={preferences.timeFormat} onEditOptions={() => { prepareCreationFlow(); setShowAdd(false); setEditingRoutineId(routine.id); }} onDuplicate={() => duplicateRoutine(routine)} onHistory={() => { setSelectedHistoryRoutine(routine.id); setTab("history"); }} onDelete={() => setRoutineToDelete(routine)} />) : <section className="routines-empty"><span className="empty-state-icon routines-empty-icon" aria-hidden="true"><ListChecks /></span><h3>Your routines start here</h3><p>Create one small routine and build from there.</p><button className="btn btn-primary primary-button premium-action" onClick={openAddFromHeader}>Add your first routine</button></section>}
               </div>
             </section>
           </div>
@@ -2303,7 +2303,7 @@ function RoutineRow({ routine, completed, skipped, completedItemIds, amountCount
     if (!touchDragContinues) onReorderEnd(event.pointerId);
   };
   const swipeDirection = dragX > 0 ? "swiping-right" : dragX < 0 ? "swiping-left" : "";
-  return <article data-routine-order-id={routine.id} className={`routine-row routine-order-item mode-${activeTrackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${reorderDragging ? "reorder-dragging" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>
+  return <article data-routine-order-id={routine.id} className={`card card-compact routine-row routine-order-item mode-${activeTrackingMode} ${completed ? "completed" : ""} ${skipped ? "skipped" : ""} ${expanded ? "expanded" : ""} ${swiping ? "swiping" : ""} ${reorderDragging ? "reorder-dragging" : ""} ${swipeDirection}`} style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="routine-swipe-underlay" aria-hidden="true"><span><SkipForward />{skipped ? "Undo skip" : "Skip today"}</span><span>{skipped ? "Undo skip" : "Skip today"}<SkipForward /></span></div>
     <div ref={swipeSurfaceRef} className="routine-swipe-surface" style={{ transform: `translateX(${dragX}px)` }} onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={finishSwipe} onPointerCancel={cancelSwipe}>
       <div className="routine-main" role="button" tabIndex={0} onKeyDown={(event) => {
@@ -2513,7 +2513,7 @@ function RoutineCard({ routine, timeFormat, onEditOptions, onDuplicate, onHistor
     ...(instructionCount ? [instructionCount === 1 ? "Instructions" : `${instructionCount} instructions`] : []),
   ].filter(Boolean);
   const trackingLabel = trackingLabelParts.length ? trackingLabelParts.join(" + ") : "Single check";
-  return <article className="routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
+  return <article className="card routine-card" style={{ "--routine": routine.color } as React.CSSProperties}>
     <div className="card-color"><span>{routine.emoji}</span></div>
     <div className="card-body"><strong>{routine.name}</strong><p>{dayLabel}</p><small>{formatRoutineTime(routine.time, timeFormat)} · {trackingLabel}</small><small className="date-range-label">{formatDateRange(routine)}</small></div>
     <div className="routine-card-actions">
