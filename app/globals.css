@@ -4006,6 +4006,8 @@ html[data-theme="dark"] .routine-builder-page .routine-wizard-header {
 .routine-builder-page .wizard-heading p {
   color: var(--text-muted);
   font-size: 12px;
+  max-width: none;
+  white-space: nowrap;
 }
 
 .routine-builder-page .wizard-progress {
@@ -4280,6 +4282,10 @@ html[data-theme="dark"] .data-danger-zone {
 
   .routine-builder-page .wizard-heading h2 {
     font-size: 21px;
+  }
+
+  .routine-builder-page .wizard-heading p {
+    font-size: 11px;
   }
 
   .routine-builder-page .form-grid {

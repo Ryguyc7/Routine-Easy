@@ -118,6 +118,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(page, /Different plan by day/);
   assert.match(page, /dayVariant-/);
   assert.match(page, /title: "Plan by day"/);
+  assert.equal((page.match(/note: "Choose repeat days and daily tracking\."/g) ?? []).length, 2);
+  assert.match(fullPageBuilderCss, /\.routine-builder-page \.wizard-heading p \{[^}]*white-space: nowrap/);
   assert.match(page, /function DayPlanSettings/);
   const addAppearanceSource = page.slice(page.indexOf('<section className="wizard-step" hidden={step !== 3} aria-label="Appearance">'), page.indexOf("function UniqueChoiceToggles"));
   assert.ok(addAppearanceSource.indexOf("<UniqueChoiceToggles") < addAppearanceSource.indexOf("<IconPicker"));

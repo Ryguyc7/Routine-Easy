@@ -2696,7 +2696,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
   const steps = [
     { title: "The basics", note: "Name it and choose when it happens." },
     { title: "How to track it", note: "Choose the check-off style that fits." },
-    { title: "Plan by day", note: "Choose when it repeats and what each day tracks." },
+    { title: "Plan by day", note: "Choose repeat days and daily tracking." },
     { title: "Make it yours", note: "Pick the icon and color that feel right." },
   ];
 
@@ -2901,7 +2901,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
   const steps = [
     { title: "The basics", note: "Update its name and when it happens." },
     { title: "How to track it", note: "Adjust its tracking styles." },
-    { title: "Plan by day", note: "Choose when it repeats and what each day tracks." },
+    { title: "Plan by day", note: "Choose repeat days and daily tracking." },
     { title: "Make it yours", note: "Change its icon and color." },
   ];
 
