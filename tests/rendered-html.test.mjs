@@ -599,7 +599,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-overview-grid/);
   assert.match(page, /type HistoryPeriod = "daily" \| "monthly" \| "yearly"/);
   assert.match(page, /className="history-period-toggle" role="group" aria-label="History period"/);
-  assert.match(page, /<h2>\{historyPeriodLabel\} progress<\/h2>/);
+  assert.doesNotMatch(page, /<h2>\{historyPeriodLabel\} progress<\/h2>/);
   assert.match(page, /setHistoryPeriod\(period\)/);
   assert.doesNotMatch(page, /Select a routine for the full monthly view/);
   assert.match(page, /className="history-overview-progress" role="progressbar"/);
@@ -612,6 +612,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /history-current-month-button/);
   assert.match(page, /calendar-month-heading[^]*history-current-month-button/);
   assert.match(css, /\.history-period-toggle \{[^}]*grid-template-columns: repeat\(3, 1fr\)/);
+  assert.match(css, /\.history-overview > \.history-overview-header \{[^}]*justify-content: center/);
   assert.match(css, /\.history-period-toggle button\.active/);
   assert.match(page, /className=\{`skipped[^]*?<SkipForward \/>/);
   assert.doesNotMatch(page, /↷/);

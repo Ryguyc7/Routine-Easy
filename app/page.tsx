@@ -1712,7 +1712,6 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
       </section>;
     })() : <section className="history-overview">
       <header className="history-overview-header">
-        <h2>{historyPeriodLabel} progress</h2>
         <div className="history-period-toggle" role="group" aria-label="History period">
           {(["daily", "monthly", "yearly"] as HistoryPeriod[]).map((period) => <button type="button" key={period} className={historyPeriod === period ? "active" : ""} aria-pressed={historyPeriod === period} onClick={() => setHistoryPeriod(period)}>{period[0].toUpperCase() + period.slice(1)}</button>)}
         </div>

@@ -3168,8 +3168,8 @@ html[data-theme="dark"] .history-page-detail .history-month-calendar .history-da
 
 .history-overview > .history-overview-header {
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: center;
+  gap: 0;
 }
 
 .history-period-toggle {
@@ -3220,7 +3220,7 @@ html[data-theme="dark"] .history-period-toggle button.active {
   .history-overview > .history-overview-header {
     align-items: stretch;
     flex-direction: column;
-    gap: 10px;
+    gap: 0;
   }
 
   .history-period-toggle {
