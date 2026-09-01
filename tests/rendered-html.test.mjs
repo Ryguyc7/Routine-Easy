@@ -407,11 +407,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /Premium actions: solid, polished/);
   assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /--brand-spectrum/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /App-icon palette: one coordinated system/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\(1\)\.active[^}]*color: var\(--purple\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\(2\)\.active[^}]*color: var\(--coral\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\(1\)\.active,[\s\S]*?bottom-nav button:nth-of-type\(4\)\.active[^}]*color: var\(--ink\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\(3\)\.active[^}]*color: #b97a08/);
-  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\(4\)\.active[^}]*color: var\(--sky\)/);
+  assert.doesNotMatch(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /bottom-nav button:nth-of-type\([1-4]\)\.active[^}]*color: (?:var\(--purple\)|var\(--coral\)|#b97a08|var\(--sky\))/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.premium-action \{\s*background: var\(--sky\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-e \{ color: var\(--purple\)/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.easy-a \{ color: var\(--coral\)/);
@@ -718,9 +716,9 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.bottom-nav\.nav-exiting button\.active::before[\s\S]*?bottom-nav-active-out \.16s/);
   assert.match(css, /\.bottom-nav \.nav-label \{[\s\S]*?top: 48px;[\s\S]*?color: currentColor;[\s\S]*?font-size: 9px/);
   assert.match(css, /\.bottom-nav button\.active \.nav-label,[\s\S]*?color: var\(--nav-accent\)/);
-  assert.match(css, /\.bottom-nav button\.calendar-nav-button:nth-of-type\(2\) \{ --nav-accent: var\(--coral\)/);
-  assert.match(css, /\.bottom-nav button:nth-of-type\(3\) \{ --nav-accent: var\(--gold\)/);
-  assert.match(css, /\.bottom-nav button:nth-of-type\(3\)\.active \.nav-label \{ color: #a96b00/);
+  assert.match(css, /\.bottom-nav button\.calendar-nav-button:nth-of-type\(2\) \{ --nav-accent: var\(--ink\)/);
+  assert.match(css, /\.bottom-nav button:nth-of-type\(3\) \{ --nav-accent: var\(--ink\)/);
+  assert.match(css, /\.bottom-nav button:nth-of-type\(3\)\.active \.nav-label \{ color: var\(--nav-accent\)/);
   assert.match(css, /\.calendar-nav-button\.active \.date-nav-icon \{[\s\S]*?color: #fff;[\s\S]*?border-color: rgba\(255,255,255,\.96\);[\s\S]*?background: #fff/);
   assert.match(css, /\.calendar-nav-button\.active \.date-nav-icon i \{ color: #fff; background: var\(--nav-accent\)/);
   assert.match(css, /\.calendar-nav-button\.active \.date-nav-icon strong \{ color: var\(--nav-accent\)/);
@@ -739,6 +737,7 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy \{[\s\S]*?font-family: inherit;[\s\S]*?font-size: inherit;[\s\S]*?font-weight: inherit/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy :is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button\.active \.nav-icon,[\s\S]*?color: var\(--color-cloud\)/);
+  assert.match(css, /\.bottom-nav button:nth-of-type\(1\)\.active \.nav-label,[\s\S]*?bottom-nav button:nth-of-type\(4\)\.active \.nav-label \{\s*color: var\(--text-strong\)/);
 });
 
 test("motion polish stays tactile and respects reduced motion", async () => {

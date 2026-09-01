@@ -1525,11 +1525,11 @@ html[data-theme="dark"] .settings-saved, html[data-theme="dark"] .setting-option
 }
 
 @media (max-width: 760px) {
-  .bottom-nav button:nth-of-type(1).active, .bottom-nav button:nth-of-type(1).active .nav-icon { color: var(--purple); }
-  .bottom-nav button:nth-of-type(2).active, .bottom-nav button:nth-of-type(2).active .nav-icon { color: var(--coral); }
-  .bottom-nav button:nth-of-type(3).active, .bottom-nav button:nth-of-type(3).active .nav-icon { color: #b97a08; }
-  .bottom-nav button:nth-of-type(4).active, .bottom-nav button:nth-of-type(4).active .nav-icon { color: var(--sky); }
-  .bottom-nav button:nth-of-type(2).calendar-nav-button.active .date-nav-icon i { background: var(--coral); }
+  .bottom-nav button:nth-of-type(1).active, .bottom-nav button:nth-of-type(1).active .nav-icon,
+  .bottom-nav button:nth-of-type(2).active, .bottom-nav button:nth-of-type(2).active .nav-icon,
+  .bottom-nav button:nth-of-type(3).active, .bottom-nav button:nth-of-type(3).active .nav-icon,
+  .bottom-nav button:nth-of-type(4).active, .bottom-nav button:nth-of-type(4).active .nav-icon { color: var(--ink); }
+  .bottom-nav button:nth-of-type(2).calendar-nav-button.active .date-nav-icon i { background: var(--ink); }
 }
 
 /* Calm typography shared by Settings and the rest of the product. */
@@ -1841,7 +1841,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
   .bottom-nav button,
   .bottom-nav button.calendar-nav-button,
   .bottom-nav button.calendar-nav-button.active {
-    --nav-accent: var(--purple);
+    --nav-accent: var(--ink);
     z-index: 2;
     width: 100%;
     height: 64px;
@@ -1859,9 +1859,9 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     -webkit-backdrop-filter: none;
     transition: color .22s ease, transform .34s cubic-bezier(.2,1.1,.3,1);
   }
-  .bottom-nav button.calendar-nav-button:nth-of-type(2) { --nav-accent: var(--coral); }
-  .bottom-nav button:nth-of-type(3) { --nav-accent: var(--gold); }
-  .bottom-nav button:nth-of-type(4) { --nav-accent: var(--sky); }
+  .bottom-nav button.calendar-nav-button:nth-of-type(2) { --nav-accent: var(--ink); }
+  .bottom-nav button:nth-of-type(3) { --nav-accent: var(--ink); }
+  .bottom-nav button:nth-of-type(4) { --nav-accent: var(--ink); }
   .bottom-nav button.active,
   .bottom-nav button.calendar-nav-button.active {
     color: var(--nav-accent);
@@ -1912,7 +1912,7 @@ html[data-theme="dark"] .color-picker label > span { border-color: #25222b; outl
     font-weight: 750;
     animation: bottom-nav-label-in .18s .1s ease-out both;
   }
-  .bottom-nav button:nth-of-type(3).active .nav-label { color: #a96b00; }
+  .bottom-nav button:nth-of-type(3).active .nav-label { color: var(--nav-accent); }
   .bottom-nav .nav-icon {
     position: relative;
     z-index: 1;
@@ -3682,6 +3682,28 @@ html[data-theme="dark"] .onboarding-live-card {
 
   .bottom-nav .calendar-nav-button.active .date-nav-icon strong,
   html[data-theme="dark"] .bottom-nav .calendar-nav-button.active .date-nav-icon strong {
+    color: var(--calendar-ink);
+  }
+
+  .bottom-nav button:nth-of-type(1).active .nav-label,
+  .bottom-nav button:nth-of-type(2).active .nav-label,
+  .bottom-nav button:nth-of-type(3).active .nav-label,
+  .bottom-nav button:nth-of-type(4).active .nav-label {
+    color: var(--text-strong);
+  }
+
+  .bottom-nav button:nth-of-type(2).calendar-nav-button.active .date-nav-icon {
+    --calendar-ink: var(--color-cloud);
+    color: var(--calendar-ink);
+    border-color: var(--calendar-ink);
+  }
+
+  .bottom-nav button:nth-of-type(2).calendar-nav-button.active .date-nav-icon i {
+    color: var(--surface-card);
+    background: var(--calendar-ink);
+  }
+
+  .bottom-nav button:nth-of-type(2).calendar-nav-button.active .date-nav-icon strong {
     color: var(--calendar-ink);
   }
 
