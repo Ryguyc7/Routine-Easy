@@ -1572,9 +1572,9 @@ export default function Home() {
 
         {tab === "calendar" && (
           <div className="page calendar-page calendar-page-matched">
-            <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills" accent={selectedCalendarRoutine?.color} multicolor={selectedRoutine === "all"}>
-              <button className={selectedRoutine === "all" ? "active" : ""} aria-pressed={selectedRoutine === "all"} onClick={() => setSelectedRoutine("all")}>All routines</button>
-              {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} aria-pressed={selectedRoutine === routine.id} style={{ "--pill": routine.color } as React.CSSProperties} onClick={() => setSelectedRoutine(routine.id)}><span>{routine.emoji}</span>{routine.name}</button>)}
+            <ScrollablePicker label="Calendar routine filters" className="calendar-filter-picker" scrollClassName="filter-pills">
+              <button className={selectedRoutine === "all" ? "active" : ""} aria-label="All routines" title="All routines" aria-pressed={selectedRoutine === "all"} onClick={() => setSelectedRoutine("all")}><ListChecks aria-hidden="true" /></button>
+              {routines.map((routine) => <button key={routine.id} className={selectedRoutine === routine.id ? "active" : ""} aria-label={`View ${routine.name} calendar`} title={routine.name} aria-pressed={selectedRoutine === routine.id} onClick={() => setSelectedRoutine(routine.id)}><span aria-hidden="true">{routine.emoji}</span></button>)}
             </ScrollablePicker>
             <section className="calendar-detail-card" style={{ "--history-color": selectedCalendarRoutine?.color ?? "var(--sky)" } as React.CSSProperties}>
               <header className="calendar-detail-heading"><div className="history-title-row"><span className="history-emoji calendar-heading-icon">{selectedCalendarRoutine ? selectedCalendarRoutine.emoji : <CalendarDays aria-hidden="true" />}</span><h2>{selectedCalendarRoutine?.name ?? "All routines"}</h2></div></header>
@@ -1734,8 +1734,6 @@ function HistoryPage({ routines, selectedRoutine, onSelectRoutine, onAddRoutine,
             ? <button type="button" key={day.key} className={className} aria-current={isToday ? "date" : undefined} aria-label={`View details for ${day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, currently ${day.status}`} onClick={() => openDayEditor(day)}>{contents}</button>
             : <div key={day.key} className={className} aria-current={isToday ? "date" : undefined} title={`${day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${day.status}`}>{contents}</div>;
         })}</div></div>
-        <div className="history-legend"><span className="completed">Completed</span><span className="partial">Partial</span><span className="skipped">Skipped</span><span className="missed">Missed</span></div>
-        <p className="history-edit-hint">Tap a past day to see what you recorded or correct it.</p>
       </section>;
     })() : <section className="history-overview">
       <header className="history-overview-header">

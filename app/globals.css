@@ -342,22 +342,6 @@ html.capacitor-native select { min-width: 0; font-size: max(16px, 1em); touch-ac
 .filter-pills button span { margin-right: 6px; }
 .filter-pills button.active { color: #fff; background: var(--pill); border-color: var(--pill); }
 .filter-pills button:first-child.active { --pill: var(--ink); }
-.calendar-filter-picker .filter-pills button:first-child.active {
-  --pill: transparent;
-  position: relative;
-  overflow: hidden;
-  padding: 6px 10px 8px;
-  color: var(--ink);
-  border: 3px solid transparent;
-  background: linear-gradient(#fff,#fff) padding-box, conic-gradient(from var(--easy-ring-angle), var(--purple) 0 25%, var(--coral) 25% 50%, var(--gold) 50% 75%, var(--sky) 75% 100%) border-box;
-  box-shadow: none;
-  text-shadow: none;
-  animation: easy-ring-orbit 4.8s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .calendar-filter-picker .filter-pills button:first-child.active { animation: none !important; }
-}
 .calendar-filter-picker { margin: 0 0 15px; }
 .calendar-filter-picker .filter-pills { margin: 0; padding-bottom: 7px; }
 .calendar-filter-picker .picker-scrollbar { margin-top: -1px; }
@@ -1712,14 +1696,6 @@ html[data-theme="dark"] .filter-pills button:first-child.active {
   background: #f4f1f7;
   box-shadow: 0 5px 14px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,255,255,.35);
 }
-html[data-theme="dark"] .calendar-filter-picker .filter-pills button:first-child.active {
-  padding: 5px 9px 7px;
-  color: #f4f1f7;
-  border: 3px solid transparent;
-  background: linear-gradient(#2b2731,#2b2731) padding-box, conic-gradient(from var(--easy-ring-angle), var(--purple) 0 25%, var(--coral) 25% 50%, var(--gold) 50% 75%, var(--sky) 75% 100%) border-box;
-  box-shadow: none;
-}
-
 html[data-theme="dark"] .routine-card-actions button {
   color: color-mix(in srgb, var(--routine) 68%, #f4f1f7);
   border-color: color-mix(in srgb, var(--routine) 34%, #45404b);
@@ -3015,13 +2991,13 @@ html[data-theme="dark"] .history-month-toolbar :is(.calendar-today-button, .hist
   padding: 18px;
 }
 
-.history-filter-picker .filter-pills {
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills {
   gap: 8px;
   padding: 0 0 6px;
 }
 
-.history-filter-picker .filter-pills button,
-html[data-theme="dark"] .history-filter-picker .filter-pills button {
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button,
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button {
   width: 42px;
   height: 42px;
   display: grid;
@@ -3034,15 +3010,15 @@ html[data-theme="dark"] .history-filter-picker .filter-pills button {
   box-shadow: none;
 }
 
-.history-filter-picker .filter-pills button:hover {
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:hover {
   color: var(--text-strong);
   background: var(--surface-sunken);
 }
 
-.history-filter-picker .filter-pills button.active,
-.history-filter-picker .filter-pills button:first-child.active,
-html[data-theme="dark"] .history-filter-picker .filter-pills button.active,
-html[data-theme="dark"] .history-filter-picker .filter-pills button:first-child.active {
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button.active,
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:first-child.active,
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button.active,
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:first-child.active {
   color: var(--color-cloud);
   background: var(--color-ink);
   border: var(--border-hairline);
@@ -3051,30 +3027,87 @@ html[data-theme="dark"] .history-filter-picker .filter-pills button:first-child.
   animation: none;
 }
 
-html[data-theme="dark"] .history-filter-picker .filter-pills button.active,
-html[data-theme="dark"] .history-filter-picker .filter-pills button:first-child.active {
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button.active,
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .filter-pills button:first-child.active {
   color: #0e1116;
 }
 
-.history-filter-picker .filter-pills button span {
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button span {
   margin: 0;
   font-size: 18px;
   line-height: 1;
 }
 
-.history-filter-picker .filter-pills button svg {
+:is(.calendar-filter-picker, .history-filter-picker) .filter-pills button svg {
   width: 18px;
   height: 18px;
 }
 
-.history-filter-picker .picker-scrollbar::before,
-html[data-theme="dark"] .history-filter-picker .picker-scrollbar::before {
+:is(.calendar-filter-picker, .history-filter-picker) .picker-scrollbar::before,
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .picker-scrollbar::before {
   background: var(--border-strong);
 }
 
-.history-filter-picker .picker-thumb::after,
-html[data-theme="dark"] .history-filter-picker .picker-thumb::after {
+:is(.calendar-filter-picker, .history-filter-picker) .picker-thumb::after,
+html[data-theme="dark"] :is(.calendar-filter-picker, .history-filter-picker) .picker-thumb::after {
   background: var(--text-muted);
+}
+
+.history-page-detail .history-detail-card,
+html[data-theme="dark"] .history-page-detail .history-detail-card {
+  min-height: auto;
+  flex: 0 0 auto;
+  padding: 20px 18px 18px;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: var(--border-hairline);
+  border-radius: 28px;
+  box-shadow: var(--shadow-tier-2);
+}
+
+.history-page-detail .history-detail-card > header {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: var(--border-hairline);
+}
+
+.history-page-detail .history-stats {
+  margin-bottom: 14px;
+}
+
+.history-page-detail .history-stats > div,
+html[data-theme="dark"] .history-page-detail .history-stats > div {
+  background: var(--surface-sunken);
+  border: var(--border-soft);
+  border-radius: 12px;
+}
+
+.history-page-detail .history-month-calendar {
+  padding: 2px;
+}
+
+.history-page-detail .history-weekday-row {
+  margin-bottom: 7px;
+}
+
+.history-page-detail .history-weekday-row span {
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+  font-weight: 500;
+}
+
+.history-page-detail .history-month-calendar .history-day,
+html[data-theme="dark"] .history-page-detail .history-month-calendar .history-day {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .history-page-detail .history-detail-card,
+  html[data-theme="dark"] .history-page-detail .history-detail-card {
+    padding: 18px 14px 16px;
+    border-radius: 26px;
+  }
 }
 
 .history-overview > .history-overview-header {
