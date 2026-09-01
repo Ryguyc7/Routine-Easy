@@ -746,6 +746,8 @@ test("motion polish stays tactile and respects reduced motion", async () => {
   assert.match(css, /\.routine-swipe-surface \{[^}]*border: 0/);
   assert.match(css, /\.check-circle \{[\s\S]*?width: 24px;[\s\S]*?border-radius: 50%/);
   assert.match(css, /\.check-circle svg \{[\s\S]*?stroke-width: 2\.7/);
+  assert.match(css, /\.routine-emoji,[\s\S]*?\.routine-row\.expanded \.routine-emoji[\s\S]*?border-radius: 50%;[\s\S]*?box-shadow: none/);
+  assert.match(css, /\.routine-row\.completed \.check-circle,[\s\S]*?box-shadow: none/);
   assert.match(css, /\.routine-expansion \{[^}]*border: 0/);
   assert.doesNotMatch(css, /\.quantity-trackers\.tracker-controls-collapsed \{ display: none/);
   assert.doesNotMatch(css, /\.routine-row:not\(\.expanded\) \{ height: 110px/);
