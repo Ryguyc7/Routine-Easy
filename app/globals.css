@@ -3315,6 +3315,11 @@ html[data-theme="dark"] .onboarding-live-card {
     color: var(--color-cloud);
   }
 
+  .bottom-nav button.calendar-nav-button.active .nav-icon,
+  html[data-theme="dark"] .bottom-nav button.calendar-nav-button.active .nav-icon {
+    color: var(--color-cloud);
+  }
+
   .bottom-nav .nav-icon svg {
     width: 20px;
     height: 20px;
