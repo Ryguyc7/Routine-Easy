@@ -1601,7 +1601,6 @@ export default function Home() {
                 })}
                 </div>
               </div>
-              <div className="calendar-legend">Colored bars show the routines scheduled for each day.</div>
             </section>
           </div>
         )}

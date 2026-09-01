@@ -310,6 +310,9 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /calendar-today-button/);
   assert.match(page, /calendar-detail-toolbar/);
   assert.match(page, /calendar-detail-card/);
+  assert.doesNotMatch(page, /Colored bars show the routines scheduled for each day/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.calendar-page-matched \.calendar-detail-card,[\s\S]*?background: var\(--surface-card\);[\s\S]*?border: var\(--border-hairline\);[\s\S]*?border-radius: 28px;[\s\S]*?box-shadow: var\(--shadow-tier-2\)/);
+  assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.calendar-page-matched \.calendar-detail-heading \{[\s\S]*?border-bottom: var\(--border-hairline\)/);
   assert.doesNotMatch(page, /calendarScheduledDays|calendarRoutineCount|calendar-summary-stats|Days scheduled|Routines shown/);
   assert.match(await readFile(new URL("../app/globals.css", import.meta.url), "utf8"), /\.calendar-page-matched \{ display: flex; flex-direction: column; padding-bottom: 88px; overflow: hidden/);
   assert.match(page, /calendar-month-heading/);
