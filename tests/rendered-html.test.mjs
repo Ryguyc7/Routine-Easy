@@ -720,6 +720,8 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.bottom-nav-selection-history \{ transform: translateX\(calc\(300% \+ 6px\)\)/);
   assert.match(css, /\.bottom-nav button,[\s\S]*?animation: none !important/);
   assert.match(css, /\.mobile-add svg \{[\s\S]*?width: 22px;[\s\S]*?height: 22px/);
+  assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy \{[\s\S]*?font-family: inherit;[\s\S]*?font-size: inherit;[\s\S]*?font-weight: inherit/);
+  assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy :is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button\.active \.nav-icon,[\s\S]*?color: var\(--color-cloud\)/);
 });
 

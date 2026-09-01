@@ -3134,6 +3134,19 @@ html[data-theme="dark"] .onboarding-live-card {
     font-weight: 600;
   }
 
+  .mobile-wordmark .mobile-wordmark-easy {
+    margin-left: 2px;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+  }
+
+  .mobile-wordmark .mobile-wordmark-easy :is(.easy-e, .easy-a, .easy-s, .easy-y) {
+    color: inherit;
+  }
+
   .mobile-wordmark img,
   html[data-theme="dark"] .mobile-wordmark img {
     width: 34px;
