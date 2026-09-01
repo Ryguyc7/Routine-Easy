@@ -3118,8 +3118,13 @@ html[data-theme="dark"] .onboarding-live-card {
     font-weight: 600;
   }
 
-  .mobile-wordmark img {
-    filter: grayscale(1) brightness(0) invert(1);
+  .mobile-wordmark img,
+  html[data-theme="dark"] .mobile-wordmark img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    transform: none;
+    filter: none;
   }
 
   .mobile-settings,
