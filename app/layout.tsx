@@ -22,18 +22,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
   const title = "Routine EASY — Simple Routine Tracker";
   const description = "Small routines. Easier days. A calm, colorful way to keep your day moving.";
-  const favicon = "/routine-easy-splash-icon-v3.png?v=20260818-3";
+  const favicon = "/routineez-app-icon-light-v1.png?v=20260902-1";
   const faviconFallback = "/favicon.ico?v=20260818-3";
   return {
     title,
     description,
     icons: {
       icon: [
-        { url: favicon, type: "image/png", sizes: "256x256" },
+        { url: favicon, type: "image/png", sizes: "512x512" },
         { url: faviconFallback, type: "image/x-icon", sizes: "256x256" },
       ],
-      shortcut: faviconFallback,
-      apple: { url: favicon, type: "image/png", sizes: "256x256" },
+      shortcut: favicon,
+      apple: { url: favicon, type: "image/png", sizes: "512x512" },
     },
     openGraph: { title, description, type: "website", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Routine EASY routine tracker" }] },
     twitter: { card: "summary_large_image", title, description, images: [`${origin}/og.png`] },

@@ -57,7 +57,8 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /splash-blob-gold/);
   assert.match(page, /splash-blob-sky/);
   assert.match(page, /splash-easy/);
-  assert.match(page, /routineez-checklist-v2\.png/);
+  assert.match(page, /routineez-checklist-v3\.png/);
+  assert.match(page, /routineez-app-icon-light-v1\.png/);
   assert.match(page, /function EasyWord/);
   assert.match(page, /easy-e/);
   assert.match(page, /easy-a/);
@@ -436,12 +437,13 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
-  assert.match(page, /routineez-checklist-v2\.png/);
+  assert.match(page, /routineez-checklist-v3\.png/);
   assert.doesNotMatch(page, /src="\/routineez-logo\.png"/);
   assert.doesNotMatch(page, /routineez-mark\.png/);
-  assert.match(layout, /const favicon = "\/routine-easy-splash-icon-v3\.png\?v=20260818-3"/);
+  assert.match(layout, /const favicon = "\/routineez-app-icon-light-v1\.png\?v=20260902-1"/);
   assert.match(layout, /const faviconFallback = "\/favicon\.ico\?v=20260818-3"/);
-  assert.match(layout, /icons:[\s\S]*icon: \[[\s\S]*url: favicon[\s\S]*url: faviconFallback/);
+  assert.match(layout, /url: favicon, type: "image\/png", sizes: "512x512"/);
+  assert.match(layout, /icons:[\s\S]*icon: \[[\s\S]*url: favicon[\s\S]*url: faviconFallback[\s\S]*shortcut: favicon/);
   assert.doesNotMatch(layout, /routineez-favicon\.png/);
   assert.match(page, /className="mobile-settings" onClick={openSettings} aria-label="Open settings"><Settings2/);
   assert.doesNotMatch(page, /mobile-profile|showProfile|profile-popover-backdrop/);
