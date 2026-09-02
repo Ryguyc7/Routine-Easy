@@ -3830,11 +3830,11 @@ html[data-theme="dark"] .splash-logo {
 
   .mobile-wordmark img,
   html[data-theme="dark"] .mobile-wordmark img {
-    width: 34px;
-    height: 34px;
+    width: 37px;
+    height: 37px;
     object-fit: contain;
     transform: none;
-    filter: none;
+    filter: drop-shadow(0 3px 5px rgba(14, 17, 22, .14));
   }
 
   .mobile-settings,

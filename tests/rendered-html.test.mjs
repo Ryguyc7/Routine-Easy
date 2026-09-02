@@ -760,7 +760,7 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /:is\(\.splash-wordmark, \.mobile-wordmark-name\) \{[\s\S]*?font-family: var\(--font-sans\);[\s\S]*?font-weight: 900;[\s\S]*?letter-spacing: -\.041em/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy :is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit/);
   assert.match(css, /Show the user-selected checklist artwork in its original color/);
-  assert.match(css, /\.mobile-wordmark img,[^{]*\{\s*filter: drop-shadow/);
+  assert.match(css, /\.mobile-wordmark img,\s*html\[data-theme="dark"\] \.mobile-wordmark img \{[^}]*width: 37px;[^}]*height: 37px;[^}]*filter: drop-shadow\(0 3px 5px rgba\(14, 17, 22, \.14\)\)/);
   assert.match(css, /\.splash-logo,[^{]*\{\s*filter: drop-shadow/);
   assert.doesNotMatch(css, /\.mobile-wordmark img,[^{]*\{\s*filter: grayscale/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button\.active \.nav-icon,[\s\S]*?color: var\(--color-cloud\)/);
