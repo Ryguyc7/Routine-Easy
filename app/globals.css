@@ -4757,3 +4757,142 @@ html[data-theme="dark"] .data-danger-zone {
     grid-column: 1 / -1;
   }
 }
+
+/* Dark-mode consistency contract: theme changes color and depth, never geometry. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+.setting-copy,
+.data-dialog > header > div:nth-child(2),
+.delete-dialog-copy,
+.history-dialog > header > div,
+.profile-copy {
+  min-width: 0;
+}
+
+.setting-options,
+.setting-options-three {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.setting-options-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+html[data-theme="dark"] :is(
+  .settings-toolbar,
+  .settings-list .setting-card,
+  .history-dialog,
+  .delete-dialog,
+  .data-dialog,
+  .profile-card
+) {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border-color: var(--color-edge);
+  box-shadow: var(--shadow-tier-1);
+}
+
+html[data-theme="dark"] :is(
+  .setting-options,
+  .data-action-list > button,
+  .data-action-list > label,
+  .profile-stats > div,
+  .history-record-section,
+  .history-simple-record,
+  .history-tracker-editor,
+  .date-range-settings,
+  .tracking-block
+) {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+}
+
+html[data-theme="dark"] :is(
+  .setting-copy p,
+  .setting-copy small,
+  .data-dialog header p,
+  .delete-dialog-copy p,
+  .history-dialog header p,
+  .profile-copy p
+) {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] .setting-icon {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+html[data-theme="dark"] .setting-options button.active {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+html[data-theme="dark"] :is(
+  .feature-dialog-backdrop:not(.history-edit-page):not(.routine-template-page),
+  .delete-dialog-backdrop,
+  .profile-popover-backdrop
+) {
+  background: rgba(3, 7, 12, .62);
+}
+
+:is(.history-dialog, .delete-dialog, .data-dialog, .profile-card) {
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+@media (max-width: 760px) {
+  .settings-list .setting-card,
+  html[data-theme="dark"] .settings-list .setting-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 14px;
+  }
+
+  .setting-options,
+  .setting-open-button {
+    grid-column: 1 / -1;
+  }
+
+  :is(
+    .feature-dialog-backdrop:not(.routine-template-page):not(.history-edit-page),
+    .delete-dialog-backdrop
+  ) {
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  :is(.history-dialog, .delete-dialog, .data-dialog) {
+    width: min(100%, 520px);
+    max-height: calc(100dvh - 32px);
+  }
+
+  .delete-dialog {
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 20px;
+  }
+
+  .delete-dialog-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-tile);
+  }
+
+  .data-dialog > header {
+    grid-template-columns: 42px minmax(0, 1fr) 40px;
+    align-items: center;
+  }
+
+  .data-dialog header > button,
+  .history-dialog header > button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+}

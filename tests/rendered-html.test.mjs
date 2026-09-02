@@ -766,6 +766,11 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.doesNotMatch(css, /\.mobile-wordmark img,[^{]*\{\s*filter: grayscale/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button\.active \.nav-icon,[\s\S]*?color: var\(--color-cloud\)/);
   assert.match(css, /\.bottom-nav button:nth-of-type\(1\)\.active \.nav-label,[\s\S]*?bottom-nav button:nth-of-type\(4\)\.active \.nav-label \{\s*color: var\(--text-strong\)/);
+  assert.match(css, /Dark-mode consistency contract: theme changes color and depth, never geometry/);
+  assert.match(css, /html\[data-theme="dark"\] \.setting-icon \{[^}]*color: var\(--text-on-ink\);[^}]*background: var\(--color-ink\);[^}]*border-color: var\(--color-ink\)/);
+  assert.match(css, /html\[data-theme="dark"\] :is\([\s\S]*?\.settings-toolbar,[\s\S]*?\.history-dialog,[\s\S]*?\.delete-dialog,[\s\S]*?\.data-dialog,[\s\S]*?\.profile-card[\s\S]*?background: var\(--surface-card\);[\s\S]*?border-color: var\(--color-edge\)/);
+  assert.match(css, /\.settings-list \.setting-card,[\s\S]*?html\[data-theme="dark"\] \.settings-list \.setting-card \{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\);[\s\S]*?column-gap: 14px;[\s\S]*?row-gap: 14px/);
+  assert.match(css, /:is\(\.history-dialog, \.delete-dialog, \.data-dialog, \.profile-card\) \{[^}]*max-width: 100%;[^}]*margin-inline: auto/);
 });
 
 test("motion polish stays tactile and respects reduced motion", async () => {
