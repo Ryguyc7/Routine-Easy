@@ -2468,10 +2468,10 @@ html[data-theme="dark"] body {
 .brand-logo {
   width: 36px;
   height: 36px;
-  padding: 7px;
-  border-radius: var(--radius-pill);
-  background: var(--color-ink);
-  filter: grayscale(1) brightness(0) invert(1);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  filter: none;
   box-shadow: none;
 }
 
@@ -3766,16 +3766,15 @@ html[data-theme="dark"] :is(.history-edit-page .history-record-row.recorded > sp
   justify-content: safe center;
 }
 
-/* The checklist artwork stays recognizable without reintroducing the old
-   multicolor brand palette. */
+/* Show the user-selected checklist artwork in its original color. */
 .mobile-wordmark img,
 html[data-theme="dark"] .mobile-wordmark img {
-  filter: grayscale(1) saturate(0) contrast(1.08);
+  filter: drop-shadow(0 5px 8px rgba(14, 17, 22, .14));
 }
 
 .splash-logo,
 html[data-theme="dark"] .splash-logo {
-  filter: grayscale(1) saturate(0) contrast(1.08) drop-shadow(0 13px 20px rgba(14, 17, 22, .18));
+  filter: drop-shadow(0 13px 20px rgba(14, 17, 22, .18));
 }
 
 @media (max-width: 760px) {

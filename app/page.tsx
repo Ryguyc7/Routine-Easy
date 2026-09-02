@@ -1058,7 +1058,7 @@ export default function Home() {
       for (const routine of todayRoutines) {
         const key = String(routine.id);
         if (!routine.time || routine.time > currentTime || notifiedIds.has(key) || skippedToday.has(routine.id) || isRoutineDone(routine)) continue;
-        new Notification(`Time for ${routine.name}`, { body: `${routine.emoji} Open Routine EASY to check it off.`, icon: "/routineez-checklist.png", tag: `routine-${routine.id}-${todayKey}` });
+        new Notification(`Time for ${routine.name}`, { body: `${routine.emoji} Open Routine EASY to check it off.`, icon: "/routineez-checklist-v2.png", tag: `routine-${routine.id}-${todayKey}` });
         notifiedIds.add(key);
       }
       window.localStorage.setItem(storageKey, JSON.stringify([...notifiedIds]));
@@ -1485,7 +1485,7 @@ export default function Home() {
     <><main className={`app-shell${nativeApp ? " native-app" : ""}${preferences.motion === "reduced" ? " reduce-motion" : ""}${darkTheme ? " theme-dark" : ""}${tab === "settings" ? " settings-view-open" : ""}`}>
       <aside className="sidebar">
         <div className="brand" aria-label="Routine EASY home">
-          <img className="brand-logo" src="/routineez-checklist-glossy.png" alt="" />
+          <img className="brand-logo" src="/routineez-checklist-v2.png" alt="" />
           <span>Routine<EasyWord className="brand-easy" /></span>
         </div>
         <p className="sidebar-date">{today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
@@ -1503,7 +1503,7 @@ export default function Home() {
         <header className="mobile-header">
           <button className="mobile-settings" onClick={openSettings} aria-label="Open settings"><Settings2 aria-hidden="true" /></button>
           <div className="mobile-wordmark" aria-label="Routine EASY">
-            <img src="/routineez-checklist-glossy.png" alt="" />
+            <img src="/routineez-checklist-v2.png" alt="" />
             <span className="mobile-wordmark-name">Routine<EasyWord className="mobile-wordmark-easy" /></span>
           </div>
           <button className="mobile-add premium-action" onClick={openAddFromHeader} aria-label="Add routine"><Plus aria-hidden="true" /></button>
@@ -2025,7 +2025,7 @@ function OnboardingSplash({ leaving = false }: { leaving?: boolean }) {
   return <main className={`onboarding-splash splash-overlay${leaving ? " leaving" : ""}`} aria-label="Loading Routine EASY">
     <BlobCorners className="app-background-blobs splash-home-blobs" />
     <div className="splash-brand">
-          <img className="splash-logo" src="/routineez-checklist-glossy.png" alt="" />
+          <img className="splash-logo" src="/routineez-checklist-v2.png" alt="" />
       <div className="splash-wordmark" aria-hidden="true">
         <span className="splash-routine">Routine</span><EasyWord className="splash-easy" />
       </div>

@@ -57,7 +57,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.match(page, /splash-blob-gold/);
   assert.match(page, /splash-blob-sky/);
   assert.match(page, /splash-easy/);
-  assert.match(page, /routineez-checklist\.png/);
+  assert.match(page, /routineez-checklist-v2\.png/);
   assert.match(page, /function EasyWord/);
   assert.match(page, /easy-e/);
   assert.match(page, /easy-a/);
@@ -436,7 +436,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
   assert.doesNotMatch(page, /day-dots/);
   assert.doesNotMatch(page, /empty-state-icon[^>]*>☀️/);
   assert.match(page, /mobile-wordmark/);
-  assert.match(page, /routineez-checklist\.png/);
+  assert.match(page, /routineez-checklist-v2\.png/);
   assert.doesNotMatch(page, /src="\/routineez-logo\.png"/);
   assert.doesNotMatch(page, /routineez-mark\.png/);
   assert.match(layout, /const favicon = "\/routine-easy-splash-icon-v3\.png\?v=20260818-3"/);
@@ -758,8 +758,10 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.progress-track,[\s\S]*?html\[data-theme="dark"\] \.progress-track \{\s*height: 5px/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy \{[\s\S]*?font-family: inherit;[\s\S]*?font-size: inherit;[\s\S]*?font-weight: inherit/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy :is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit/);
-  assert.match(css, /\.mobile-wordmark img,[^{]*\{\s*filter: grayscale\(1\) saturate\(0\) contrast\(1\.08\)/);
-  assert.match(css, /\.splash-logo,[^{]*\{\s*filter: grayscale\(1\) saturate\(0\) contrast\(1\.08\)/);
+  assert.match(css, /Show the user-selected checklist artwork in its original color/);
+  assert.match(css, /\.mobile-wordmark img,[^{]*\{\s*filter: drop-shadow/);
+  assert.match(css, /\.splash-logo,[^{]*\{\s*filter: drop-shadow/);
+  assert.doesNotMatch(css, /\.mobile-wordmark img,[^{]*\{\s*filter: grayscale/);
   assert.match(css, /\.bottom-nav button\.calendar-nav-button\.active \.nav-icon,[\s\S]*?color: var\(--color-cloud\)/);
   assert.match(css, /\.bottom-nav button:nth-of-type\(1\)\.active \.nav-label,[\s\S]*?bottom-nav button:nth-of-type\(4\)\.active \.nav-label \{\s*color: var\(--text-strong\)/);
 });
