@@ -3830,8 +3830,8 @@ html[data-theme="dark"] .splash-logo {
 
   .mobile-wordmark img,
   html[data-theme="dark"] .mobile-wordmark img {
-    width: 37px;
-    height: 37px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
     transform: none;
     filter: drop-shadow(0 3px 5px rgba(14, 17, 22, .14));
