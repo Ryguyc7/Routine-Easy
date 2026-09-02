@@ -3807,6 +3807,14 @@ html[data-theme="dark"] .splash-logo {
     font-weight: 600;
   }
 
+  /* Keep the compact header wordmark typographically identical to the splash. */
+  :is(.splash-wordmark, .mobile-wordmark-name) {
+    font-family: var(--font-sans);
+    font-weight: 900;
+    letter-spacing: -.041em;
+    line-height: 1;
+  }
+
   .mobile-wordmark .mobile-wordmark-easy {
     margin-left: 2px;
     color: inherit;

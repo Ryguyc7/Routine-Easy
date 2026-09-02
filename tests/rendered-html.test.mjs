@@ -757,6 +757,7 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.progress-card,[\s\S]*?html\[data-theme="dark"\] \.progress-card \{[\s\S]*?padding: 14px 16px 12px;[\s\S]*?row-gap: 9px;[\s\S]*?border-radius: 22px/);
   assert.match(css, /\.progress-track,[\s\S]*?html\[data-theme="dark"\] \.progress-track \{\s*height: 5px/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy \{[\s\S]*?font-family: inherit;[\s\S]*?font-size: inherit;[\s\S]*?font-weight: inherit/);
+  assert.match(css, /:is\(\.splash-wordmark, \.mobile-wordmark-name\) \{[\s\S]*?font-family: var\(--font-sans\);[\s\S]*?font-weight: 900;[\s\S]*?letter-spacing: -\.041em/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy :is\(\.easy-e, \.easy-a, \.easy-s, \.easy-y\) \{\s*color: inherit/);
   assert.match(css, /Show the user-selected checklist artwork in its original color/);
   assert.match(css, /\.mobile-wordmark img,[^{]*\{\s*filter: drop-shadow/);
