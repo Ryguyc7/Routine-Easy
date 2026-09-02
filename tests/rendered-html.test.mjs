@@ -754,7 +754,8 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /\.bottom-nav-selection-history \{ transform: translateX\(calc\(300% \+ 6px\)\)/);
   assert.match(css, /\.bottom-nav button,[\s\S]*?animation: none !important/);
   assert.match(css, /\.mobile-add svg \{[\s\S]*?width: 22px;[\s\S]*?height: 22px/);
-  assert.match(css, /\.progress-card,[\s\S]*?html\[data-theme="dark"\] \.progress-card \{[\s\S]*?padding: 14px 16px 12px;[\s\S]*?row-gap: 9px;[\s\S]*?border-radius: 22px/);
+  assert.match(css, /\.progress-card,[\s\S]*?html\[data-theme="dark"\] \.progress-card \{[\s\S]*?padding: 12px 16px 10px;[\s\S]*?row-gap: 8px;[\s\S]*?border-radius: 22px;[\s\S]*?box-shadow: var\(--shadow-tier-1\)/);
+  assert.match(css, /\.progress-number \{[^}]*min-width: 50px;[^}]*font-family: var\(--font-sans\);[^}]*font-size: 22px;[^}]*text-align: right/);
   assert.match(css, /\.progress-track,[\s\S]*?html\[data-theme="dark"\] \.progress-track \{\s*height: 5px/);
   assert.match(css, /\.mobile-wordmark \.mobile-wordmark-easy \{[\s\S]*?font-family: inherit;[\s\S]*?font-size: inherit;[\s\S]*?font-weight: inherit/);
   assert.match(css, /:is\(\.splash-wordmark, \.mobile-wordmark-name\) \{[\s\S]*?font-family: var\(--font-sans\);[\s\S]*?font-weight: 900;[\s\S]*?letter-spacing: -\.041em/);

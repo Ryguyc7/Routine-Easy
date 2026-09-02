@@ -3895,11 +3895,11 @@ html[data-theme="dark"] .splash-logo {
   .progress-card,
   html[data-theme="dark"] .progress-card {
     margin-bottom: 20px;
-    padding: 14px 16px 12px;
+    padding: 12px 16px 10px;
     column-gap: 12px;
-    row-gap: 9px;
+    row-gap: 8px;
     border-radius: 22px;
-    box-shadow: var(--shadow-tier-2);
+    box-shadow: var(--shadow-tier-1);
   }
 
   .progress-copy {
@@ -3907,13 +3907,13 @@ html[data-theme="dark"] .splash-logo {
   }
 
   .progress-icon {
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
   }
 
   .progress-copy strong {
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.1;
   }
 
@@ -3925,8 +3925,14 @@ html[data-theme="dark"] .splash-logo {
   }
 
   .progress-number {
-    font-size: 28px;
+    min-width: 50px;
+    align-self: center;
+    font-family: var(--font-sans);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -.025em;
     line-height: 1;
+    text-align: right;
   }
 
   .progress-track,
