@@ -697,6 +697,7 @@ test("ships the Routine EASY product instead of starter content", async () => {
 });
 
 test("dark mode covers mobile cards and interactive surfaces", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
   assert.match(css, /Dark theme completion pass/);
@@ -771,6 +772,15 @@ test("dark mode covers mobile cards and interactive surfaces", async () => {
   assert.match(css, /html\[data-theme="dark"\] :is\([\s\S]*?\.settings-toolbar,[\s\S]*?\.history-dialog,[\s\S]*?\.delete-dialog,[\s\S]*?\.data-dialog,[\s\S]*?\.profile-card[\s\S]*?background: var\(--surface-card\);[\s\S]*?border-color: var\(--color-edge\)/);
   assert.match(css, /\.settings-list \.setting-card,[\s\S]*?html\[data-theme="dark"\] \.settings-list \.setting-card \{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\);[\s\S]*?column-gap: 14px;[\s\S]*?row-gap: 14px/);
   assert.match(css, /:is\(\.history-dialog, \.delete-dialog, \.data-dialog, \.profile-card\) \{[^}]*max-width: 100%;[^}]*margin-inline: auto/);
+  assert.match(css, /Neutral dark surfaces and compact builder steps/);
+  assert.match(css, /html\[data-theme="dark"\] :is\(\.progress-card, \.routine-row, \.routine-swipe-surface\) \{[^}]*background: var\(--surface-card\);[^}]*border-color: var\(--color-edge\)/);
+  assert.match(css, /html\[data-theme="dark"\] :is\(\.progress-track span, \.collapsed-progress span\),[^}]*background: var\(--color-ink\)/);
+  assert.match(css, /\.routine-builder-page \.form-grid\.form-step-2,[\s\S]*?flex: 0 0 auto;[\s\S]*?min-height: 0/);
+  assert.match(css, /\.tracking-add-button,[\s\S]*?color: var\(--text-on-ink\);[\s\S]*?background: var\(--color-ink\)/);
+  assert.match(css, /\.day-plan-days > button\.active,[\s\S]*?background: var\(--color-ink\);[\s\S]*?border-color: var\(--color-ink\)/);
+  assert.match(css, /html\[data-theme="dark"\] \.history-page-detail \.history-stats strong \{\s*color: var\(--text-strong\)/);
+  assert.match(css, /html\[data-theme="dark"\] \.history-edit-page \.history-edit-dialog \{[^}]*background: transparent;[^}]*border: 0/);
+  assert.match(page, /className=\{`form-grid form-step-\$\{step \+ 1\}`\}/);
 });
 
 test("motion polish stays tactile and respects reduced motion", async () => {

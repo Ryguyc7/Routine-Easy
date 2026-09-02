@@ -2756,7 +2756,7 @@ function AddRoutineForm({ template, onSubmit, onCancel, saving, usedEmojis, used
         </div>
       </div>
     </header>
-    <div className="form-grid">
+    <div className={`form-grid form-step-${step + 1}`}>
       <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
         <label className="field wide"><span>Routine name</span><input name="name" value={previewName} onChange={(event) => setPreviewName(event.target.value)} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
         <TimeField defaultValue={template?.time ?? ""} />
@@ -2959,7 +2959,7 @@ function RoutineOptionsEditor({ routine, onSubmit, onCancel, saving, usedEmojis,
         <div className="wizard-progress" role="progressbar" aria-label="Edit routine progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={step + 1}>{steps.map((item, index) => <i key={item.title} className={index <= step ? "active" : ""} />)}</div>
       </div>
     </header>
-    <div className="form-grid">
+    <div className={`form-grid form-step-${step + 1}`}>
       <section className="wizard-step" hidden={step !== 0} aria-label="Routine details">
         <label className="field wide"><span>Routine name</span><input name="name" defaultValue={routine.name} placeholder="e.g. Take vitamins" required maxLength={40} autoFocus /></label>
         <TimeField defaultValue={routine.time} />

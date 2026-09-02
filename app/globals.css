@@ -4896,3 +4896,209 @@ html[data-theme="dark"] :is(
     border-radius: 50%;
   }
 }
+
+/* Neutral dark surfaces and compact builder steps. Accent colors are reserved
+   for data and focus, never for card fills, borders, or navigation states. */
+html[data-theme="dark"] :is(.progress-card, .routine-row, .routine-swipe-surface) {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border-color: var(--color-edge);
+}
+
+html[data-theme="dark"] .progress-icon {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.progress-track, .collapsed-progress) {
+  background: var(--surface-sunken);
+}
+
+html[data-theme="dark"] :is(.progress-track span, .collapsed-progress span),
+html[data-theme="dark"] .routine-row.skipped .collapsed-progress span {
+  background: var(--color-ink);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.routine-emoji, .routine-row.expanded .routine-emoji) {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.routine-row.skipped, .routine-row.completed) .routine-swipe-surface {
+  background: var(--surface-card);
+}
+
+html[data-theme="dark"] :is(.today-variant, .routine-row.skipped .routine-info small) {
+  color: var(--text-muted);
+}
+
+.routine-builder-page .form-grid.form-step-2,
+.routine-builder-page .form-grid.form-step-3 {
+  flex: 0 0 auto;
+  align-content: start;
+  min-height: 0;
+}
+
+.tracking-add-button,
+html[data-theme="dark"] .tracking-add-button {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-tier-1);
+  text-shadow: none;
+}
+
+.tracking-empty-hint {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.day-plan-days {
+  justify-content: center;
+  gap: 8px;
+}
+
+.day-plan-days > button,
+.day-plan-days > button.scheduled,
+.day-plan-days > button:nth-child(3).scheduled,
+.day-plan-days > button:nth-child(7).scheduled,
+html[data-theme="dark"] :is(.day-plan-days > button, .day-plan-days > button.scheduled) {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+  box-shadow: none;
+}
+
+.day-plan-days > button.active,
+.day-plan-days > button.scheduled.active,
+html[data-theme="dark"] :is(.day-plan-days > button.active, .day-plan-days > button.scheduled.active) {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px var(--surface-card), var(--shadow-tier-1);
+}
+
+.day-plan-days > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-signal) 28%, transparent);
+}
+
+.day-plan-editor {
+  border-top-color: var(--color-edge);
+}
+
+.day-plan-select-all,
+.day-plan-select-all[aria-pressed="true"],
+html[data-theme="dark"] :is(.day-plan-select-all, .day-plan-select-all[aria-pressed="true"]) {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+}
+
+.day-plan-options > button,
+.day-plan-options > button.selected,
+html[data-theme="dark"] :is(.day-plan-options > button, .day-plan-options > button.selected) {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+  box-shadow: none;
+}
+
+.day-plan-options > button > span:first-child,
+html[data-theme="dark"] .day-plan-options > button > span:first-child {
+  color: var(--text-strong);
+  background: var(--surface-card);
+}
+
+.day-plan-options > button.selected > i,
+html[data-theme="dark"] .day-plan-options > button.selected > i {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+html[data-theme="dark"] .history-page-detail .history-stats > div {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+}
+
+html[data-theme="dark"] .history-page-detail .history-stats strong {
+  color: var(--text-strong);
+}
+
+html[data-theme="dark"] .history-page-detail .history-month-calendar .history-day {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+}
+
+html[data-theme="dark"] .history-page-detail .history-month-calendar .history-day.completed {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+html[data-theme="dark"] .history-page-detail .history-month-calendar :is(.history-day.partial, .history-day.skipped, .history-day.missed) {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border-color: var(--color-edge);
+}
+
+html[data-theme="dark"] .history-edit-page.feature-dialog-backdrop {
+  background-color: var(--surface-page);
+  background-image: none;
+}
+
+html[data-theme="dark"] .history-edit-page .history-edit-dialog {
+  color: var(--text-strong);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .history-edit-page .history-edit-sticky {
+  background: transparent;
+}
+
+html[data-theme="dark"] .history-edit-page :is(.history-edit-sticky > header, .history-day-summary, .history-record-section, .history-simple-record) {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border-color: var(--color-edge);
+  box-shadow: var(--shadow-tier-1);
+}
+
+html[data-theme="dark"] .history-edit-page .history-day-summary > span {
+  color: var(--text-on-ink);
+  background: var(--color-ink);
+}
+
+html[data-theme="dark"] .history-edit-page :is(.history-summary-fix, .history-edit-options-compact) {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  border-color: var(--color-edge);
+}
+
+@media (max-width: 760px) {
+  .routine-builder-page .form-grid.form-step-2,
+  .routine-builder-page .form-grid.form-step-3 {
+    margin-top: 16px;
+    padding: 20px;
+  }
+
+  .day-plan-days {
+    gap: 6px;
+  }
+
+  .day-plan-days > button {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+}
